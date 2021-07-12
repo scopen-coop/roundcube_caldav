@@ -56,31 +56,40 @@ class roundcube_caldav extends rcube_plugin
         $param_list['blocks']['main']['name'] = $this->gettext('settings');
         $param_list = $this->server_caldav_form($param_list);
 
-        $_url_base = $this->rcube->config->get('url_base', false);
-        $_login = $this->rcube->config->get('login', false);
-        $_password = $this->rcube->config->get('password', false);
+        $server = $this->rcube->config->get('server_caldav');
+
+        $_url_base = $server['_url_base'];
+        $_login = $server['_login'];
+        $_password = $server['_password'];
         if (!empty($_url_base) && !empty($_login) && !empty($_password)) {
-            $param_list = $this->connection_server_calDAV($_url_base, $_login, $_password,$param_list);
+            $param_list = $this->connection_server_calDAV($_url_base, $_login, $_password, $param_list);
         }
         return $param_list;
     }
 
     function preferences_save($save_params)
     {
+
         if ($save_params['section'] == 'server_caldav') {
-            $save_params['prefs'] = array();
 
             if (!empty($_POST['_define_server_caldav']) && !empty($_POST['_define_login']) &&
                 !empty($_POST['_define_password'])) {
                 $this->rcmail->output->command('display_message', $this->gettext('save_msg'), 'valid');
-                $save_params['prefs']['url_base'] = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
-                $save_params['prefs']['login'] = rcube_utils::get_input_value('_define_login', rcube_utils::INPUT_POST);
-                $save_params['prefs']['password'] = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST);
+                $save_params['prefs']['server_caldav']['_url_base'] = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
+                $save_params['prefs']['server_caldav']['_login'] = rcube_utils::get_input_value('_define_login', rcube_utils::INPUT_POST);
+                $save_params['prefs']['server_caldav']['_password'] = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST);
+                $save_params['prefs']['server_caldav']['_main_calendar'] = rcube_utils::get_input_value('_define_main_calendar', rcube_utils::INPUT_POST);
+
+                foreach (rcube_utils::get_input_value('_define_used_calendars', rcube_utils::INPUT_POST) as $cal) {
+                    $save_params['prefs']['server_caldav']['_used_calendars'][$cal] = $cal;
+                }
 
             } else {
                 $this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
             }
         }
+        $save_params['result'] = true;
+        $save_params['abort'] = false;
         return $save_params;
     }
 
@@ -90,13 +99,14 @@ class roundcube_caldav extends rcube_plugin
      */
     public function server_caldav_form(array $param_list)
     {
+        $server = $this->rcube->config->get('server_caldav');
 
         // Champs pour specifier l'url du serveur
         $field_id = 'define_server_caldav';
         $url_base = new html_inputfield(array('name' => '_' . $field_id, 'id' => $field_id));
         $param_list['blocks']['main']['options']['url_base'] = array(
             'title' => html::label($field_id, rcube::Q($this->gettext('url_base'))),
-            'content' => $url_base->show($this->rcube->config->get('url_base', false)),
+            'content' => $url_base->show($server['_url_base']),
         );
 
         // Champs pour specifier le login
@@ -104,7 +114,7 @@ class roundcube_caldav extends rcube_plugin
         $login = new html_inputfield(array('name' => '_' . $field_id, 'id' => $field_id));
         $param_list['blocks']['main']['options']['login'] = array(
             'title' => html::label($field_id, rcube::Q($this->gettext('login'))),
-            'content' => $login->show($this->rcube->config->get('login', false)),
+            'content' => $login->show($server['_login']),
         );
 
         // Champs pour specifier le mot de passe
@@ -112,28 +122,44 @@ class roundcube_caldav extends rcube_plugin
         $password = new html_passwordfield(array('name' => '_' . $field_id, 'id' => $field_id));
         $param_list['blocks']['main']['options']['password'] = array(
             'title' => html::label($field_id, rcube::Q($this->gettext('password'))),
-            'content' => $password->show($this->rcube->config->get('password', false)),
+            'content' => $password->show($server['_password']),
         );
         return $param_list;
     }
 
-    function connection_server_calDAV($_url_base, $_login, $_password,array $args)
+
+    function connection_server_calDAV($_url_base, $_login, $_password, array $args)
     {
-        //$args['blocks']['main']['name'] = $this->gettext('settings');
+
+
+        $args['blocks']['main']['options']['calendar_choice'] = array(
+            'title'   => html::label('ojk', rcube::Q($this->gettext('calendar_choice'))),
+        );
+
+        $server = $this->rcube->config->get('server_caldav');
         $client = new SimpleCalDAVClient();
         try {
 
             $client->connect($_url_base, $_login, $_password);
-            $arrayOfCalendars = array_keys($client->findCalendars());
+            $arrayOfCalendars = $client->findCalendars();
 
             foreach ($arrayOfCalendars as $cal) {
-                $field_id = $cal;
-                $checkbox = new html_checkbox(array('name' => '_' . $field_id, 'id' => $field_id, 'value' => 1));
+                $print=null;
+                foreach ($server['_used_calendars'] as $used_calendar){
+                    if($used_calendar == $cal->getCalendarID()){
+                        $print = $cal->getCalendarID();
+                    }
+                }
 
-                $args['blocks']['main']['options'][$cal] = array(
-                    'title'   => html::label($field_id, $cal),
-                    'content' => $checkbox->show(intval($this->rcube->config->get($cal, false)))
-                );
+
+                $radiobutton = new html_radiobutton(array('name' => '_define_main_calendar', 'value' => $cal->getCalendarID()));
+                $checkbox = new html_checkbox(array('name' => '_define_used_calendars[]', 'value' => $cal->getCalendarID()));
+                $args['blocks']['main']['options'][$cal->getCalendarID()] = array(
+                    'title' => html::label($cal->getCalendarID(), $cal->getDisplayName()),
+                    'content' => html::div('input-group', $radiobutton->show($server['_main_calendar']) .
+                        $checkbox->show($print)
+                    ));
+
             }
         } catch (Exception $e) {
             echo $e->__toString();
@@ -143,4 +169,5 @@ class roundcube_caldav extends rcube_plugin
 }
 
 
-
+//$server['_main_calendar']
+//$server['_used_calendars'][$cal->getCalendarID()]
