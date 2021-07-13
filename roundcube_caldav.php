@@ -32,7 +32,7 @@ class roundcube_caldav extends rcube_plugin
     {
         $this->rcmail = rcmail::get_instance();
         $this->rcube = rcube::get_instance();
-
+        $this->include_script('roundcube_caldav.js');
         $this->load_config();
         $this->add_texts('localization/');
 
@@ -221,6 +221,12 @@ class roundcube_caldav extends rcube_plugin
         return array('content' => $content);
     }
 
+    function start_with($string, $startstring)
+    {
+        $len = strlen($startstring);
+        return (substr($string, 0, $len) === $startstring);
+    }
+
     public function process_attachment(&$content, &$message, &$a)
     {
         $rcmail = $this->rcmail;
@@ -248,28 +254,37 @@ class roundcube_caldav extends rcube_plugin
 
 
             $attendees = array();
+            $id=0;
+
             foreach (array_merge($event->organizer_array, $event->attendee_array) as $attendee) {
                 if (array_key_exists('CN', $attendee)) {
-                    array_push($attendees, $attendee['CN']);
+                    $attendees[$id]['name']= $attendee['CN'];
+
+                }elseif ($this->start_with($attendee, 'mailto:')) {
+                    $attendees[$id]['email']= substr($attendee,7);
+                    $id++;
+                }else{
+                    $id++;
                 }
+
             }
 
             $html = '<div>' . '<ul>';
-            $html .= '<li>'.'<b>' . $event->summary . '</b>' . '<br/>'.'</li>';
+            $html .= '<li>' . '<b>' . $event->summary . '</b>' . '<br/>' . '</li>';
 
-            if(!empty($event->description)){
-                $html .= '<li>'.$event->description . '<br/>'.'</li>';
+            if (!empty($event->description)) {
+                $html .= '<li>' . $event->description . '<br/>' . '</li>';
             }
-            if(!empty($event->location)){
-                $html .= '<li>'.$event->location . '<br/>'.'</li>';
+            if (!empty($event->location)) {
+                $html .= '<li>' . $event->location . '<br/>' . '</li>';
             }
 
-            $html .= '<li>'.$datestr . '<br/>'.'</li>';
+            $html .= '<li>' . $datestr . '<br/>' . '</li>';
 
-            if(!empty($attendees)){
+            if (!empty($attendees)) {
                 $html .= '<li> Participants: <ul>';
                 foreach ($attendees as $attendee) {
-                    $html .= '<li>'.$attendee . '</li>';
+                    $html .= '<li><a class="reply"  id=$attendee["email"] role="button" >' . $attendee['email'] . '</a></li>';
                 }
                 $html .= '</ul></li>';
             }
@@ -281,21 +296,8 @@ class roundcube_caldav extends rcube_plugin
         }
     }
 
-    function replyto($email){
-        $OUTPUT   = $this->rcube->output;
-        $SENDMAIL = new rcmail_sendmail(null, array(
-            'sendmail' => true,
-            'from' => $from,
-            'mailto' => $email,
-            'dsn_enabled' => false,
-            'charset' => 'UTF-8',
-            'error_handler' => function() use ($OUTPUT) {
-                call_user_func_array(array($OUTPUT, 'show_message'), func_get_args());
-                $OUTPUT->send();
-            }
-        ));
+//<a class="reply" data-content-button="true" id="rcmbtn116" role="button" tabindex="0" aria-disabled="false" href="#" onclick="return rcmail.command('reply','',this,event)"><span class="inner">Répondre</span></a>
 
-    }
 
 }
 
