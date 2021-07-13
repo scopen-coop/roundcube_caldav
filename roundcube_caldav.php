@@ -39,7 +39,9 @@ class roundcube_caldav extends rcube_plugin
         $this->add_hook('preferences_save', array($this, 'preferences_save'));
     }
 
-
+    /*
+     * Affichage de la section "Configuration du serveur CalDAV"
+     */
     function modify_section($args)
     {
         $args['list']['server_caldav'] = array(
@@ -48,48 +50,54 @@ class roundcube_caldav extends rcube_plugin
         return $args;
     }
 
+
+    /*
+     * Affichage des différents champs de la section
+     */
     function preferences_list($param_list)
     {
         if ($param_list['section'] != 'server_caldav') {
             return $param_list;
         }
         $param_list['blocks']['main']['name'] = $this->gettext('settings');
+
         $param_list = $this->server_caldav_form($param_list);
 
         $server = $this->rcube->config->get('server_caldav');
 
-        $_url_base = $server['_url_base'];
-        $_login = $server['_login'];
-        $_password = $server['_password'];
-        if (!empty($_url_base) && !empty($_login) && !empty($_password)) {
-            $param_list = $this->connection_server_calDAV($_url_base, $_login, $_password, $param_list);
+        if (!empty( $server['_url_base']) && !empty($server['_login']) && !empty($server['_password'])) {
+            $param_list = $this->connection_server_calDAV( $param_list);
         }
         return $param_list;
     }
 
+    /*
+     * Sauvegarde des préférences une fois les différents champs remplis
+     */
     function preferences_save($save_params)
     {
-
         if ($save_params['section'] == 'server_caldav') {
 
-            if (!empty($_POST['_define_server_caldav']) && !empty($_POST['_define_login']) &&
-                !empty($_POST['_define_password'])) {
-                $this->rcmail->output->command('display_message', $this->gettext('save_msg'), 'valid');
+            if (!empty($_POST['_define_server_caldav']) && !empty($_POST['_define_login'])) {
                 $save_params['prefs']['server_caldav']['_url_base'] = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
                 $save_params['prefs']['server_caldav']['_login'] = rcube_utils::get_input_value('_define_login', rcube_utils::INPUT_POST);
-                $save_params['prefs']['server_caldav']['_password'] = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST);
-                $save_params['prefs']['server_caldav']['_main_calendar'] = rcube_utils::get_input_value('_define_main_calendar', rcube_utils::INPUT_POST);
 
+                if(!empty($_POST['_define_password'])){
+                    $ciphered_password = $this->encrypt(rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST),$this->rcube->config->get('des_key'), true) ;
+                    $save_params['prefs']['server_caldav']['_password'] = $ciphered_password;
+                }elseif (array_key_exists('_password',$this->rcube->config->get('server_caldav'))){
+                    $save_params['prefs']['server_caldav']['_password']=$this->rcube->config->get('server_caldav')['_password'];
+                }
+
+                $save_params['prefs']['server_caldav']['_main_calendar'] = rcube_utils::get_input_value('_define_main_calendar', rcube_utils::INPUT_POST);
                 foreach (rcube_utils::get_input_value('_define_used_calendars', rcube_utils::INPUT_POST) as $cal) {
                     $save_params['prefs']['server_caldav']['_used_calendars'][$cal] = $cal;
                 }
-
             } else {
                 $this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
             }
         }
-        $save_params['result'] = true;
-        $save_params['abort'] = false;
+
         return $save_params;
     }
 
@@ -122,15 +130,18 @@ class roundcube_caldav extends rcube_plugin
         $password = new html_passwordfield(array('name' => '_' . $field_id, 'id' => $field_id));
         $param_list['blocks']['main']['options']['password'] = array(
             'title' => html::label($field_id, rcube::Q($this->gettext('password'))),
-            'content' => $password->show($server['_password']),
+            'content' => $password->show(),
         );
         return $param_list;
     }
 
 
-    function connection_server_calDAV($_url_base, $_login, $_password, array $args)
+    function connection_server_calDAV( array $args)
     {
-
+        $server = $this->rcube->config->get('server_caldav');
+        $_login = $server['_login'];
+        $_password = $server['_password'];
+        $_url_base = $server['_url_base'];
 
         $args['blocks']['main']['options']['calendar_choice'] = array(
             'title'   => html::label('ojk', rcube::Q($this->gettext('calendar_choice'))),
@@ -140,7 +151,9 @@ class roundcube_caldav extends rcube_plugin
         $client = new SimpleCalDAVClient();
         try {
 
-            $client->connect($_url_base, $_login, $_password);
+
+            $plain_password = $this->decrypt($_password,$this->rcube->config->get('des_key'), true) ;
+            $client->connect($_url_base, $_login, $plain_password);
             $arrayOfCalendars = $client->findCalendars();
 
             foreach ($arrayOfCalendars as $cal) {
@@ -162,12 +175,71 @@ class roundcube_caldav extends rcube_plugin
 
             }
         } catch (Exception $e) {
-            echo $e->__toString();
+            $this->rcmail->output->command('display_message', $this->gettext('connect_error_msg'), 'error');
         }
         return $args;
     }
+
+
+    /**
+     * Encrypts (but does not authenticate) a message
+     *
+     * @param string $message - plaintext message
+     * @param string $key - encryption key (raw binary expected)
+     * @param boolean $encode - set to TRUE to return a base64-encoded
+     * @return string (raw binary)
+     */
+    public static function encrypt($message, $key, $encode = false)
+    {
+        $nonceSize = openssl_cipher_iv_length('aes-256-ctr');
+        $nonce = openssl_random_pseudo_bytes($nonceSize);
+
+        $ciphertext = openssl_encrypt(
+            $message,
+            'aes-256-ctr',
+            $key,
+            OPENSSL_RAW_DATA,
+            $nonce
+        );
+
+        // Now let's pack the IV and the ciphertext together
+        // Naively, we can just concatenate
+        if ($encode) {
+            return base64_encode($nonce.$ciphertext);
+        }
+        return $nonce.$ciphertext;
+    }
+
+    /**
+     * Decrypts (but does not verify) a message
+     *
+     * @param string $message - ciphertext message
+     * @param string $key - encryption key (raw binary expected)
+     * @param boolean $encoded - are we expecting an encoded string?
+     * @return string
+     */
+    public static function decrypt($message, $key, $encoded = false)
+    {
+        if ($encoded) {
+            $message = base64_decode($message, true);
+            if ($message === false) {
+                throw new Exception('Encryption failure');
+            }
+        }
+
+        $nonceSize = openssl_cipher_iv_length('aes-256-ctr');
+        $nonce = mb_substr($message, 0, $nonceSize, '8bit');
+        $ciphertext = mb_substr($message, $nonceSize, null, '8bit');
+
+        $plaintext = openssl_decrypt(
+            $ciphertext,
+            'aes-256-ctr',
+            $key,
+            OPENSSL_RAW_DATA,
+            $nonce
+        );
+
+        return $plaintext;
+    }
 }
 
-
-//$server['_main_calendar']
-//$server['_used_calendars'][$cal->getCalendarID()]
