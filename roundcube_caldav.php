@@ -19,11 +19,12 @@
  */
 
 require('lib/simpleCalDAV/SimpleCalDAVClient.php');
-require ('lib/password_encryption/password_encryption.php');
+require('lib/password_encryption/password_encryption.php');
 
 class roundcube_caldav extends rcube_plugin
 {
-    public $task = 'settings';
+    public $task = 'settings|mail';
+
     public $rcube;
     public $rcmail;
 
@@ -35,9 +36,15 @@ class roundcube_caldav extends rcube_plugin
         $this->load_config();
         $this->add_texts('localization/');
 
+
         $this->add_hook('preferences_sections_list', array($this, 'modify_section'));
         $this->add_hook('preferences_list', array($this, 'preferences_list'));
         $this->add_hook('preferences_save', array($this, 'preferences_save'));
+
+
+        $this->add_hook('message_load', array($this, 'message_load'));
+        $this->add_hook('message_objects', array($this, 'message_objects'));
+
     }
 
     /**
@@ -70,8 +77,8 @@ class roundcube_caldav extends rcube_plugin
 
         $server = $this->rcube->config->get('server_caldav');
 
-        if (!empty( $server['_url_base']) && !empty($server['_login']) && !empty($server['_password'])) {
-            $param_list = $this->connection_server_calDAV( $param_list);
+        if (!empty($server['_url_base']) && !empty($server['_login']) && !empty($server['_password'])) {
+            $param_list = $this->connection_server_calDAV($param_list);
         }
         return $param_list;
     }
@@ -90,11 +97,11 @@ class roundcube_caldav extends rcube_plugin
                 $save_params['prefs']['server_caldav']['_url_base'] = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
                 $save_params['prefs']['server_caldav']['_login'] = rcube_utils::get_input_value('_define_login', rcube_utils::INPUT_POST);
 
-                if(!empty($_POST['_define_password'])){
-                    $ciphered_password = $cipher->encrypt(rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST),$this->rcube->config->get('des_key'), true) ;
+                if (!empty($_POST['_define_password'])) {
+                    $ciphered_password = $cipher->encrypt(rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST), $this->rcube->config->get('des_key'), true);
                     $save_params['prefs']['server_caldav']['_password'] = $ciphered_password;
-                }elseif (array_key_exists('_password',$this->rcube->config->get('server_caldav'))){
-                    $save_params['prefs']['server_caldav']['_password']=$this->rcube->config->get('server_caldav')['_password'];
+                } elseif (array_key_exists('_password', $this->rcube->config->get('server_caldav'))) {
+                    $save_params['prefs']['server_caldav']['_password'] = $this->rcube->config->get('server_caldav')['_password'];
                 }
 
                 $save_params['prefs']['server_caldav']['_main_calendar'] = rcube_utils::get_input_value('_define_main_calendar', rcube_utils::INPUT_POST);
@@ -149,7 +156,7 @@ class roundcube_caldav extends rcube_plugin
      * @param array $param_list
      * @return array
      */
-    function connection_server_calDAV( array $param_list)
+    function connection_server_calDAV(array $param_list)
     {
         $cipher = new password_encryption();
         $server = $this->rcube->config->get('server_caldav');
@@ -158,7 +165,7 @@ class roundcube_caldav extends rcube_plugin
         $_url_base = $server['_url_base'];
 
         $param_list['blocks']['main']['options']['calendar_choice'] = array(
-            'title'   => html::label('ojk', rcube::Q($this->gettext('calendar_choice'))),
+            'title' => html::label('ojk', rcube::Q($this->gettext('calendar_choice'))),
         );
 
         $server = $this->rcube->config->get('server_caldav');
@@ -166,14 +173,14 @@ class roundcube_caldav extends rcube_plugin
         try {
 
 
-            $plain_password = $cipher->decrypt($_password,$this->rcube->config->get('des_key'), true) ;
+            $plain_password = $cipher->decrypt($_password, $this->rcube->config->get('des_key'), true);
             $client->connect($_url_base, $_login, $plain_password);
             $arrayOfCalendars = $client->findCalendars();
 
             foreach ($arrayOfCalendars as $cal) {
-                $print=null;
-                foreach ($server['_used_calendars'] as $used_calendar){
-                    if($used_calendar == $cal->getCalendarID()){
+                $print = null;
+                foreach ($server['_used_calendars'] as $used_calendar) {
+                    if ($used_calendar == $cal->getCalendarID()) {
                         $print = $cal->getCalendarID();
                     }
                 }
@@ -191,5 +198,104 @@ class roundcube_caldav extends rcube_plugin
         }
         return $param_list;
     }
+
+    /**
+     * This callback function adds a box above the message content
+     * if there is an ical attachment available
+     */
+    function message_objects($args)
+    {
+        // Get arguments
+        $content = $args['content'];
+        $message = $args['message'];
+
+        foreach ($message->attachments as &$attachment) {
+            if ($attachment->mimetype == 'text/calendar') {
+                try {
+                    $this->process_attachment($content, $message, $attachment);
+                } catch (\Exception $e) {
+                }
+            }
+        }
+
+        return array('content' => $content);
+    }
+
+    public function process_attachment(&$content, &$message, &$a)
+    {
+        $rcmail = $this->rcmail;
+
+        $date_format = $rcmail->config->get('date_format');
+        $time_format = $rcmail->config->get('time_format', 'D-m-y');
+
+        $combined_format = $date_format . ' ' . $time_format;
+
+        $ics = $message->get_part_body($a->mime_id);
+        $ical = new \ICal\ICal($ics);
+
+        foreach ($ical->events() as &$event) {
+            $date_start = $event->dtstart_array[2];
+            $date_end = $event->dtend_array[2];
+
+
+            $datestr = $rcmail->format_date($date_start, $combined_format) . ' - ';
+            $df = 'd-m-Y';
+            if (date($df, $date_start) == date($df, $date_end)) {
+                $datestr .= $rcmail->format_date($date_end, $time_format);
+            } else {
+                $datestr .= $rcmail->format_date($date_end, $combined_format);
+            }
+
+
+            $attendees = array();
+            foreach (array_merge($event->organizer_array, $event->attendee_array) as $attendee) {
+                if (array_key_exists('CN', $attendee)) {
+                    array_push($attendees, $attendee['CN']);
+                }
+            }
+
+            $html = '<div>' . '<ul>';
+            $html .= '<li>'.'<b>' . $event->summary . '</b>' . '<br/>'.'</li>';
+
+            if(!empty($event->description)){
+                $html .= '<li>'.$event->description . '<br/>'.'</li>';
+            }
+            if(!empty($event->location)){
+                $html .= '<li>'.$event->location . '<br/>'.'</li>';
+            }
+
+            $html .= '<li>'.$datestr . '<br/>'.'</li>';
+
+            if(!empty($attendees)){
+                $html .= '<li> Participants: <ul>';
+                foreach ($attendees as $attendee) {
+                    $html .= '<li>'.$attendee . '</li>';
+                }
+                $html .= '</ul></li>';
+            }
+            $html .= '</ul>';
+            $html .= '</div>';
+
+
+            array_push($content, $html);
+        }
+    }
+
+    function replyto($email){
+        $OUTPUT   = $this->rcube->output;
+        $SENDMAIL = new rcmail_sendmail(null, array(
+            'sendmail' => true,
+            'from' => $from,
+            'mailto' => $email,
+            'dsn_enabled' => false,
+            'charset' => 'UTF-8',
+            'error_handler' => function() use ($OUTPUT) {
+                call_user_func_array(array($OUTPUT, 'show_message'), func_get_args());
+                $OUTPUT->send();
+            }
+        ));
+
+    }
+
 }
 
