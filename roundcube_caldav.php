@@ -28,6 +28,8 @@ class roundcube_caldav extends rcube_plugin
     public $rcube;
     public $rcmail;
 
+    public $attendees = array();
+
     function init()
     {
         $this->rcmail = rcmail::get_instance();
@@ -41,9 +43,20 @@ class roundcube_caldav extends rcube_plugin
         $this->add_hook('preferences_list', array($this, 'preferences_list'));
         $this->add_hook('preferences_save', array($this, 'preferences_save'));
 
-
-        $this->add_hook('message_load', array($this, 'message_load'));
         $this->add_hook('message_objects', array($this, 'message_objects'));
+
+        $this->register_action('plugin.reply_attendee', array($this, 'reply_attendee'));
+
+        $this->add_button(
+            array(
+                'type' => 'link-menuitem',
+                'label' => 'vcard_attachments.forwardvcard',
+                'command' => 'attach-vcard',
+                'class' => 'icon vcard',
+                'classact' => 'icon vcard active',
+                'innerclass' => 'icon vcard',
+            ),
+            'ics_attachments');
 
     }
 
@@ -168,7 +181,6 @@ class roundcube_caldav extends rcube_plugin
             'title' => html::label('ojk', rcube::Q($this->gettext('calendar_choice'))),
         );
 
-        $server = $this->rcube->config->get('server_caldav');
         $client = new SimpleCalDAVClient();
         try {
 
@@ -231,10 +243,6 @@ class roundcube_caldav extends rcube_plugin
     {
         $rcmail = $this->rcmail;
 
-        $date_format = $rcmail->config->get('date_format');
-        $time_format = $rcmail->config->get('time_format', 'D-m-y');
-
-        $combined_format = $date_format . ' ' . $time_format;
 
         $ics = $message->get_part_body($a->mime_id);
         $ical = new \ICal\ICal($ics);
@@ -244,32 +252,30 @@ class roundcube_caldav extends rcube_plugin
             $date_end = $event->dtend_array[2];
 
 
-            $datestr = $rcmail->format_date($date_start, $combined_format) . ' - ';
-            $df = 'd-m-Y';
-            if (date($df, $date_start) == date($df, $date_end)) {
-                $datestr .= $rcmail->format_date($date_end, $time_format);
-            } else {
-                $datestr .= $rcmail->format_date($date_end, $combined_format);
-            }
+            $datestr = $this->pretty_date($date_start, $date_end);
 
 
-            $attendees = array();
-            $id=0;
+            $id = 0;
 
+            $email = true;
             foreach (array_merge($event->organizer_array, $event->attendee_array) as $attendee) {
-                if (array_key_exists('CN', $attendee)) {
-                    $attendees[$id]['name']= $attendee['CN'];
+                if (array_key_exists('CN', $attendee) && $email) {
+                    $this->attendees[$id]['name'] = $attendee['CN'];
+                    $email = false;
 
-                }elseif ($this->start_with($attendee, 'mailto:')) {
-                    $attendees[$id]['email']= substr($attendee,7);
+                } elseif (array_key_exists('CN', $attendee)) {
+                    $this->attendees[++$id]['name'] = $attendee['CN'];
+
+
+                } elseif ($this->start_with($attendee, 'mailto:')) {
+                    $this->attendees[$id]['email'] = substr($attendee, 7);
                     $id++;
-                }else{
-                    $id++;
+                    $email = true;
                 }
-
             }
 
-            $html = '<div>' . '<ul>';
+
+            $html = '<div >' . '<ul>';
             $html .= '<li>' . '<b>' . $event->summary . '</b>' . '<br/>' . '</li>';
 
             if (!empty($event->description)) {
@@ -281,23 +287,234 @@ class roundcube_caldav extends rcube_plugin
 
             $html .= '<li>' . $datestr . '<br/>' . '</li>';
 
-            if (!empty($attendees)) {
-                $html .= '<li> Participants: <ul>';
-                foreach ($attendees as $attendee) {
-                    $html .= '<li><a class="reply"  id=$attendee["email"] role="button" >' . $attendee['email'] . '</a></li>';
+            if (!empty($this->attendees)) {
+                $html .= '<li> ' . $this->gettext("attendee") . ' <ul>';
+                foreach ($this->attendees as $attendee) {
+                    $attrs = array(
+                        'href' => 'mailto:' . $attendee["email"],
+                        'class' => 'rcmContactAddress',
+                        'onclick' => sprintf("return %s.command('compose','%s',this)",
+                            rcmail_output::JS_OBJECT_NAME, rcube::JQ(format_email_recipient($attendee["email"], $attendee['name']))),
+                    );
+
+                    $html .= '<li>' . html::a($attrs, $attendee['name']) . '</li>';
+
                 }
                 $html .= '</ul></li>';
             }
+            $attrs = array(
+                'href' => 'reply_all',
+                'class' => 'rcmContactAddress',
+                'onclick' => sprintf("return %s.command('reply-all','%s',this)",
+                    rcmail_output::JS_OBJECT_NAME, 'Répondre à tous'),
+            );
+
+            $html .= '<li>' . html::a($attrs, 'Répondre à tous') . '</li>';
+
+
+            $html .= '<li>' . $this->connect_server($event) . '<li>';
             $html .= '</ul>';
             $html .= '</div>';
-
-
             array_push($content, $html);
         }
     }
 
-//<a class="reply" data-content-button="true" id="rcmbtn116" role="button" tabindex="0" aria-disabled="false" href="#" onclick="return rcmail.command('reply','',this,event)"><span class="inner">Répondre</span></a>
+    function connect_server($curr_event)
+    {
+        $server = $this->rcube->config->get('server_caldav');
+        $_login = $server['_login'];
+        $_password = $server['_password'];
+        $_url_base = $server['_url_base'];
+        $_main_calendar = $server['_main_calendar'];
+        $_used_calendars = $server['_used_calendars'];
+        $client = new SimpleCalDAVClient();
 
 
+        try {
+
+            $cipher = new password_encryption();
+            $plain_password = $cipher->decrypt($_password, $this->rcube->config->get('des_key'), true);
+            $client->connect($_url_base, $_login, $plain_password);
+            $arrayOfCalendars = $client->findCalendars();
+
+            $meeting_collision = $this->meeting_collision($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $curr_event);
+            $previous_meeting = $this->get_previous_meeting($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $curr_event);
+
+        } catch (Exception $e) {
+            echo $e;
+        }
+        return $meeting_collision . '<br/>' . $previous_meeting;
+    }
+
+    public function get_previous_meeting($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $curr_event)
+    {
+        $test_rdv_low= false;
+        $test_rdv_high= false;
+        $meeting_low='';
+        $meeting_high='';
+        foreach ($arrayOfCalendars as $cal) {
+            // On récupère les calendriers et on travaille qu'avec ceux définit dans les paramètres
+            if ($cal->getCalendarID() == $_main_calendar || array_key_exists($cal->getCalendarID(), $_used_calendars)) {
+
+                $client->setCalendar($arrayOfCalendars[$cal->getCalendarID()]);
+
+
+                $curr_date_m1 = date("Ymd\THis\Z", $curr_event->dtstart_array[2] - 86400);
+                $curr_date_p1 = date("Ymd\THis\Z", $curr_event->dtend_array[2] + 86400);
+
+
+                //On preselectionne les fichiers ics en collision avec la date du fichier reçu
+                $filter_low = new CalDAVFilter("VEVENT");
+                $filter_low->mustOverlapWithTimerange($curr_date_m1, $curr_event->dtstart_array[1] . 'Z');
+                $filter_high = new CalDAVFilter("VEVENT");
+                $filter_high->mustOverlapWithTimerange($curr_event->dtend_array[1] . 'Z', $curr_date_p1);
+
+
+                $rapport_low = $client->getCustomReport($filter_low->toXML());
+                $rapport_high = $client->getCustomReport($filter_high->toXML());
+
+                // On affiche le nom du calendrier
+                $temp_low = '<b>' . $cal->getDisplayName() . '</b>' . ': <br/>';
+                $temp_high = '<b>' . $cal->getDisplayName() . '</b>' . ': <br/>';
+
+                $test_cal_low = false;
+                $test_cal_high = false;
+                foreach ($rapport_low as $event_found_ics) {
+                    // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
+                    $event_found_ical = new ICal\ICal($event_found_ics->getData());
+
+                    // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
+                    foreach ($event_found_ical->events() as &$event_found) {
+                        $test_rdv_low = true;
+                        $test_cal_low = true;
+
+                        if ($this->compare_time($curr_date_m1, $curr_event->dtstart_array[1], $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
+                            $temp_low .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+                        }
+
+                    }
+                }
+                if ($test_cal_low) {
+                    $meeting_low.= $temp_low;
+                }
+                foreach ($rapport_high as $event_found_ics) {
+                    // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
+                    $event_found_ical = new ICal\ICal($event_found_ics->getData());
+
+                    // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
+                    foreach ($event_found_ical->events() as &$event_found) {
+                        $test_rdv_high = true;
+                        $test_cal_high = true;
+
+                        if ($this->compare_time($curr_event->dtend_array[1], $curr_date_p1, $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
+                            $temp_low .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+                        }
+
+                    }
+                }
+                if ($test_cal_high) {
+                    $meeting_high .= $temp_high;
+                }
+
+            }
+
+        }
+        if ($test_rdv_low) {
+            $meeting_low = $this->gettext('meeting_low') . '<br/>' . $meeting_low;
+        }
+        if ($test_rdv_high) {
+            $meeting_high = $this->gettext('meeting_high') . '<br/>' . $meeting_high;
+        }
+        return $meeting_high .$meeting_low ;
+    }
+
+    /**
+     * @param $date_start
+     * @param $date_end
+     * @return string
+     */
+    public function pretty_date($date_start, $date_end)
+    {
+        $date_format = $this->rcmail->config->get('date_format', 'D-m-y');
+        $time_format = $this->rcmail->config->get('time_format');
+
+        $combined_format = $date_format . ' ' . $time_format;
+
+        $datestr = $this->rcmail->format_date($date_start, $combined_format) . ' - ';
+        $df = 'd-m-Y';
+        if (date($df, $date_start) == date($df, $date_end)) {
+            $datestr .= $this->rcmail->format_date($date_end, $time_format);
+        } else {
+            $datestr .= $this->rcmail->format_date($date_end, $combined_format);
+        }
+        return $datestr;
+    }
+
+    public function compare_time($currdate_start, $currdate_end, $date_start, $date_end)
+    {
+        return (((strtotime($date_start) <= strtotime($currdate_start))
+                && (strtotime($date_end) >= strtotime($currdate_start)))
+            || ((strtotime($date_start) <= strtotime($currdate_end))
+                && (strtotime($date_end) >= strtotime($currdate_end)))
+            || ((strtotime($date_start) >= strtotime($currdate_start))
+                && (strtotime($date_end) <= strtotime($currdate_end))));
+    }
+
+    /**
+     * @param $arrayOfCalendars
+     * @param $_main_calendar
+     * @param $_used_calendars
+     * @param $client
+     * @param $curr_event
+     * @return string
+     * @throws CalDAVException
+     */
+    public function meeting_collision($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $curr_event)
+    {
+        $meeting_collision = '';
+        $test_rdv = false;
+        foreach ($arrayOfCalendars as $cal) {
+
+            // On récupère les calendriers et on travaille qu'avec ceux définit dans les paramètres
+            if ($cal->getCalendarID() == $_main_calendar || array_key_exists($cal->getCalendarID(), $_used_calendars)) {
+
+                $client->setCalendar($arrayOfCalendars[$cal->getCalendarID()]);
+
+
+                //On preselectionne les fichiers ics en collision avec la date du fichier reçu
+                $filter = new CalDAVFilter("VEVENT");
+                $filter->mustOverlapWithTimerange($curr_event->dtstart_array[1] . 'Z', $curr_event->dtend_array[1] . 'Z');
+                $rapport = $client->getCustomReport($filter->toXML());
+
+                // On affiche le nom du calendrier
+                $temp = '<b>' . $cal->getDisplayName() . '</b>' . ': <br/>';
+
+                $test_cal = false;
+                foreach ($rapport as $event_found_ics) {
+                    // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
+                    $event_found_ical = new ICal\ICal($event_found_ics->getData());
+
+                    // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
+                    foreach ($event_found_ical->events() as &$event_found) {
+                        $test_rdv = true;
+                        $test_cal = true;
+
+                        if ($this->compare_time($curr_event->dtstart_array[1], $curr_event->dtend_array[1], $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
+                            $temp .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+                        }
+
+                    }
+                }
+                if ($test_cal) {
+                    $meeting_collision .= $temp;
+                }
+            }
+
+        }
+        if ($test_rdv) {
+            $meeting_collision = $this->gettext('same_hour_meeting') . '<br/>' . $meeting_collision;
+        }
+        return $meeting_collision;
+    }
 }
 
