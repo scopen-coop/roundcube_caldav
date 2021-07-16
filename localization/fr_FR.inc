@@ -27,8 +27,8 @@ Attention : si vous modifiez votre url / login / mot de passe vos préférences 
 $labels['connect_error_msg'] = 'La connection avec votre server CalDAV à échouée';
 $labels['same_hour_meeting'] = 'Vous avez deja un ou plusieur rendez vous durant cette periode :';
 $labels['attendee'] = 'Participants: ';
-$labels['meeting_low'] = 'Vos rendez vous dans les 24h précedents celui çi : ';
-$labels['meeting_high'] = 'Vos rendez vous dans les 24h succedant celui çi :';
+$labels['previous_meeting'] = 'Votre rendez vous le plus proche dans les 24h précédentes par calendriers:  ';
+$labels['next_meeting'] = 'Votre rendez vous le plus proche dans les 24h suivantes par calendriers:  ';
 $labels['all_day'] = 'Toute la journée';
 
 ?>

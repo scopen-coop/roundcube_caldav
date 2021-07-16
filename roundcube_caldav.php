@@ -27,6 +27,7 @@ class roundcube_caldav extends rcube_plugin
 
     public $rcube;
     public $rcmail;
+    public $time_zone_offset;
 
     public $attendees = array();
 
@@ -247,9 +248,14 @@ class roundcube_caldav extends rcube_plugin
         $ics = $message->get_part_body($a->mime_id);
         $ical = new \ICal\ICal($ics);
 
+
         foreach ($ical->events() as &$event) {
+
             $date_start = $event->dtstart_array[1];
             $date_end = $event->dtend_array[1];
+
+            $this->time_zone_offset = $ical->iCalDateToDateTime($date_start)->getOffset();
+
 
             $datestr = $this->pretty_date($date_start, $date_end);
 
@@ -311,14 +317,23 @@ class roundcube_caldav extends rcube_plugin
             $html .= '<li>' . html::a($attrs, 'Répondre à tous') . '</li>';
 
 
-            $html .= '<li>' . $this->connect_server($event) . '<li>';
+            $html .= '<li>' . $this->display_caldav_server_related_information($event) . '<li>';
             $html .= '</ul>';
             $html .= '</div>';
             array_push($content, $html);
         }
     }
 
-    function connect_server($curr_event)
+    /**
+     * @param $current_event
+     * @return string
+     * Affichage de toutes les informations concernant le serveur caldav
+     * CAD pour chacun des calendriers choisis :
+     * - affichage des evenement chevauchant l'evenement courant
+     * - affichage de l'événement immédiatement avant
+     * - affichage de l'événement immédiatement après
+     */
+    function display_caldav_server_related_information($current_event)
     {
         $server = $this->rcube->config->get('server_caldav');
         $_login = $server['_login'];
@@ -326,18 +341,20 @@ class roundcube_caldav extends rcube_plugin
         $_url_base = $server['_url_base'];
         $_main_calendar = $server['_main_calendar'];
         $_used_calendars = $server['_used_calendars'];
-        $client = new SimpleCalDAVClient();
 
 
         try {
-
+            // Récupération du mot de passe chiffré dans la bdd et décodage
             $cipher = new password_encryption();
             $plain_password = $cipher->decrypt($_password, $this->rcube->config->get('des_key'), true);
+
+            //  Connexion au serveur calDAV et récupération des calendriers dispos
+            $client = new SimpleCalDAVClient();
             $client->connect($_url_base, $_login, $plain_password);
             $arrayOfCalendars = $client->findCalendars();
 
-            $meeting_collision = $this->meeting_collision($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $curr_event);
-            $previous_meeting = $this->get_previous_meeting($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $curr_event);
+            $meeting_collision = $this->meeting_collision_with_current_event_by_calendars($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $current_event);
+            $previous_meeting = $this->get_previous_and_next_meeting_by_calendars($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $current_event);
 
         } catch (Exception $e) {
             echo $e;
@@ -345,88 +362,164 @@ class roundcube_caldav extends rcube_plugin
         return $meeting_collision . '<br/>' . $previous_meeting;
     }
 
-    public function get_previous_meeting($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $curr_event)
+    /**
+     * @param $arrayOfCalendars
+     * @param $_main_calendar
+     * @param $_used_calendars
+     * @param $client
+     * @param $current_event
+     * @return string
+     * @throws CalDAVException
+     *
+     * Affichage des événements en collision avec l'événement étudié sur tous les calendriers
+     * disponible
+     */
+    public function meeting_collision_with_current_event_by_calendars($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $current_event)
     {
-        $test_rdv_low= false;
-        $test_rdv_high= false;
-        $meeting_low='';
-        $meeting_high='';
-        foreach ($arrayOfCalendars as $cal) {
+        $display_meeting_collision = '';
+        $meeting_collision = '';
+        $has_collision = false;
+
+        foreach ($arrayOfCalendars as $calendar) {
+
             // On récupère les calendriers et on travaille qu'avec ceux définit dans les paramètres
-            if ($cal->getCalendarID() == $_main_calendar || array_key_exists($cal->getCalendarID(), $_used_calendars)) {
+            if ($calendar->getCalendarID() == $_main_calendar || array_key_exists($calendar->getCalendarID(), $_used_calendars)) {
 
-                $client->setCalendar($arrayOfCalendars[$cal->getCalendarID()]);
-
-
-                $curr_date_m1 = date("Ymd\THis\Z", $curr_event->dtstart_array[2] - 86400);
-                $curr_date_p1 = date("Ymd\THis\Z", $curr_event->dtend_array[2] + 86400);
+                $client->setCalendar($arrayOfCalendars[$calendar->getCalendarID()]);
 
 
                 //On preselectionne les fichiers ics en collision avec la date du fichier reçu
-                $filter_low = new CalDAVFilter("VEVENT");
-                $filter_low->mustOverlapWithTimerange($curr_date_m1, $curr_event->dtstart_array[1] . 'Z');
-                $filter_high = new CalDAVFilter("VEVENT");
-                $filter_high->mustOverlapWithTimerange($curr_event->dtend_array[1] . 'Z', $curr_date_p1);
+                $curr_date_start_with_offset = date("Ymd\THis\Z", $current_event->dtstart_array[2] - $this->time_zone_offset);
+                $curr_date_end_with_offset = date("Ymd\THis\Z", $current_event->dtend_array[2] - $this->time_zone_offset);
 
+                $rapport = $client->getEvents($curr_date_start_with_offset, $curr_date_end_with_offset);
 
-                $rapport_low = $client->getCustomReport($filter_low->toXML());
-                $rapport_high = $client->getCustomReport($filter_high->toXML());
 
                 // On affiche le nom du calendrier
-                $temp_low = '<b>' . $cal->getDisplayName() . '</b>' . ': <br/>';
-                $temp_high = '<b>' . $cal->getDisplayName() . '</b>' . ': <br/>';
+                $temp = '<b>' . $calendar->getDisplayName() . '</b>' . ': <br/>';
 
-                $test_cal_low = false;
-                $test_cal_high = false;
-                foreach ($rapport_low as $event_found_ics) {
+
+                $has_collision_by_calendars = false;
+                foreach ($rapport as $event_found_ics) {
+
                     // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
                     $event_found_ical = new ICal\ICal($event_found_ics->getData());
 
                     // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
                     foreach ($event_found_ical->events() as &$event_found) {
+                        if ($event_found->uid != $current_event->uid) {
+                            if ($this->is_there_an_overlap($current_event->dtstart_array[1], $current_event->dtend_array[1],
+                                $event_found->dtstart_array[1], $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
 
-
-                        if ($this->compare_time($curr_date_m1, $curr_event->dtstart_array[1], $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
-                            $temp_low .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
-                            $test_rdv_low = true;
-                            $test_cal_low = true;
+                                // Affichage de l'événement
+                                $temp .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+                                $has_collision = true;
+                                $has_collision_by_calendars = true;
+                            }
                         }
-
                     }
                 }
-                if ($test_cal_low) {
-                    $meeting_low.= $temp_low;
+                if ($has_collision_by_calendars) {
+                    $meeting_collision .= $temp;
                 }
-                foreach ($rapport_high as $event_found_ics) {
-                    // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
-                    $event_found_ical = new ICal\ICal($event_found_ics->getData());
-
-                    // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
-                    foreach ($event_found_ical->events() as &$event_found) {
-
-
-                        if ($this->compare_time($curr_event->dtend_array[1], $curr_date_p1, $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
-                            $temp_high .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
-                            $test_rdv_high = true;
-                            $test_cal_high = true;
-                        }
-
-                    }
-                }
-                if ($test_cal_high) {
-                    $meeting_high .= $temp_high;
-                }
-
             }
+        }
+        // On affiche le texte seulement si il y a eu une collision
+        if ($has_collision) {
+            $display_meeting_collision = $this->gettext('same_hour_meeting') . '<br/>' . $meeting_collision;
+        }
+        return $display_meeting_collision;
+    }
 
+    /**
+     * @param $arrayOfCalendars
+     * @param $_main_calendar
+     * @param $_used_calendars
+     * @param $client
+     * @param $current_event
+     * @return string
+     *
+     * Affichage des événements précédents et suivants si ils existent sur les différents calendriers
+     */
+    public function get_previous_and_next_meeting_by_calendars($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $current_event)
+    {
+        $has_meeting_the_previous_day = false;
+        $previous_meeting = '';
+        $next_meeting = '';
+
+
+        foreach ($arrayOfCalendars as $calendar) {
+            // On récupère les calendriers et on travaille qu'avec ceux définit dans les paramètres
+            if ($calendar->getCalendarID() == $_main_calendar || array_key_exists($calendar->getCalendarID(), $_used_calendars)) {
+
+                // On definit le calendrier courant
+                $client->setCalendar($arrayOfCalendars[$calendar->getCalendarID()]);
+
+                // On convertit la date de l'événement courant dans le GMT
+                $current_dtstart_with_offset = date("Ymd\THis\Z", $current_event->dtstart_array[2] - $this->time_zone_offset);
+                $current_dtend_with_offset = date("Ymd\THis\Z", $current_event->dtend_array[2] - $this->time_zone_offset);
+
+                $current_dtstart_minus_24h = date("Ymd\THis\Z", $current_event->dtstart_array[2] - $this->time_zone_offset - 86400);
+                $current_dtend_plus_24h = date("Ymd\THis\Z", $current_event->dtend_array[2] - $this->time_zone_offset + 86400);
+
+
+                //On preselectionne les fichiers ics en collision avec la date du fichier reçu
+                $get_all_previous_meeting_found = $client->getEvents($current_dtstart_minus_24h, $current_dtstart_with_offset);
+                $get_all_next_meeting_found = $client->getEvents($current_dtend_with_offset, $current_dtend_plus_24h);
+
+                // On affiche le nom du calendrier
+                $calendar_name = '<b>' . $calendar->getDisplayName() . '</b>' . ': <br/>';
+
+
+                $has_meeting_the_previous_day_by_calendars = false;
+                $has_meeting_the_next_day_by_calendars = false;
+
+
+                $stock_previous_events = array();
+                $stock_next_events = array();
+
+//                foreach ($get_all_previous_meeting_found as $event_found_ics) {
+//
+//                    // On recupère uniquement le fichier ics qui est dans la partie data et on le parse
+//                    $event_found_ical = new ICal\ICal($event_found_ics->getData());
+//
+//                    // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
+//                    foreach ($event_found_ical->events() as &$event_found) {
+//
+//                        // On verifie que l'événement courant n'existe pas déja dans ce calendrier
+//                        if ($event_found->uid != $current_event->uid) {
+//                            if ($this->is_there_an_overlap($current_dtstart_minus_24h, $current_event->dtstart_array[1],
+//                                $event_found->dtstart_array[1], $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
+//
+//                                // On stocke tous les événements trouvés dans un tableau pour effectuer un tri ensuite
+//                                $temp_value = $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+//                                $stock_previous_events[$event_found->uid]['str'] = $temp_value;
+//                                $stock_previous_events[$event_found->uid]['date_start'] = $event_found->dtstart_array[1];
+//                                $stock_previous_events[$event_found->uid]['uid'] = $event_found->uid;
+//
+//                                $has_meeting_the_previous_day = true;
+//                                $has_meeting_the_previous_day_by_calendars = true;
+//                            }
+//                        }
+//                    }
+//                }
+//                if ($has_meeting_the_previous_day_by_calendars) {
+//                    // On selectionne le rdv le plus proche par calendriers
+//                    $res = $this->choose_the_closest_meeting($stock_previous_events, true);
+//                    $previous_meeting .= $calendar_name . $stock_previous_events[$res]['str'];
+//                }
+                $previous_meeting .= $this->get_closest_meeting_by_calendars($get_all_previous_meeting_found, $current_event, $current_dtstart_minus_24h, $calendar_name);
+                // On fait la même procédure pour les rendez vous précédents
+                $next_meeting .= $this->get_closest_meeting_by_calendars($get_all_next_meeting_found, $current_event, $current_dtend_plus_24h, $calendar_name);
+            }
         }
-        if ($test_rdv_low) {
-            $meeting_low = $this->gettext('meeting_low') . '<br/>' . $meeting_low;
+        if ($has_meeting_the_previous_day) {
+            $previous_meeting = $this->gettext('previous_meeting') . '<br/>' . $previous_meeting;
         }
-        if ($test_rdv_high) {
-            $meeting_high = $this->gettext('meeting_high') . '<br/>' . $meeting_high;
+        if (strcmp($next_meeting, '') != 0) {
+            $next_meeting = $this->gettext('next_meeting') . '<br/>' . $next_meeting;
         }
-        return $meeting_high . '<br/>' .$meeting_low ;
+        return $previous_meeting . '<br/>' . $next_meeting;
     }
 
     /**
@@ -436,22 +529,21 @@ class roundcube_caldav extends rcube_plugin
      */
     public function pretty_date($date_start, $date_end)
     {
-//        var_dump( 'pretty',$date_start, $date_end);
         $date_format = $this->rcmail->config->get('date_format', 'D-m-y');
         $time_format = $this->rcmail->config->get('time_format');
 
         $combined_format = $date_format . ' ' . $time_format;
 
-        $datestr = $this->rcmail->format_date($date_start, $combined_format) .' - ' ;
+        $datestr = $this->rcmail->format_date($date_start, $combined_format) . ' - ';
         $df = 'd-m-Y';
 
-        if(strlen($date_start)==8 && strlen($date_end)==8){
-            if(strcmp($date_start,$date_end)==0){
+        if (strlen($date_start) == 8 && strlen($date_end) == 8) {
+            if (strcmp($date_start, $date_end) == 0) {
                 $datestr = $this->rcmail->format_date($date_start, $date_format) . $this->gettext('all_day');
-            }else{
+            } else {
                 $datestr = $this->rcmail->format_date($date_start, $date_format) . ' - ' . $datestr = $this->rcmail->format_date($date_end, $date_format);
             }
-        }else {
+        } else {
             if (date($df, $date_start) == date($df, $date_end)) {
                 $datestr .= $this->rcmail->format_date($date_end, $time_format);
             } else {
@@ -461,73 +553,94 @@ class roundcube_caldav extends rcube_plugin
         return $datestr;
     }
 
-    public function compare_time($currdate_start, $currdate_end, $date_start, $date_end)
+    public function is_there_an_overlap($current_date_start, $current_date_end, $date_start, $date_end, $base_timestamp)
     {
-        return (((strtotime($date_start) <= strtotime($currdate_start))
-                && (strtotime($date_end) >= strtotime($currdate_start)))
-            || ((strtotime($date_start) <= strtotime($currdate_end))
-                && (strtotime($date_end) >= strtotime($currdate_end)))
-            || ((strtotime($date_start) >= strtotime($currdate_start))
-                && (strtotime($date_end) <= strtotime($currdate_end))));
+        return (((strtotime($date_start, $base_timestamp) >= strtotime($current_date_start, $base_timestamp))
+                && (strtotime($date_start, $base_timestamp) < strtotime($current_date_end, $base_timestamp))) ||
+            ((strtotime($date_end, $base_timestamp) >= strtotime($current_date_start, $base_timestamp))
+                && (strtotime($date_end, $base_timestamp) < strtotime($current_date_end, $base_timestamp))));
     }
 
-    /**
-     * @param $arrayOfCalendars
-     * @param $_main_calendar
-     * @param $_used_calendars
-     * @param $client
-     * @param $curr_event
-     * @return string
-     * @throws CalDAVException
-     */
-    public function meeting_collision($arrayOfCalendars, $_main_calendar, $_used_calendars, $client, $curr_event)
+    public function choose_the_closest_meeting($array_date, $start)
     {
-        $meeting_collision = '';
-        $test_rdv = false;
-        foreach ($arrayOfCalendars as $cal) {
-
-            // On récupère les calendriers et on travaille qu'avec ceux définit dans les paramètres
-            if ($cal->getCalendarID() == $_main_calendar || array_key_exists($cal->getCalendarID(), $_used_calendars)) {
-
-                $client->setCalendar($arrayOfCalendars[$cal->getCalendarID()]);
-
-
-                //On preselectionne les fichiers ics en collision avec la date du fichier reçu
-                $filter = new CalDAVFilter("VEVENT");
-                $filter->mustOverlapWithTimerange($curr_event->dtstart_array[1] . 'Z', $curr_event->dtend_array[1] . 'Z');
-                $rapport = $client->getCustomReport($filter->toXML());
-
-                // On affiche le nom du calendrier
-                $temp = '<b>' . $cal->getDisplayName() . '</b>' . ': <br/>';
-
-                $test_cal = false;
-                foreach ($rapport as $event_found_ics) {
-                    // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
-                    $event_found_ical = new ICal\ICal($event_found_ics->getData());
-
-                    // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
-                    foreach ($event_found_ical->events() as &$event_found) {
-                        $test_rdv = true;
-                        $test_cal = true;
-
-
-                        if ($this->compare_time($curr_event->dtstart_array[1], $curr_event->dtend_array[1], $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
-//                            var_dump('collision',$event_found->summary,$event_found->dtstart_array[1],$event_found->dtend_array[1]);
-                            $temp .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
-                        }
-
-                    }
+        if ($start) {
+            $uid = current($array_date)['uid'];
+            foreach ($array_date as $date) {
+                if (strtotime($array_date[$uid]['date_start']) <= strtotime($date['date_start'])) {
+                    $uid = $date['uid'];
                 }
-                if ($test_cal) {
-                    $meeting_collision .= $temp;
+            }
+        } else {
+            $uid = current($array_date)['uid'];
+            foreach ($array_date as $date) {
+                if (strtotime($array_date[$uid]['date_start']) >= strtotime($date['date_start'])) {
+                    $uid = $date['uid'];
                 }
             }
 
         }
-        if ($test_rdv) {
-            $meeting_collision = $this->gettext('same_hour_meeting') . '<br/>' . $meeting_collision;
+        return $uid;
+    }
+
+
+    /**
+     * @param $get_all_closest_meeting_found
+     * @param $current_event
+     * @param $offset
+     * @param $calendar_name
+     * @return string
+     */
+
+
+
+    // A FINIR DE FACTORISER
+    public function get_closest_meeting_by_calendars($get_all_closest_meeting_found, $current_event, $offset, $calendar_name, $opt='next')
+    {
+        $closest_meeting = '';
+        $stock_closest_events = array();
+        $has_meeting_by_calendars = false;
+        foreach ($get_all_closest_meeting_found as $event_found_ics) {
+            // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
+            $event_found_ical = new ICal\ICal($event_found_ics->getData());
+
+            // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
+            foreach ($event_found_ical->events() as &$event_found) {
+
+                if ($event_found->uid != $current_event->uid) {
+                    if (strcmp($opt, 'next') == 0) {
+                        if ($this->is_there_an_overlap($current_event->dtend_array[1], $offset, $event_found->dtstart_array[1],
+                            $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
+                            $temp_value = $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+
+                            $stock_closest_events[$event_found->uid]['str'] = $temp_value;
+                            $stock_closest_events[$event_found->uid]['date_start'] = $event_found->dtstart_array[1];
+                            $stock_closest_events[$event_found->uid]['uid'] = $event_found->uid;
+
+
+                            $has_meeting_by_calendars = true;
+                        }
+                    }else{
+                        if ($this->is_there_an_overlap($offset, $current_event->dtstart_array[1],
+                            $event_found->dtstart_array[1], $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
+
+                            // On stocke tous les événements trouvés dans un tableau pour effectuer un tri ensuite
+                            $temp_value = $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+                            $stock_closest_events[$event_found->uid]['str'] = $temp_value;
+                            $stock_closest_events[$event_found->uid]['date_start'] = $event_found->dtstart_array[1];
+                            $stock_closest_events[$event_found->uid]['uid'] = $event_found->uid;
+
+                            $has_meeting_by_calendars = true;
+                        }
+                    }
+
+                }
+            }
         }
-        return $meeting_collision;
+        if ($has_meeting_by_calendars) {
+            $res = $this->choose_the_closest_meeting($stock_closest_events, false);
+            $closest_meeting = $calendar_name . $stock_closest_events[$res]['str'];
+        }
+        return $closest_meeting;
     }
 }
 
