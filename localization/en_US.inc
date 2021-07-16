@@ -26,5 +26,6 @@ Warning : If you change url / login / password your preferences will be forgotte
 $labels['same_hour_meeting'] = 'You already have one or several meeting during this period: ';
 $labels['connect_error_msg'] = 'Connection with CalDAV server failed';
 $labels['attendee'] = 'Attendees: ';
+$labels['all_day'] = 'All day';
 
 ?>

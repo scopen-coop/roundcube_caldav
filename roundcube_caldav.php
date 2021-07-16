@@ -248,9 +248,8 @@ class roundcube_caldav extends rcube_plugin
         $ical = new \ICal\ICal($ics);
 
         foreach ($ical->events() as &$event) {
-            $date_start = $event->dtstart_array[2];
-            $date_end = $event->dtend_array[2];
-
+            $date_start = $event->dtstart_array[1];
+            $date_end = $event->dtend_array[1];
 
             $datestr = $this->pretty_date($date_start, $date_end);
 
@@ -385,11 +384,12 @@ class roundcube_caldav extends rcube_plugin
 
                     // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
                     foreach ($event_found_ical->events() as &$event_found) {
-                        $test_rdv_low = true;
-                        $test_cal_low = true;
+
 
                         if ($this->compare_time($curr_date_m1, $curr_event->dtstart_array[1], $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
                             $temp_low .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+                            $test_rdv_low = true;
+                            $test_cal_low = true;
                         }
 
                     }
@@ -403,11 +403,12 @@ class roundcube_caldav extends rcube_plugin
 
                     // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
                     foreach ($event_found_ical->events() as &$event_found) {
-                        $test_rdv_high = true;
-                        $test_cal_high = true;
+
 
                         if ($this->compare_time($curr_event->dtend_array[1], $curr_date_p1, $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
-                            $temp_low .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+                            $temp_high .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
+                            $test_rdv_high = true;
+                            $test_cal_high = true;
                         }
 
                     }
@@ -425,7 +426,7 @@ class roundcube_caldav extends rcube_plugin
         if ($test_rdv_high) {
             $meeting_high = $this->gettext('meeting_high') . '<br/>' . $meeting_high;
         }
-        return $meeting_high .$meeting_low ;
+        return $meeting_high . '<br/>' .$meeting_low ;
     }
 
     /**
@@ -435,17 +436,27 @@ class roundcube_caldav extends rcube_plugin
      */
     public function pretty_date($date_start, $date_end)
     {
+//        var_dump( 'pretty',$date_start, $date_end);
         $date_format = $this->rcmail->config->get('date_format', 'D-m-y');
         $time_format = $this->rcmail->config->get('time_format');
 
         $combined_format = $date_format . ' ' . $time_format;
 
-        $datestr = $this->rcmail->format_date($date_start, $combined_format) . ' - ';
+        $datestr = $this->rcmail->format_date($date_start, $combined_format) .' - ' ;
         $df = 'd-m-Y';
-        if (date($df, $date_start) == date($df, $date_end)) {
-            $datestr .= $this->rcmail->format_date($date_end, $time_format);
-        } else {
-            $datestr .= $this->rcmail->format_date($date_end, $combined_format);
+
+        if(strlen($date_start)==8 && strlen($date_end)==8){
+            if(strcmp($date_start,$date_end)==0){
+                $datestr = $this->rcmail->format_date($date_start, $date_format) . $this->gettext('all_day');
+            }else{
+                $datestr = $this->rcmail->format_date($date_start, $date_format) . ' - ' . $datestr = $this->rcmail->format_date($date_end, $date_format);
+            }
+        }else {
+            if (date($df, $date_start) == date($df, $date_end)) {
+                $datestr .= $this->rcmail->format_date($date_end, $time_format);
+            } else {
+                $datestr .= $this->rcmail->format_date($date_end, $combined_format);
+            }
         }
         return $datestr;
     }
@@ -499,7 +510,9 @@ class roundcube_caldav extends rcube_plugin
                         $test_rdv = true;
                         $test_cal = true;
 
+
                         if ($this->compare_time($curr_event->dtstart_array[1], $curr_event->dtend_array[1], $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
+//                            var_dump('collision',$event_found->summary,$event_found->dtstart_array[1],$event_found->dtend_array[1]);
                             $temp .= $event_found->summary . ': ' . $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) . '<br/>';
                         }
 

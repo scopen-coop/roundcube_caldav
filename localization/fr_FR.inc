@@ -29,5 +29,6 @@ $labels['same_hour_meeting'] = 'Vous avez deja un ou plusieur rendez vous durant
 $labels['attendee'] = 'Participants: ';
 $labels['meeting_low'] = 'Vos rendez vous dans les 24h précedents celui çi : ';
 $labels['meeting_high'] = 'Vos rendez vous dans les 24h succedant celui çi :';
+$labels['all_day'] = 'Toute la journée';
 
 ?>
