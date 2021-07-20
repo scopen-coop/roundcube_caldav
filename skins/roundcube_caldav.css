@@ -1,0 +1,16 @@
+#conteneur {
+    display: flex;
+    justify-content: space-around;
+}
+
+#info_caldav_server {
+
+    display: flex;
+    justify-content: space-around;
+    flex-direction: column;
+
+}
+
+#titre_current {
+    font-size: xx-large;
+}

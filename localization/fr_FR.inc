@@ -25,10 +25,12 @@ $labels['main_calendar'] = 'Veuillez indiquer votre calendrier par default';
 $labels['calendar_choice'] = 'Veuillez choisir votre calendrier par default (Bouton radio à gauche) ainsi que les calendriers que vous serez amené à utilisé (à droite)\n
 Attention : si vous modifiez votre url / login / mot de passe vos préférences seront oubliées';
 $labels['connect_error_msg'] = 'La connection avec votre server CalDAV à échouée';
+$labels['invitation']= 'Vous avez reçu une invitation';
 $labels['same_hour_meeting'] = 'Vous avez deja un ou plusieur rendez vous durant cette periode :';
 $labels['attendee'] = 'Participants: ';
-$labels['previous_meeting'] = 'Votre rendez vous le plus proche dans les 24h précédentes par calendriers:  ';
-$labels['next_meeting'] = 'Votre rendez vous le plus proche dans les 24h suivantes par calendriers:  ';
+$labels['reply_all'] = 'Répondre à tous: ';
+$labels['previous_meeting'] = 'Votre rendez vous le plus proche dans les 24h précédentes :  ';
+$labels['next_meeting'] = 'Votre rendez vous le plus proche dans les 24h suivantes :  ';
 $labels['all_day'] = 'Toute la journée';
 
 ?>

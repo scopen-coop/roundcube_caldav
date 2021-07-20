@@ -25,8 +25,10 @@ Warning : If you change url / login / password your preferences will be forgotte
 $labels['same_hour_meeting'] = 'You already have one or several meeting during this period: ';
 $labels['connect_error_msg'] = 'Connection with CalDAV server failed';
 $labels['attendee'] = 'Attendees: ';
-$labels['previous_meeting'] = 'Your closest meeting during the day before by calendars ';
-$labels['next_meeting'] = 'Your nearest meeting in the following day by calendars';
+$labels['reply_all'] = 'Reply all';
+$labels['previous_meeting'] = 'Your closest meeting during the day before ';
+$labels['next_meeting'] = 'Your nearest meeting in the following day';
+$labels['invitation']= 'You just received an invitation';
 $labels['all_day'] = 'All day';
 
 ?>

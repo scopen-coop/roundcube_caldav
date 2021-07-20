@@ -1,10 +1,14 @@
-rcmail.addEventListener('init', function(evt) {
-    // create custom button
-    var button = get
-    button.bind('click', function(e){ return rcmail.command('reply', this); });
+function accept(response){
+    // $('#disp_invitation').html(response.message);
+    console.log(response.message);
+}
 
-    // add and register
-    rcmail.add_element(button, 'toolbar');
-    rcmail.register_button('plugin.samplecmd', 'rcmSampleButton', 'link');
-    rcmail.register_command('plugin.samplecmd', sample_handler, true);
+
+rcmail.addEventListener('init', function(evt) {
+    rcmail.addEventListener('plugin.accept',accept)
+
+    document.getElementById('accept_button').addEventListener('click',function evt(){
+        rcmail.http_post('plugin.accept_action');
+    })
+
 });
