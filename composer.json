@@ -1,0 +1,6 @@
+{
+    "require": {
+        "thecsea/simple-caldav-client": "^0.1.14",
+        "ext-curl": "*"
+    }
+}
