@@ -32,5 +32,9 @@ $labels['reply_all'] = 'Répondre à tous: ';
 $labels['previous_meeting'] = 'Votre rendez vous le plus proche dans les 24h précédentes :  ';
 $labels['next_meeting'] = 'Votre rendez vous le plus proche dans les 24h suivantes :  ';
 $labels['all_day'] = 'Toute la journée';
-
+$labels['successfully_saved'] = 'Cet événement à été ajouté à votre agenda';
+$labels['something_happened'] = "L'enregistrement de cet événement ne s'est pas passé comme prévu";
+$labels['confirm'] = 'Confirmer';
+$labels['tentative'] = 'Confirmer Provisoirement';
+$labels['decline'] = "Décliner l'invitation";
 ?>

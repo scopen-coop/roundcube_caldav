@@ -68,8 +68,8 @@
         </div>
     </div>
     <div id="action_button">
-        <button id="confirm_button">confirm</button>
-        <button id="tentative_button">tentative</button>
-        <button id="decline_button">decline</button>
+        <button id="confirm_button"><?php echo $this->gettext('confirm')?></button>
+        <button id="tentative_button"><?php echo $this->gettext('tentative')?></button>
+        <button id="decline_button"><?php echo $this->gettext('decline')?></button>
     </div>
 </div>

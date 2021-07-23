@@ -332,9 +332,9 @@ class roundcube_caldav extends rcube_plugin
                             $found_event_with_good_uid = $this->find_event_with_matching_uid($event);
                             if (empty($found_event_with_good_uid)) {
 
-                                $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
+                                $res = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
                             } else {
-                                $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getHref());
+                                $res = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getHref());
                             }
                         }
                     } catch (CalDAVException $e) {
@@ -356,9 +356,9 @@ class roundcube_caldav extends rcube_plugin
                             $found_event_with_good_uid = $this->find_event_with_matching_uid($event);
 
                             if (empty($found_event_with_good_uid)) {
-                                $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
+                                $res = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
                             } else {
-                                $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getHref());
+                                $res = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getHref());
                             }
 
                         }
@@ -368,6 +368,13 @@ class roundcube_caldav extends rcube_plugin
                 }
             }
         }
+        if($res){
+            $this->rcmail->output->command('display_message', $this->gettext('successfully_saved'), 'confirmation');
+        }else{
+            $this->rcmail->output->command('display_message', $this->gettext('something_happened'), 'error');
+        }
+
+        return $res;
     }
 
     function connexion_with_curl($ics, $url_base, $calendar_id, $uid, $login, $password,$href = null )
@@ -412,7 +419,7 @@ class roundcube_caldav extends rcube_plugin
         // close curl resource to free up system resources
         curl_close($ch);
         $info = curl_getinfo($ch);
-        return var_export($output, true) . $err . $info['http_code'];
+        return  $err == '';
     }
 
     function change_ics_status($ics, $status)
