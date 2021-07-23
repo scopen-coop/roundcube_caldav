@@ -301,11 +301,19 @@ class roundcube_caldav extends rcube_plugin
 
         $server = $this->rcube->config->get('server_caldav');
         $_main_calendar = $server['_main_calendar'];
-
+        $_urlbase = $server['_url_base'];
+        $_password = $server['_password'];
+        $_login = $server['_login'];
+        $cipher = new password_encryption();
+        $plain_password = $cipher->decrypt($_password, $this->rcube->config->get('des_key'), true);
 
         $_used_calendars = $server['_used_calendars'];
 
         $arrayOfCalendars = $this->client->findCalendars();
+
+        $calendar_id = explode('/', $arrayOfCalendars[$_main_calendar]->getUrl());
+        array_pop($calendar_id);
+        $calendar_id = array_pop($calendar_id);
 
 
         if (strcmp($type, 'CONFIRMED') == 0) {
@@ -317,39 +325,24 @@ class roundcube_caldav extends rcube_plugin
                         $this->client_plus->SetCalendar($arrayOfCalendars[$_main_calendar]);
                         $this->client->setCalendar($arrayOfCalendars[$_main_calendar]);
                         $ical = new ICal\ICal($ics);
+
+
                         foreach ($ical->events() as $event) {
 
 
-                            $current_dtstart_with_offset = date("Ymd\THis\Z", $event->dtstart_array[2] - $this->time_zone_offset-20000);
-                            $current_dtend_with_offset = date("Ymd\THis\Z", $event->dtend_array[2] - $this->time_zone_offset+20000);
-
-
-                            $found_events = $this->client->getEvents($current_dtstart_with_offset, $current_dtend_with_offset);
-                            if (empty($found_events)){$this->rcmail->output->command('plugin.accept', array('request' => "not found"));}
-
-                            $found_event_with_good_uid= array();
-                            foreach ($found_events as $event_found_ics) {
-                                $event_found_ical = new ICal\ICal($event_found_ics->getData());
-                                // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
-                                foreach ($event_found_ical->events() as &$event_found) {
-                                    $this->rcmail->output->command('plugin.accept', array('request' => "trouvé meme date"));
-                                    if ($event_found->uid == $event->uid) {
-                                        array_push($found_event_with_good_uid, $event_found_ics);
-                                        $this->rcmail->output->command('plugin.accept', array('request' =>$event_found->uid));
-                                    }
-                                }
-                            }
+                            $found_event_with_good_uid = $this->find_event_with_matching_uid($event);
 
                             if (empty($found_event_with_good_uid)) {
                                 $this->rcmail->output->command('plugin.accept', array('request' => 'ok create Accept'));
-                                $this->client->create($ics);
+                                $ret = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
+                                $this->rcmail->output->command('plugin.accept', array('request' => $ret));
 
 
                             } else {
 
                                 $this->rcmail->output->command('plugin.accept', array('request' => 'ok change Accept'));
-                                $this->client->change($found_event_with_good_uid[0]->getHref(), $ics, $found_event_with_good_uid[0]->getEtag());
-
+                                $ret = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getEtag());
+                                $this->rcmail->output->command('plugin.accept', array('request' => $ret));
                             }
                         }
                     } catch (CalDAVException $e) {
@@ -368,86 +361,73 @@ class roundcube_caldav extends rcube_plugin
                         $ical = new ICal\ICal($ics);
                         foreach ($ical->events() as $event) {
 
-                            $current_dtstart_with_offset = date("Ymd\THis\Z", $event->dtstart_array[2] - $this->time_zone_offset-20000);
-                            $current_dtend_with_offset = date("Ymd\THis\Z", $event->dtend_array[2] - $this->time_zone_offset+20000);
+                            $found_event_with_good_uid = $this->find_event_with_matching_uid($event);
 
-
-                            $found_events = $this->client->getEvents($current_dtstart_with_offset, $current_dtend_with_offset);
-                            if (empty($found_events)){$this->rcmail->output->command('plugin.accept', array('request' => "not found"));}
-
-                            $found_event_with_good_uid= array();
-                            foreach ($found_events as $event_found_ics) {
-                                $event_found_ical = new ICal\ICal($event_found_ics->getData());
-                                // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
-                                foreach ($event_found_ical->events() as &$event_found) {
-                                    if ($event_found->uid == $event->uid) {
-                                         array_push($found_event_with_good_uid, $event_found_ics);
-                                        $this->rcmail->output->command('plugin.accept', array('request' =>$event_found->uid));
-                                    }
-                                }
-                            }
                             if (empty($found_event_with_good_uid)) {
-                                $this->rcmail->output->command('plugin.accept', array('request' => "ok create tentative"));
-                                $this->client->create($ics);
-                                $this->rcmail->output->command('plugin.accept', array('request' => 'ez' ));
+                                $this->rcmail->output->command('plugin.accept', array('request' => 'ok create Tentative'));
+                                $ret = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
+                                $this->rcmail->output->command('plugin.accept', array('request' => $ret));
                             } else {
                                 $this->rcmail->output->command('plugin.accept', array('request' => 'ok change tentative'));
-                                $this->client->change($found_event_with_good_uid[0]->getHref(), $ics, $found_event_with_good_uid[0]->getEtag());
-                                $this->rcmail->output->command('plugin.accept', array('request' => "ok change tentative2"));
+                                $ret = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getEtag());
+                                $this->rcmail->output->command('plugin.accept', array('request' => $ret));
 
 
                             }
 
                         }
                     } catch (CalDAVException $e) {
-                        $this->rcmail->output->command('plugin.accept', array('request' => 'attention' .$e->getResponseHeader()));
+                        $this->rcmail->output->command('plugin.accept', array('request' => 'attention' . $e->getResponseHeader()));
                     }
                 }
             }
         }
     }
 
-    function create1($cal)
+    function connexion_with_curl($ics, $url_base, $calendar_id, $uid, $login, $password, $etag = null)
     {
-        // Connection and calendar set?
-        if (!isset($this->client_plus)) throw new Exception('No connection. Try connect().');
-        if (!isset($this->client_plus->calendar_url)) throw new Exception('No calendar selected. Try findCalendars() and setCalendar().');
+        // create curl resource
+        $ch = curl_init();
 
-        // Parse $cal for UID
-        $pos_status = strpos($cal, 'UID:');
-        if ($pos_status  < 0) {
-            throw new Exception('Can\'t find UID in $cal');
-        } else {
-            $deb = substr($cal, 0, $pos_status + 4);
-            $end = substr($cal, $pos_status + 4);
+
+        $pos_status = strpos($ics, 'METHOD:');
+        if ($pos_status > 0) {
+            $deb = substr($ics, 0, $pos_status);
+            $end = substr($ics, $pos_status);
             $count_until_endline = strpos($end, "\n");
-            $uid = substr($end,0, $count_until_endline);
+            $end = substr($end, $count_until_endline);
+            $ics = $deb . $end;
         }
 
-
-        // Does $this->url.$uid.'.ics' already exist?
-        $result = $this->client_plus->GetEntryByUid( $uid );
-        $this->rcmail->output->command('plugin.accept', array('request' => $result));
-//        if ($this->client->GetHttpResultCode() == '200') {
-//            throw new CalDAVException($this->client_plus->url . $uid . '.ics already exists. UID not unique?', $this->client);
-//        } else if ($this->client->GetHttpResultCode() == '404') ;
-//        else throw new CalDAVException('Recieved unknown HTTP status', $this->client);
-//
-//        // Put it!
-//        $newEtag = $this->client->DoPUTRequest($this->client_plus->url . $uid . '.ics', $cal);
-//
-//        // PUT-request successfull?
-//        if ($this->client->GetHttpResultCode() != '201') {
-//            if ($this->client->GetHttpResultCode() == '204') // $url.$uid.'.ics' already existed on server
-//            {
-//                throw new CalDAVException($this->client_plus->url . $uid . '.ics already existed. Entry has been overwritten.', $this->client);
-//            } else // Unknown status
-//            {
-//                throw new CalDAVException('Recieved unknown HTTP status', $this->client);
-//            }
+        $headers = array("Depth: 1", "Content-Type: text/calendar; charset='UTF-8'");
+//        if($etag!=null){
+//            $ics = array_push($headers,sprintf("If-Match: \"%s\"",$etag));
 //        }
-//
-//        return new CalDAVObject($this->client_plus->url . $uid . '.ics', $cal, $newEtag);
+
+        // set url
+        $url = $url_base . '/' . $calendar_id . '/' . $uid . '.ics';
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_USERPWD, $login . ':' . $password);
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $ics);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // $output contains the output string
+        $output = curl_exec($ch);
+
+        if ($errno = curl_errno($ch)) {
+            $err = curl_strerror($errno);
+        }
+
+        // close curl resource to free up system resources
+        curl_close($ch);
+        $info = curl_getinfo($ch);
+        return var_export($output, true) . $err . $info['http_code'];
     }
 
     function change_ics_status($ics, $status)
@@ -846,6 +826,35 @@ class roundcube_caldav extends rcube_plugin
 
         }
         return $uid;
+    }
+
+    /**
+     * @param $event
+     * @return array
+     */
+    public function find_event_with_matching_uid($event)
+    {
+        $current_dtstart_with_offset = date("Ymd\THis\Z", $event->dtstart_array[2] - $this->time_zone_offset - 20000);
+        $current_dtend_with_offset = date("Ymd\THis\Z", $event->dtend_array[2] - $this->time_zone_offset + 20000);
+
+
+        $found_events = $this->client->getEvents($current_dtstart_with_offset, $current_dtend_with_offset);
+        if (empty($found_events)) {
+            $this->rcmail->output->command('plugin.accept', array('request' => "not found"));
+        }
+
+        $found_event_with_good_uid = array();
+        foreach ($found_events as &$event_found_ics) {
+            $event_found_ical = new ICal\ICal($event_found_ics->getData());
+
+            // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
+            foreach ($event_found_ical->events() as &$event_found) {
+                if ($event_found->uid == $event->uid) {
+                    array_push($found_event_with_good_uid, $event_found_ics);
+                }
+            }
+        }
+        return $found_event_with_good_uid;
     }
 
 
