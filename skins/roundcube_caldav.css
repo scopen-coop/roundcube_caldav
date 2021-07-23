@@ -7,11 +7,16 @@
 #content{
     display: flex;
     justify-content: space-around;
+    align-items: center;
+    border:1px solid black
+
 }
 
-#info_caldav_server {
+.info_ics {
     justify-content: space-around;
-
+    width: 50%;
+    padding-left: 0px;
+    border:1px solid black
 }
 
 #titre_current {
@@ -21,4 +26,6 @@
 #action_button{
     display: flex;
     justify-content: space-around;
+}
+
 }

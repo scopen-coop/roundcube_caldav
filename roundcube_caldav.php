@@ -297,6 +297,7 @@ class roundcube_caldav extends rcube_plugin
         $uid = rcube_utils::get_input_value('_uid', rcube_utils::INPUT_POST);
         $mbox = rcube_utils::get_input_value('_mbox', rcube_utils::INPUT_POST);
         $type = rcube_utils::get_input_value('_type', rcube_utils::INPUT_POST);
+
         $message = new rcube_message($uid, $mbox);
 
         $server = $this->rcube->config->get('server_caldav');
@@ -328,21 +329,12 @@ class roundcube_caldav extends rcube_plugin
 
 
                         foreach ($ical->events() as $event) {
-
-
                             $found_event_with_good_uid = $this->find_event_with_matching_uid($event);
-
                             if (empty($found_event_with_good_uid)) {
-                                $this->rcmail->output->command('plugin.accept', array('request' => 'ok create Accept'));
-                                $ret = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
-                                $this->rcmail->output->command('plugin.accept', array('request' => $ret));
 
-
+                                $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
                             } else {
-
-                                $this->rcmail->output->command('plugin.accept', array('request' => 'ok change Accept'));
-                                $ret = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getEtag());
-                                $this->rcmail->output->command('plugin.accept', array('request' => $ret));
+                                $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getHref());
                             }
                         }
                     } catch (CalDAVException $e) {
@@ -364,15 +356,9 @@ class roundcube_caldav extends rcube_plugin
                             $found_event_with_good_uid = $this->find_event_with_matching_uid($event);
 
                             if (empty($found_event_with_good_uid)) {
-                                $this->rcmail->output->command('plugin.accept', array('request' => 'ok create Tentative'));
-                                $ret = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
-                                $this->rcmail->output->command('plugin.accept', array('request' => $ret));
+                                $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
                             } else {
-                                $this->rcmail->output->command('plugin.accept', array('request' => 'ok change tentative'));
-                                $ret = $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getEtag());
-                                $this->rcmail->output->command('plugin.accept', array('request' => $ret));
-
-
+                                $this->connexion_with_curl($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password,$found_event_with_good_uid[0]->getHref());
                             }
 
                         }
@@ -384,7 +370,7 @@ class roundcube_caldav extends rcube_plugin
         }
     }
 
-    function connexion_with_curl($ics, $url_base, $calendar_id, $uid, $login, $password, $etag = null)
+    function connexion_with_curl($ics, $url_base, $calendar_id, $uid, $login, $password,$href = null )
     {
         // create curl resource
         $ch = curl_init();
@@ -398,14 +384,13 @@ class roundcube_caldav extends rcube_plugin
             $end = substr($end, $count_until_endline);
             $ics = $deb . $end;
         }
-
-        $headers = array("Depth: 1", "Content-Type: text/calendar; charset='UTF-8'");
-//        if($etag!=null){
-//            $ics = array_push($headers,sprintf("If-Match: \"%s\"",$etag));
-//        }
-
         // set url
         $url = $url_base . '/' . $calendar_id . '/' . $uid . '.ics';
+
+        $headers = array("Depth: 1", "Content-Type: text/calendar; charset='UTF-8'");
+        if($href!=null){
+            $url = $href;
+        }
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_USERPWD, $login . ':' . $password);
 
@@ -465,6 +450,7 @@ class roundcube_caldav extends rcube_plugin
         foreach ($ical->events() as &$event) {
 
             $date_start = $event->dtstart_array[1];
+            $date_end = $event->dtend_array[1];
 
 
             // On récupère la time_zone qui va nous servir plus tard dans une autre fonction
