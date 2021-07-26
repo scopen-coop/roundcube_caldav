@@ -2,30 +2,131 @@
     display: flex;
     justify-content: space-around;
     flex-direction: column;
+
+
 }
 
-#content{
+#invitation {
+    padding: 20px;
+    text-align: center;
+}
+
+#content {
     display: flex;
     justify-content: space-around;
     align-items: center;
-    border:1px solid black
 
 }
 
 .info_ics {
-    justify-content: space-around;
-    width: 50%;
-    padding-left: 0px;
-    border:1px solid black
+    padding: 20px;
 }
+
+.icon_date {
+    margin: auto;
+    font-size: 1em; /* change icon size */
+    display: block;
+    position: relative;
+    width: 7em;
+    height: 7em;
+    background-color: #fff;
+    border-radius: 0.2em;
+    box-shadow: 0 1px 0 #bdbdbd, 0 0 0 1px #bdbdbd;
+    overflow: hidden;
+    flex-shrink: 0;
+    padding: 0 !important;
+    min-height: 0 !important;
+}
+
+.icon_date * {
+    display: block;
+    width: 100%;
+    font-size: 1em;
+    font-weight: bold;
+    font-style: normal;
+    text-align: center;
+    margin: 0 !important;
+    min-height: 0 !important;
+}
+
+.icon_date .m {
+    font-size: 1.2em;
+    position: absolute;
+    top: 0;
+    padding: 0.1em 0 !important;
+    color: #fff;
+    background-color: rgb(55, 189, 254);
+}
+
+.icon_date .h {
+    font-size: 1.1em;
+    position: absolute;
+    bottom: 0.1em;
+    color: black;
+    padding: 0 !important;
+}
+
+.icon_date .d {
+    font-size: 2.4em;
+    letter-spacing: -0.05em;
+    padding: 0.9em 0 0 0 !important;
+    color: black;
+}
+
+#date_event {
+    display: inline-flex;
+    text-align: center;
+    padding: 10px;
+}
+
+#alone {
+    margin: auto;
+    width: 7em
+}
+
+#reply_all {
+    padding: 10px;
+    text-align: center;
+}
+
 
 #titre_current {
     font-size: xx-large;
 }
 
-#action_button{
+#action_button {
+    padding-top: 30px;
+    padding-bottom: 30px;
     display: flex;
     justify-content: space-around;
 }
 
+.arrow-right {
+    width: 20px;
+    height: 30px;
+    background-color: #404f54;
+    position: relative;
+    clip-path: polygon(0 0, 0 100%, 100% 50%);
+    margin: 0.4em;
+    margin-top: 2.5em;
+}
+
+.attendee_link {
+    margin-left: 20px;
+}
+
+
+#info_caldav_server {
+    padding-left: 40px;
+}
+
+.meeting_display {
+    padding-left: 20px;
+}
+
+.meeting_collision {
+    color: #752361;
+    background-color: #f7d6d9;
+    padding: 10px;
+    border-radius: 0.5em;
 }

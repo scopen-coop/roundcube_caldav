@@ -35,5 +35,7 @@ $labels['something_happened'] = "Something happened badly, nothing have been add
 $labels['confirm'] = 'Confirm';
 $labels['tentative'] = 'Tentative';
 $labels['decline'] = "Decline";
+$labels['location'] = "Location: ";
+$labels['description']= "Description: ";
 
 ?>
