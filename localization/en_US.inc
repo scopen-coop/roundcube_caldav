@@ -37,12 +37,20 @@ $labels['decline'] = "Decline";
 $labels['confirmed'] = 'Confirmed';
 $labels['tentatived'] = 'Provisionally confirmed';
 $labels['declined'] = "Declined";
-$labels['location'] = "Location: ";
+$labels['location'] = "Place: ";
 $labels['description'] = "Description: ";
 $labels['chose_calendar'] = "Add this event to :";
 $labels['repeated_event'] = "This event repeat itself through several occurences";
 $labels['use_this_calendar'] = "Use the calendar ";
 $labels['make_this_calendar_default1'] = "Select the ";
 $labels['make_this_calendar_default2'] = " calendar by default";
-
+$labels['reschedule_meeting']= "Reschedule this meeting ";
+$labels['new_date_start'] = 'New begin date for this event';
+$labels['new_time_start'] = 'Start times';
+$labels['new_time_end'] = 'End times';
+$labels['new_date_end'] = 'New end date for this event';
+$labels['new_location'] = 'Choose a new location';
+$labels['if_rescheduled_msg'] = 'You have rescheduled this event :';
+$labels['error_date_inf'] = 'Warning! you can\'t choose a begin date superior to end date';
+$labels['error_incomplete_field'] = "Warning  you have not filled in the necessary fields (either the field place or all fields date)";
 ?>

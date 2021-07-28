@@ -463,7 +463,6 @@ class roundcube_caldav extends rcube_plugin
         }
     }
 
-
     /**
      * Fonction qui procède a la récupération de la PJ et affiche les informations dans un conteneur html
      * directement sur le mail
@@ -482,6 +481,12 @@ class roundcube_caldav extends rcube_plugin
 
         $date_start = $event->dtstart_array[1];
         $date_end = $event->dtend_array[1];
+
+        $test = '20210719T110002';
+        $test2 = '20210719T1sawg';
+        var_dump($this->change_date_ics($test,$test2,$ics));
+
+
         $same_date = false;
         if (strcmp(substr($date_start, 0, -6), substr($date_end, 0, -6)) == 0) {
             $same_date = true;
@@ -538,7 +543,6 @@ class roundcube_caldav extends rcube_plugin
         array_push($content, $html);
 
     }
-
 
     /**
      * Récupere le status d'un événement si celui çi existe déja sur le serveur puis l'envoie au client pour l'affichage
@@ -852,7 +856,6 @@ class roundcube_caldav extends rcube_plugin
                 && (strtotime($date_end, $base_timestamp) < strtotime($current_date_end, $base_timestamp))));
     }
 
-
     /**
      * Decide à partir d'un tableau contenant des dates lequels de ces événements commence
      * le plus tard juste avant ou le plus tot juste après
@@ -896,7 +899,7 @@ class roundcube_caldav extends rcube_plugin
      * @param $event
      * @return array
      */
-    public function find_event_with_matching_uid($event, $calendar)
+    function find_event_with_matching_uid($event, $calendar)
     {
         // formatage des dates pour la fonction getEvent()
         $current_dtstart_with_offset = date("Ymd\THis\Z", $event->dtstart_array[2] - $this->time_zone_offset - 20000);
@@ -920,6 +923,53 @@ class roundcube_caldav extends rcube_plugin
         return $found_event_with_good_uid;
     }
 
+    function change_date_ics($date_start, $date_end, $ics)
+    {
+        // date start
+        // On coupe pour avoir juste le premier événement
+        $pos_deb_event = strpos($ics, 'BEGIN:VEVENT');
+        $deb = substr($ics,0, $pos_deb_event);
+        $event = substr($ics, $pos_deb_event);
+
+        // on se rend a la ligne en question
+        $pos_dtstart=strpos($event, 'DTSTART;');
+        $before_line =  substr($event, 0,$pos_dtstart);
+        $line_dtstart = substr($event, $pos_dtstart);
+
+        // on va jusqu'a la date
+        $pos_effective_dtstart= strpos($line_dtstart,':');
+        $before_dots =  substr($line_dtstart, 0,$pos_effective_dtstart+1);
+        $after_dots=  substr($line_dtstart, $pos_effective_dtstart+1);
+
+        // on recupere toute les lignes suivantes
+        $count_until_endline = strpos($after_dots, "\n");
+        $afterline = substr($after_dots, $count_until_endline);
+
+
+        // On concatène ensuite le début jusqu'a l'event, puis jusqu'a la ligne , puis jusqu'au ':', on remplace la date , on ajoute la fin du fichier
+        $ics = $deb . $before_line .$before_dots. $date_start . $afterline;
+
+        // On refait de meme pour la date de fin
+        $pos_deb_event = strpos($ics, 'BEGIN:VEVENT');
+        $deb = substr($ics,0, $pos_deb_event);
+        $event = substr($ics, $pos_deb_event);
+
+
+        $pos_dtend=strpos($event, 'DTEND;');
+        $before_line =  substr($event, 0,$pos_dtend);
+        $line_dtend = substr($event, $pos_dtend);
+
+        $pos_effective_dtstart= strpos($line_dtend,':');
+        $before_dots =  substr($line_dtend, 0,$pos_effective_dtstart+1);
+        $after_dots=  substr($line_dtend, $pos_effective_dtstart+1);
+
+        $count_until_endline = strpos($after_dots, "\n");
+        $afterline = substr($after_dots, $count_until_endline);
+
+        $ics = $deb . $before_line .$before_dots. $date_end . $afterline;
+
+        return $ics ;
+    }
 
 }
 

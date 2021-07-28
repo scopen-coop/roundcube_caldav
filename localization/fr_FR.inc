@@ -45,6 +45,13 @@ $labels['repeated_event'] = "L'évenement se répète à plusieurs occurences: "
 $labels['use_this_calendar'] = "Utiliser le calendrier ";
 $labels['make_this_calendar_default1'] = "Selectionner le calendrier ";
 $labels['make_this_calendar_default2'] = " par défaut";
-
-
+$labels['reschedule_meeting']= "Reprogrammer cet événement";
+$labels['new_date_start'] = 'Nouvelle date de début pour cet événement';
+$labels['new_time_start'] = 'Horaire du début';
+$labels['new_time_end'] = 'Horaire de fin';
+$labels['new_date_end'] = 'Nouvelle date de fin pour cet événement';
+$labels['new_location'] = 'Choisir un nouveau lieu pour cet événement';
+$labels['if_rescheduled_msg'] = 'Vous avez reprogrammé cet événement :';
+$labels['error_date_inf'] = 'Attention vous ne pouvez pas mettre une date de fin supérieure à la date de début';
+$labels['error_incomplete_field'] = "Attention vous n'avez pas remplis les champs nécessaires (soit le champs lieu soit tous les champs date) "
 ?>

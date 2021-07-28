@@ -36,10 +36,10 @@
             <?php endif; ?>
         </div>
         <div class="info_ics repeated">
-            <p><b><?php echo $this->gettext("repeated_event"); ?></b></p>
             <?php if ($repeated_event): ?>
+                <p><b><?php echo $this->gettext("repeated_event"); ?></b></p>
                 <?php foreach ($array_event as &$event): ?>
-                    <?php echo $this->pretty_date($event->dtstart_array[1],$event->dtend_array[1])?><br/>
+                    <?php echo $this->pretty_date($event->dtstart_array[1], $event->dtend_array[1]) ?><br/>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
@@ -102,7 +102,9 @@
 
         </div>
     </div>
-
+    <div id="if_rescheduled" style="display: none" >
+        <p><b><?php echo $this->gettext("if_rescheduled_msg") ?></b></p>
+    </div>
     <div id="action_button">
         <form method="post" name="chosen_cal">
             <label>
@@ -113,7 +115,30 @@
                     <?php endforeach; ?>
                 </select>
             </label>
+
         </form>
+        <div id="dialog-form" title="Reschedule">
+            <form>
+                <fieldset>
+                    <label for="location"><?php echo $this->gettext("new_location") ?></label>
+                    <input type="text" name="location" id="location">
+
+                    <label class="label_popup" for="date_start"><?php echo $this->gettext("new_date_start") ?></label>
+                    <input id="date_start" type="date">
+                    <label class="label_popup" for="time_start"><?php echo $this->gettext("new_time_start") ?></label>
+                    <input id="time_start" type="time">
+
+                    <label class="label_popup" for="date_end"><?php echo $this->gettext("new_date_end") ?></label>
+                    <input id="date_end" type="date">
+                    <label class="label_popup" for="time_end"><?php echo $this->gettext("new_time_end") ?></label>
+                    <input id="time_end" type="time">
+
+                </fieldset>
+
+            </form>
+        </div>
+        <button id="open_dialog"><?php echo $this->gettext('reschedule_meeting') ?></button>
+
 
         <button id="confirm_button"><?php echo $this->gettext('confirm') ?></button>
         <button id="tentative_button"><?php echo $this->gettext('tentative') ?></button>
