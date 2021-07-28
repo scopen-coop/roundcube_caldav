@@ -4,42 +4,46 @@
         <h4><?php echo $event->summary ?></h4>
     </div>
     <div id="content">
+        <div id="date_event">
+            <?php if ($same_date): ?>
+                <div class="icon_date" id="alone">
+                    <div class="d"><?php echo $this->rcmail->format_date($date_start, 'd') ?></div>
+                    <div class="m"><?php echo $this->rcmail->format_date($date_start, 'M') . '/' . $this->rcmail->format_date($date_start, 'Y') ?></div>
+                    <div class="h"><?php echo $this->rcmail->format_date($date_start, 'G:i') . ' : ' . $this->rcmail->format_date($date_end, 'G:i') ?></div>
+                </div>
+            <?php else: ?>
+
+                <div class="icon_date">
+                    <div class="d"><?php echo $this->rcmail->format_date($date_start, 'd') ?></div>
+                    <div class="m"><?php echo $this->rcmail->format_date($date_start, 'M') . '/' . $this->rcmail->format_date($date_start, 'Y') ?></div>
+                    <div class="h"><?php echo $this->rcmail->format_date($date_start, 'G:i') ?></div>
+                </div>
+                <div class="arrow-right"></div>
+                <div class="icon_date">
+                    <div class="d"><?php echo $this->rcmail->format_date($date_end, 'd') ?></div>
+                    <div class="m"><?php echo $this->rcmail->format_date($date_end, 'M') . '/' . $this->rcmail->format_date($date_end, 'Y') ?></div>
+                    <div class="h"><?php echo $this->rcmail->format_date($date_end, 'G:i') ?></div>
+                </div>
+            <?php endif; ?>
+        </div>
         <div class="info_ics">
+            <?php if (!empty($event->location)): ?>
+                <p><?php echo '<b>' . $this->gettext("location") . '</b>' . $event->location; ?></p>
+            <?php endif; ?>
 
-
-            <div id="date_event">
-
-                <?php if ($same_date): ?>
-                    <div class="icon_date" id="alone">
-                        <div class="d"><?php echo $this->rcmail->format_date($date_start, 'd') ?></div>
-                        <div class="m"><?php echo $this->rcmail->format_date($date_start, 'M') . '/' . $this->rcmail->format_date($date_start, 'Y') ?></div>
-                        <div class="h"><?php echo $this->rcmail->format_date($date_start, 'G:i') . ' : ' . $this->rcmail->format_date($date_end, 'G:i') ?></div>
-                    </div>
-                <?php else: ?>
-
-                    <div class="icon_date">
-                        <div class="d"><?php echo $this->rcmail->format_date($date_start, 'd') ?></div>
-                        <div class="m"><?php echo $this->rcmail->format_date($date_start, 'M') . '/' . $this->rcmail->format_date($date_start, 'Y') ?></div>
-                        <div class="h"><?php echo $this->rcmail->format_date($date_start, 'G:i') ?></div>
-                    </div>
-                    <div class="arrow-right"></div>
-                    <div class="icon_date">
-                        <div class="d"><?php echo $this->rcmail->format_date($date_end, 'd') ?></div>
-                        <div class="m"><?php echo $this->rcmail->format_date($date_end, 'M') . '/' . $this->rcmail->format_date($date_end, 'Y') ?></div>
-                        <div class="h"><?php echo $this->rcmail->format_date($date_end, 'G:i') ?></div>
-                    </div>
-                <?php endif; ?>
-            </div>
-            <div>
-                <?php if (!empty($event->location)): ?>
-                    <p><?php echo '<b>' . $this->gettext("location") . '</b>' . $event->location; ?></p>
-                <?php endif; ?>
-
-                <?php if (!empty($event->description)): ?>
-                    <p> <?php echo '<b>' . $this->gettext("description") . '</b>' . $event->description . ' :' ?></p>
-                <?php endif; ?>
-            </div>
-
+            <?php if (!empty($event->description)): ?>
+                <p> <?php echo '<b>' . $this->gettext("description") . '</b>' . $event->description . ' :' ?></p>
+            <?php endif; ?>
+        </div>
+        <div class="info_ics repeated">
+            <p><b><?php echo $this->gettext("repeated_event"); ?></b></p>
+            <?php if ($repeated_event): ?>
+                <?php foreach ($array_event as &$event): ?>
+                    <?php echo $this->pretty_date($event->dtstart_array[1],$event->dtend_array[1])?><br/>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <div class="info_ics">
             <?php if (!empty($this->attendees)): ?>
                 <div>
                     <p><b><?php echo $this->gettext("attendee"); ?></b></p>
@@ -56,15 +60,12 @@
                 </div>
                 <div id="reply_all"><?php echo html::a($attrs, $this->gettext('reply_all')); ?></div>
             <?php endif; ?>
-
-
         </div>
         <div id="info_caldav_server">
             <div class="close_meeting">
                 <?php if (!empty($display_caldav_info['close_meeting']['previous'])): ?>
-                    <p><?php echo $this->gettext('previous_meeting') ?></p>
-
-                    <p class="meeting_display"><?php echo $display_caldav_info['close_meeting']['previous']['summary']
+                    <p><b><?php echo $this->gettext('previous_meeting') ?></b><br/>
+                        <?php echo $display_caldav_info['close_meeting']['previous']['summary']
                             . ': ' . '<i>' . '(' . $display_caldav_info['close_meeting']['previous']['calendar'] . ')' . '</i><br>'
                             . $this->pretty_date($display_caldav_info['close_meeting']['previous']['date_start'], $display_caldav_info['close_meeting']['previous']['date_end']) ?>
                     </p>
@@ -91,8 +92,8 @@
             <br/>
             <div class="close_meeting">
                 <?php if (!empty($display_caldav_info['close_meeting']['next'])): ?>
-                    <p><?php echo $this->gettext('next_meeting') ?></p>
-                    <p class="meeting_display"><?php echo $display_caldav_info['close_meeting']['next']['summary']
+                    <p><b><?php echo $this->gettext('next_meeting') ?></b><br/>
+                        <?php echo $display_caldav_info['close_meeting']['next']['summary']
                             . ': ' . '<i>' . '(' . $display_caldav_info['close_meeting']['next']['calendar'] . ')' . '</i><br>'
                             . $this->pretty_date($display_caldav_info['close_meeting']['next']['date_start'], $display_caldav_info['close_meeting']['next']['date_end']) ?>
                     </p>
@@ -101,17 +102,17 @@
 
         </div>
     </div>
+
     <div id="action_button">
         <form method="post" name="chosen_cal">
             <label>
-                Choose Calendar
+                <?php echo $this->gettext("chose_calendar") ?>
                 <select id="choose_calendar_to_add_event">
                     <?php foreach ($_used_calendars as $calendar): ?>
                         <option value="<?php echo $calendar ?>" <?php echo ($calendar == $main_calendar) ? 'selected' : '' ?>><?php echo $calendar ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
-            <input type="submit" value="Submit the form"/>
         </form>
 
         <button id="confirm_button"><?php echo $this->gettext('confirm') ?></button>

@@ -1,6 +1,7 @@
 {
     "require": {
         "thecsea/simple-caldav-client": "^0.1.14",
-        "ext-curl": "*"
+        "ext-curl": "*",
+        "johngrogg/ics-parser": "^3.0"
     }
 }
