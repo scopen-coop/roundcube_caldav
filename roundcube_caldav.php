@@ -78,7 +78,7 @@ class roundcube_caldav extends rcube_plugin
         // on affiche les informations ics uniquement si l'on a une configuration fonctionnelle qui permet de se connecter au serveur
         if ($_connexion) {
             $this->add_hook('message_objects', array($this, 'message_objects'));
-            $this->register_action('plugin.accept_action', array($this, 'accept_action'));
+            $this->register_action('plugin.import_action', array($this, 'import_action'));
             $this->register_action('plugin.get_status', array($this, 'get_status'));
         }
 
@@ -317,15 +317,22 @@ class roundcube_caldav extends rcube_plugin
      * @return bool
      * @throws Exception
      */
-    function accept_action()
+    function import_action()
     {
-        $uid = rcube_utils::get_input_value('_uid', rcube_utils::INPUT_POST);
+        $mail_uid = rcube_utils::get_input_value('_mail_uid', rcube_utils::INPUT_POST);
+        $event_uid = rcube_utils::get_input_value('_event_uid', rcube_utils::INPUT_POST);
         $mbox = rcube_utils::get_input_value('_mbox', rcube_utils::INPUT_POST);
         $type = rcube_utils::get_input_value('_type', rcube_utils::INPUT_POST);
         $chosen_calendar = rcube_utils::get_input_value('_calendar', rcube_utils::INPUT_POST);
+        $chosen_date_start = rcube_utils::get_input_value('_chosenDateStart', rcube_utils::INPUT_POST);
+        $chosen_date_end = rcube_utils::get_input_value('_chosenDateEnd', rcube_utils::INPUT_POST);
+        $chosen_time_start = rcube_utils::get_input_value('_chosenTimeStart', rcube_utils::INPUT_POST);
+        $chosen_time_end = rcube_utils::get_input_value('_chosenTimeEnd', rcube_utils::INPUT_POST);
+        $chosen_location = rcube_utils::get_input_value('_chosenLocation', rcube_utils::INPUT_POST);
+
 
         // Récupération du mail
-        $message = new rcube_message($uid, $mbox);
+        $message = new rcube_message($mail_uid, $mbox);
 
         // Récupération de l'url, du login et du mdp
         $server = $this->rcube->config->get('server_caldav');
@@ -349,21 +356,53 @@ class roundcube_caldav extends rcube_plugin
                 try {
                     // On récupère la PJ
                     $ics = $message->get_part_body($attachment->mime_id);
+                    $new_ics = $this->find_specific_event_ics($ics, $event_uid);
 
-                    // On change le status de l'événement en celui qui nous convient
-                    $ics = $this->change_ics_status($ics, $type);
-                    $ical = new ICal\ICal($ics);
-                    foreach ($ical->events() as $event) {
-                        // On cherche si le serveur possède déja un événement avec cet uid
-                        $found_event_with_good_uid = $this->find_event_with_matching_uid($event, $chosen_calendar);
 
-                        // On ajoute le fichier au serveur calDAV
-                        if (empty($found_event_with_good_uid)) {
-                            $res = $this->add_ics_event_to_caldav_server($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password);
+                    $ical = new \ICal\ICal($new_ics);
+                    $array_event = $ical->events();
+
+                    $event = $array_event[0];
+
+
+                    // On parse la date puis on remplace par la nouvelle date dans le fichier ics
+                    if ($chosen_date_start && $chosen_date_end && $chosen_time_start && $chosen_time_end) {
+                        $new_date_start_int = strtotime($chosen_date_start . ' ' . $chosen_time_start);
+                        $new_date_end_int = strtotime($chosen_date_end . ' ' . $chosen_time_end);
+                        $new_date_start = date("Ymd\THis", $new_date_start_int - $this->time_zone_offset);
+                        $new_date_end = date("Ymd\THis", $new_date_end_int - $this->time_zone_offset);
+
+                        if (count($array_event) > 1) {
+
+                            $offset_start = $new_date_start_int - $event->dtstart_array[2];
+                            $offset_end = $new_date_end_int - $event->dtend_array[2];
+                            $new_ics = $this->change_date_ics($new_date_start, $new_date_end, $new_ics, $offset_start, $offset_end);
                         } else {
-                            $res = $this->add_ics_event_to_caldav_server($ics, $_urlbase, $calendar_id, $event->uid, $_login, $plain_password, $found_event_with_good_uid[0]->getHref());
+                            $new_ics = $this->change_date_ics($new_date_start, $new_date_end, $new_ics);
                         }
                     }
+
+                    // On remplace par le nouveau lieu dans le fichier ics
+                    if ($chosen_location) {
+                        $new_ics = $this->change_location_ics($chosen_location, $new_ics);
+                    }
+
+
+                    // On change le status de l'événement en celui qui nous convient
+                    $new_ics = $this->change_status_ics($new_ics, $type);
+
+                    $this->rcmail->output->command('plugin.affichage', array('request' => $new_ics));
+
+                    // On cherche si le serveur possède déja un événement avec cet uid
+                    $found_event_with_good_uid = $this->find_event_with_matching_uid($event, $chosen_calendar);
+
+                    // On ajoute le fichier au serveur calDAV
+                    if (empty($found_event_with_good_uid)) {
+                        $res = $this->add_ics_event_to_caldav_server($new_ics, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password);
+                    } else {
+                        $res = $this->add_ics_event_to_caldav_server($new_ics, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password, $found_event_with_good_uid[0]->getHref());
+                    }
+
                 } catch (CalDAVException $e) {
                     $this->rcmail->output->command('display_message', $e, 'error');
                 }
@@ -437,31 +476,9 @@ class roundcube_caldav extends rcube_plugin
         curl_close($ch);
 
 
-        return $err;
+        return $output;
     }
 
-    /**
-     * Modifie le parametre 'STATUS' d'un fichier ics
-     * @param $ics
-     * @param $status
-     * @return string
-     */
-    function change_ics_status($ics, $status)
-    {
-        $pos_status = strpos($ics, 'STATUS:');
-        if ($pos_status > 0) {
-            $deb = substr($ics, 0, $pos_status + 7);
-            $end = substr($ics, $pos_status + 7);
-            $count_until_endline = strpos($end, "\n");
-            $end = substr($end, $count_until_endline);
-            return $deb . $status . $end;
-        } else {
-            $pos_end_event = strpos($ics, 'END:VEVENT');
-            $deb = substr($ics, 0, $pos_end_event);
-            $end = substr($ics, $pos_end_event);
-            return $deb . "STATUS:" . $status . "\n" . $end;
-        }
-    }
 
     /**
      * Fonction qui procède a la récupération de la PJ et affiche les informations dans un conteneur html
@@ -476,71 +493,79 @@ class roundcube_caldav extends rcube_plugin
     {
         $ics = $message->get_part_body($attachments->mime_id);
         $ical = new \ICal\ICal($ics);
-        $array_event = $ical->events();
-        $event = array_shift($array_event);
+        $events = $ical->events();
 
-        $date_start = $event->dtstart_array[1];
-        $date_end = $event->dtend_array[1];
-
-        $test = '20210719T110002';
-        $test2 = '20210719T1sawg';
-        var_dump($this->change_date_ics($test,$test2,$ics));
-
-
-        $same_date = false;
-        if (strcmp(substr($date_start, 0, -6), substr($date_end, 0, -6)) == 0) {
-            $same_date = true;
+        $recurrent_events = array();
+        foreach ($events as $event) {
+            $recurrent_events[$event->uid][] = $event;
         }
 
-        // On récupère la time_zone qui va nous servir plus tard dans une autre fonction
-        $this->time_zone_offset = $ical->iCalDateToDateTime($date_start)->getOffset();
 
+        $same_uid = $events[0]->uid;
+        foreach ($events as $i => &$event) {
 
-        // Les tableaux $event->attendee_array & $event->organizer_array ont une structure
-        // [1] => array() : attendee1_infos
-        // [2] => string : attendee1_email
-        // [3] => array() : attendee2_infos
-        // ...
-        // D'ou cette partie pour regrouper le mail et le nom d'un participant au sein du même sous tableau
-        $id = 0;
-        foreach (array_merge($event->organizer_array, $event->attendee_array) as $attendee) {
-
-            if (!is_string($attendee) && array_key_exists('CN', $attendee)) {
-                $this->attendees[$id]['name'] = $attendee['CN'];
-                $this->attendees[$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . rcube::JQ(format_email_recipient($attendee["email"], $attendee['name'])) . "',this)";
-            } elseif ($this->str_start_with($attendee, 'mailto:')) {
-                $this->attendees[$id]['email'] = substr($attendee, 7);
-                $id++;
-
+            if ($same_uid == $event->uid && $i != 0) {
+                continue;
+            } else {
+                $same_uid = $event->uid;
             }
+
+            $date_start = $event->dtstart_array[1];
+            $date_end = $event->dtend_array[1];
+
+
+            $same_date = false;
+            if (strcmp(substr($date_start, 0, -6), substr($date_end, 0, -6)) == 0) {
+                $same_date = true;
+            }
+
+            // On récupère la time_zone qui va nous servir plus tard dans une autre fonction
+            $this->time_zone_offset = $ical->iCalDateToDateTime($date_start)->getOffset();
+
+
+            // Les tableaux $event->attendee_array & $event->organizer_array ont une structure
+            // [1] => array() : attendee1_infos
+            // [2] => string : attendee1_email
+            // [3] => array() : attendee2_infos
+            // ...
+            // D'ou cette partie pour regrouper le mail et le nom d'un participant au sein du même sous tableau
+            $id = 0;
+            foreach (array_merge($event->organizer_array, $event->attendee_array) as $attendee) {
+
+                if (!is_string($attendee) && array_key_exists('CN', $attendee)) {
+                    $this->attendees[$id]['name'] = $attendee['CN'];
+                    $this->attendees[$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . rcube::JQ(format_email_recipient($attendee["email"], $attendee['name'])) . "',this)";
+                } elseif ($this->str_start_with($attendee, 'mailto:')) {
+                    $this->attendees[$id]['email'] = substr($attendee, 7);
+                    $id++;
+
+                }
+            }
+
+
+            // On affiche un bouton pour répondre à tous
+            $attrs = array(
+                'href' => 'reply_all',
+                'class' => 'rcmContactAddress',
+                'onclick' => sprintf("return %s.command('reply-all','%s',this)",
+                    rcmail_output::JS_OBJECT_NAME, $this->gettext('reply_all')),
+            );
+
+
+            // On affiche les autres informations concernant notre server caldav
+            $display_caldav_info = $this->display_caldav_server_related_information($event);
+
+            $server = $this->rcube->config->get('server_caldav');
+            $_used_calendars = $server['_used_calendars'];
+            $main_calendar = $server['_main_calendar'];
+
+
+            ob_start();
+            include("plugins/roundcube_caldav/roundcube_caldav_display.php");
+            $html = ob_get_clean();
+            $content[] = $html;
+
         }
-
-
-        // On affiche un bouton pour répondre à tous
-        $attrs = array(
-            'href' => 'reply_all',
-            'class' => 'rcmContactAddress',
-            'onclick' => sprintf("return %s.command('reply-all','%s',this)",
-                rcmail_output::JS_OBJECT_NAME, $this->gettext('reply_all')),
-        );
-
-
-        // On affiche les autres informations concernant notre server caldav
-        $display_caldav_info = $this->display_caldav_server_related_information($event);
-
-        $server = $this->rcube->config->get('server_caldav');
-        $_used_calendars = $server['_used_calendars'];
-        $main_calendar = $server['_main_calendar'];
-
-        $repeated_event = false;
-        if (!empty($array_event)) {
-            $repeated_event = true;
-        }
-
-        ob_start();
-        include("plugins/roundcube_caldav/roundcube_caldav_display.php");
-        $html = ob_get_clean();
-        array_push($content, $html);
 
     }
 
@@ -563,6 +588,7 @@ class roundcube_caldav extends rcube_plugin
                     $ics = $message->get_part_body($attachment->mime_id);
                     $ical = new ICal\ICal($ics);
                     foreach ($ical->events() as $event) {
+
                         $ics_found = $this->find_event_with_matching_uid($event, $chosen_calendar);
                         if (!empty($ics_found)) {
                             $ical = new ICal\ICal($ics_found[0]->getData());
@@ -621,8 +647,6 @@ class roundcube_caldav extends rcube_plugin
      * @param $current_event
      * @return array
      * @throws CalDAVException
-     *
-     *
      */
     function meeting_collision_with_current_event_by_calendars($arrayOfCalendars, $_main_calendar, $_used_calendars, $current_event)
     {
@@ -659,7 +683,7 @@ class roundcube_caldav extends rcube_plugin
                                 $event_found->dtstart_array[1], $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
 
                                 // Affichage de l'événement
-                                array_push($display_meeting_collision[$calendar->getCalendarID()], $event_found);
+                                $display_meeting_collision[$calendar->getCalendarID()][] = $event_found;
                                 $has_collision_by_calendars = true;
                             }
                         }
@@ -916,60 +940,153 @@ class roundcube_caldav extends rcube_plugin
             // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
             foreach ($event_found_ical->events() as &$event_found) {
                 if ($event_found->uid == $event->uid) {
-                    array_push($found_event_with_good_uid, $event_found_ics);
+                    $found_event_with_good_uid[] = $event_found_ics;
                 }
             }
         }
         return $found_event_with_good_uid;
     }
 
-    function change_date_ics($date_start, $date_end, $ics)
+
+    function find_specific_event_ics($ics, $uid)
     {
-        // date start
-        // On coupe pour avoir juste le premier événement
-        $pos_deb_event = strpos($ics, 'BEGIN:VEVENT');
-        $deb = substr($ics,0, $pos_deb_event);
-        $event = substr($ics, $pos_deb_event);
+        $head_match = array();
+        $foot_match = array();
+        $array_event = array();
 
-        // on se rend a la ligne en question
-        $pos_dtstart=strpos($event, 'DTSTART;');
-        $before_line =  substr($event, 0,$pos_dtstart);
-        $line_dtstart = substr($event, $pos_dtstart);
+        preg_match("@(.*?)(?=BEGIN:VEVENT)@s", $ics, $head_match);
+        preg_match("@(?!.*\nEND:VEVENT)END:VEVENT(.*)@s", $ics, $foot_match);
+        $header = $head_match[1];
+        $footer = $foot_match[1];
 
-        // on va jusqu'a la date
-        $pos_effective_dtstart= strpos($line_dtstart,':');
-        $before_dots =  substr($line_dtstart, 0,$pos_effective_dtstart+1);
-        $after_dots=  substr($line_dtstart, $pos_effective_dtstart+1);
+        preg_match_all("@(?<=BEGIN:VEVENT)(.*?)(?:END:VEVENT)@s", $ics, $array_event);
 
-        // on recupere toute les lignes suivantes
-        $count_until_endline = strpos($after_dots, "\n");
-        $afterline = substr($after_dots, $count_until_endline);
+        $specific_event = '';
+        foreach ($array_event[1] as $event) {
+            $uid_match = array();
+            preg_match("@^UID:(.*?)[\r|\n]+@m", $event, $uid_match);
+            if (strcmp($uid, $uid_match[1]) == 0) {
+                $specific_event .= 'BEGIN:VEVENT' . $event . "END:VEVENT\n";
+            }
+        }
 
-
-        // On concatène ensuite le début jusqu'a l'event, puis jusqu'a la ligne , puis jusqu'au ':', on remplace la date , on ajoute la fin du fichier
-        $ics = $deb . $before_line .$before_dots. $date_start . $afterline;
-
-        // On refait de meme pour la date de fin
-        $pos_deb_event = strpos($ics, 'BEGIN:VEVENT');
-        $deb = substr($ics,0, $pos_deb_event);
-        $event = substr($ics, $pos_deb_event);
-
-
-        $pos_dtend=strpos($event, 'DTEND;');
-        $before_line =  substr($event, 0,$pos_dtend);
-        $line_dtend = substr($event, $pos_dtend);
-
-        $pos_effective_dtstart= strpos($line_dtend,':');
-        $before_dots =  substr($line_dtend, 0,$pos_effective_dtstart+1);
-        $after_dots=  substr($line_dtend, $pos_effective_dtstart+1);
-
-        $count_until_endline = strpos($after_dots, "\n");
-        $afterline = substr($after_dots, $count_until_endline);
-
-        $ics = $deb . $before_line .$before_dots. $date_end . $afterline;
-
-        return $ics ;
+        if (strlen($specific_event) > 0) {
+            return $header . $specific_event . $footer;
+        }
+        return null;
     }
 
+    /**
+     * Change la date de début et de fin d'un evenement
+     * @param $new_date_start
+     * @param $new_date_end
+     * @param $ics
+     * @return string le fichier ics mis a jour
+     */
+    function change_date_ics($new_date_start, $new_date_end, $ics, $offset_start = null, $offset_end = null)
+    {
+        $head_match = array();
+        preg_match("@(.*?)(?=BEGIN:VEVENT)(.*)@s", $ics, $head_match);
+        $header = $head_match[1];
+        $body = $head_match[2];
+
+        // date start
+        if (is_null($offset_start) && is_null($offset_end)) {
+            $body = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start, $body);
+            $body = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $body);
+
+            $ics = $header . $body;
+
+        } else {
+            $foot_match = array();
+            preg_match("@(.*?)(?=END:VEVENT)(.*)@s", $body, $foot_match);
+            $begin_events = $foot_match[1];
+            $end = $foot_match[2];
+
+
+            $begin_events = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start, $begin_events);
+            $begin_events = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $begin_events);
+
+
+            $array_dtstart = array();
+            $array_dtend = array();
+            preg_match('@DTSTART.*:([0-9A-Z]+)@m', $end, $array_dtstart);
+            preg_match('@DTEND.*:([0-9A-Z]+)@m', $end, $array_dtend);
+
+
+            $new_date_start_second_event = date("Ymd\THis", strtotime($array_dtstart[1]) + $offset_start - $this->time_zone_offset);
+            $new_date_end_second_event = date("Ymd\THis", strtotime($array_dtend[1]) + $offset_end - $this->time_zone_offset);
+
+            $end = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start_second_event, $end);
+            $end = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end_second_event, $end);
+
+            $ics = $header . $begin_events . $end;
+        }
+        return $ics;
+    }
+
+    /**
+     * Modifie le parametre 'LOCATION' d'un fichier ics
+     * @param $location
+     * @param $ics
+     * @return string le fichier ics mis a jour
+     */
+    function change_location_ics($location, $ics)
+    {
+        $splited_location = str_split($location, 66);
+        $sections = preg_split('@(\n(?! ))@m', $ics);
+        foreach ($sections as &$section) {
+            if (preg_match('@^LOCATION:@', $section) > 0) {
+                $section = substr($section, 0, 9) . implode($splited_location);
+            }
+        }
+        return implode("\n", $sections);
+    }
+
+    /**
+     * Modifie le parametre 'STATUS' d'un fichier ics
+     * @param $ics
+     * @param $status
+     * @return string le fichier ics mis a jour
+     */
+    function change_status_ics($ics, $status)
+    {
+        $pos_status = strpos($ics, 'STATUS:');
+        if ($pos_status > 0) {
+            $ics = preg_replace('@^(STATUS:).*$@m', '$1' . $status, $ics);
+        } else {
+            $ics = preg_replace('@(END:VEVENT)@', 'STATUS:' . $status . "\n$1", $ics);
+        }
+        if (strcmp("CONFIRMED", $status) == 0) {
+            $status = 'ACCEPTED';
+        }
+
+        $identity = $this->rcmail->user->list_identities(null, true);
+        $email = $identity[0]['email'];
+
+        $sections = preg_split('@(\n(?! ))@m', $ics);
+
+        foreach ($sections as &$section) {
+
+            if (preg_match('@ATTENDEE@', $section)==1) {
+                if (strpos($section, $email) >= 0) {
+                    $section = implode('',explode("\r\n ",$section));
+                    $attributes = explode(';', $section);
+                    foreach ($attributes as &$attribute) {
+
+                        $parts = explode('=', $attribute);
+                        $command = $parts[0];
+                        if (strcmp($command, 'PARTSTAT') == 0) {
+                            $this->rcmail->output->command('plugin.affichage', array('request' => $parts));
+                            $parts[1] = $status;
+                            $attribute = implode('=', $parts);
+                        }
+                    }
+                    $section = implode("\r\n ", str_split(implode(';', $attributes), 75));
+                }
+            }
+        }
+        return implode("\n", $sections);
+    }
 }
 

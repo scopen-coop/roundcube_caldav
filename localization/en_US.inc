@@ -45,6 +45,7 @@ $labels['use_this_calendar'] = "Use the calendar ";
 $labels['make_this_calendar_default1'] = "Select the ";
 $labels['make_this_calendar_default2'] = " calendar by default";
 $labels['reschedule_meeting']= "Reschedule this meeting ";
+$labels['cancel'] = "Cancel";
 $labels['new_date_start'] = 'New begin date for this event';
 $labels['new_time_start'] = 'Start times';
 $labels['new_time_end'] = 'End times';

@@ -1,4 +1,5 @@
-<div id="conteneur" class="alert ui">
+<div class="conteneur alert ui">
+    <div class="uid" hidden><?php echo $event->uid ?></div>
     <div id="invitation">
         <h3><?php echo $this->gettext('invitation') ?></h3>
         <h4><?php echo $event->summary ?></h4>
@@ -26,25 +27,31 @@
                 </div>
             <?php endif; ?>
         </div>
-        <div class="info_ics">
-            <?php if (!empty($event->location)): ?>
-                <p><?php echo '<b>' . $this->gettext("location") . '</b>' . $event->location; ?></p>
-            <?php endif; ?>
+        <?php if (!empty($event->location) || !empty($event->description)): ?>
+            <div class="info_ics">
+                <?php if (!empty($event->location)): ?>
 
-            <?php if (!empty($event->description)): ?>
-                <p> <?php echo '<b>' . $this->gettext("description") . '</b>' . $event->description . ' :' ?></p>
-            <?php endif; ?>
-        </div>
-        <div class="info_ics repeated">
-            <?php if ($repeated_event): ?>
+                    <p><?php echo '<b>' . $this->gettext("location") . '</b>' . $event->location; ?></p>
+                <?php endif; ?>
+
+                <?php if (!empty($event->description)): ?>
+                    <p> <?php echo '<b>' . $this->gettext("description") . '</b>' . $event->description . ' :' ?></p>
+
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+        <?php if (count($recurrent_events[$event->uid]) > 1): ?>
+            <div class="info_ics repeated">
                 <p><b><?php echo $this->gettext("repeated_event"); ?></b></p>
-                <?php foreach ($array_event as &$event): ?>
-                    <?php echo $this->pretty_date($event->dtstart_array[1], $event->dtend_array[1]) ?><br/>
+                <?php foreach ($recurrent_events[$event->uid] as &$event_found): ?>
+                    <?php echo $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) ?><br/>
                 <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-        <div class="info_ics">
-            <?php if (!empty($this->attendees)): ?>
+            </div>
+        <?php endif; ?>
+
+
+        <?php if (!empty($this->attendees)): ?>
+            <div class="info_ics">
                 <div>
                     <p><b><?php echo $this->gettext("attendee"); ?></b></p>
                     <div class='attendee_link'>
@@ -59,8 +66,9 @@
 
                 </div>
                 <div id="reply_all"><?php echo html::a($attrs, $this->gettext('reply_all')); ?></div>
-            <?php endif; ?>
-        </div>
+            </div>
+        <?php endif; ?>
+
         <div id="info_caldav_server">
             <div class="close_meeting">
                 <?php if (!empty($display_caldav_info['close_meeting']['previous'])): ?>
@@ -102,10 +110,10 @@
 
         </div>
     </div>
-    <div id="if_rescheduled" style="display: none" >
+    <div class="if_rescheduled" style="display:none">
         <p><b><?php echo $this->gettext("if_rescheduled_msg") ?></b></p>
     </div>
-    <div id="action_button">
+    <div class="action_button">
         <form method="post" name="chosen_cal">
             <label>
                 <?php echo $this->gettext("chose_calendar") ?>
@@ -117,32 +125,31 @@
             </label>
 
         </form>
-        <div id="dialog-form" title="Reschedule">
+        <div class="dialog-form" title=<?php echo $this->gettext('reschedule_meeting') ?>>
             <form>
                 <fieldset>
                     <label for="location"><?php echo $this->gettext("new_location") ?></label>
-                    <input type="text" name="location" id="location">
+                    <input type="text" name="location" class="location">
 
                     <label class="label_popup" for="date_start"><?php echo $this->gettext("new_date_start") ?></label>
-                    <input id="date_start" type="date">
+                    <input class="date_start" type="date">
                     <label class="label_popup" for="time_start"><?php echo $this->gettext("new_time_start") ?></label>
-                    <input id="time_start" type="time">
+                    <input class="time_start" type="time">
 
                     <label class="label_popup" for="date_end"><?php echo $this->gettext("new_date_end") ?></label>
-                    <input id="date_end" type="date">
+                    <input class="date_end" type="date">
                     <label class="label_popup" for="time_end"><?php echo $this->gettext("new_time_end") ?></label>
-                    <input id="time_end" type="time">
+                    <input class="time_end" type="time">
 
                 </fieldset>
 
             </form>
         </div>
-        <button id="open_dialog"><?php echo $this->gettext('reschedule_meeting') ?></button>
 
-
-        <button id="confirm_button"><?php echo $this->gettext('confirm') ?></button>
-        <button id="tentative_button"><?php echo $this->gettext('tentative') ?></button>
-        <button id="decline_button"><?php echo $this->gettext('decline') ?></button>
+        <button class="action_buttons open_dialog"><?php echo $this->gettext('reschedule_meeting') ?></button>
+        <button class="action_buttons confirm_button"><?php echo $this->gettext('confirm') ?></button>
+        <button class="action_buttons tentative_button"><?php echo $this->gettext('tentative') ?></button>
+        <button class="action_buttons decline_button"><?php echo $this->gettext('decline') ?></button>
     </div>
 </div>
 

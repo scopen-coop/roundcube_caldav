@@ -1,4 +1,4 @@
-#conteneur {
+.conteneur {
     display: flex;
     justify-content: space-around;
     flex-direction: column;
@@ -20,6 +20,10 @@
 
 .info_ics {
     padding: 20px;
+    width:15em;
+    text-align: justify;
+    text-justify: inter-word;
+
 }
 
 .icon_date {
@@ -94,14 +98,14 @@
     font-size: xx-large;
 }
 
-#action_button {
+.action_button {
     padding-top: 30px;
     padding-bottom: 30px;
     display: flex;
 }
 
-#action_button button {
-    margin-left: 15px;
+.action_button button {
+    margin-left: 30px;
 }
 
 .arrow-right {
