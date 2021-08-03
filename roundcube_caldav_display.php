@@ -1,9 +1,14 @@
 <div class="conteneur alert ui">
-    <div class="uid" hidden><?php echo $event->uid ?></div>
+    <div class="uid" hidden><?php echo $used_event->uid ?></div>
     <div id="invitation">
         <h3><?php echo $this->gettext('invitation') ?></h3>
-        <h4><?php echo $event->summary ?></h4>
+        <h4><?php echo $used_event->summary ?></h4>
     </div>
+    <?php if($found_advance):?>
+        <div>
+            <?php echo $this->gettext("modified_event") . $found_on_calendar?>
+        </div>
+    <?php endif;?>
     <div id="content">
         <div id="date_event">
             <?php if ($same_date): ?>
@@ -27,23 +32,23 @@
                 </div>
             <?php endif; ?>
         </div>
-        <?php if (!empty($event->location) || !empty($event->description)): ?>
+        <?php if (!empty($used_event->location) || !empty($used_event->description)): ?>
             <div class="info_ics">
-                <?php if (!empty($event->location)): ?>
+                <?php if (!empty($used_event->location)): ?>
 
-                    <p><?php echo '<b>' . $this->gettext("location") . '</b>' . $event->location; ?></p>
+                    <p><?php echo '<b>' . $this->gettext("location") . '</b>' . $used_event->location; ?></p>
                 <?php endif; ?>
 
-                <?php if (!empty($event->description)): ?>
-                    <p> <?php echo '<b>' . $this->gettext("description") . '</b>' . $event->description . ' :' ?></p>
+                <?php if (!empty($used_event->description)): ?>
+                    <p> <?php echo '<b>' . $this->gettext("description") . '</b>' . $used_event->description . ' :' ?></p>
 
                 <?php endif; ?>
             </div>
         <?php endif; ?>
-        <?php if (count($recurrent_events[$event->uid]) > 1): ?>
+        <?php if (count($recurrent_events[$used_event->uid]) > 1): ?>
             <div class="info_ics repeated">
                 <p><b><?php echo $this->gettext("repeated_event"); ?></b></p>
-                <?php foreach ($recurrent_events[$event->uid] as &$event_found): ?>
+                <?php foreach ($recurrent_events[$used_event->uid] as &$event_found): ?>
                     <?php echo $this->pretty_date($event_found->dtstart_array[1], $event_found->dtend_array[1]) ?><br/>
                 <?php endforeach; ?>
             </div>

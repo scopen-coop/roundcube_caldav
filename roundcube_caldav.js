@@ -1,3 +1,5 @@
+var $event;
+
 function affichage(response) {
     console.log(response.request)
 }
@@ -13,9 +15,39 @@ function isEqual(str1, str2) {
 }
 
 
+/**
+ * Récupère le status de l'événement si l'utilisateur le possede déja dans son calendrier
+ * @param response
+ */
+
+function change_status(response) {
+    let status = response.request;
+    if (isEqual(status, 'CONFIRMED')) {
+        let confirm = $event.find($('.confirm_button'));
+        if (confirm) {
+            confirm.attr('disabled', true);
+            confirm.html(rcmail.gettext('confirmed', 'roundcube_caldav'));
+        }
+    } else if (isEqual(status, 'TENTATIVE')) {
+        let tentative = $event.find($('.tentative_button'));
+        if (tentative) {
+            tentative.attr('disabled', true);
+            tentative.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
+        }
+    } else if (isEqual(status, 'CANCELLED')) {
+        let decline = $event.find($('.decline_button'));
+        if (decline) {
+            decline.attr('disabled', true);
+            decline.html(rcmail.gettext('declined', 'roundcube_caldav'));
+
+        }
+    }
+}
+
+
 rcmail.addEventListener('init', function (evt) {
     $(".conteneur").each(function (index) {
-        const $event = $(this);
+        $event = $(this);
         let dialog, form,
             chosenDateStart = null,
             chosenDateEnd = null,
@@ -45,7 +77,7 @@ rcmail.addEventListener('init', function (evt) {
         let decline = $event.find($('.decline_button'));
 
         if (confirm) {
-            // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les information necessaire pour l'ajout au calendrier
+            // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
             // Et on modifie le texte dans les boutons
             confirm.bind('click', function evt() {
                 rcmail.http_post('plugin.import_action', {
@@ -116,24 +148,21 @@ rcmail.addEventListener('init', function (evt) {
         }
 
 
-        // A modifier pas propre
+        // A MODIFIER PAS PROPRE
         let $location = $event.find($('.location')),
             $date_start = $event.find($('.date_start')),
             $time_start = $event.find($('.time_start')),
             $date_end = $event.find($('.date_end')),
             $time_end = $event.find($('.time_end')),
             $divtoadd = $event.find($('.if_rescheduled'));
-
         /**
          * Lorsque l'utilisateur décide de reprogrammer l'évenement,
-         * on verifie que les date sont valide et toutes remplies et on affiche un balise html pour indiquer à l'utlisateur
+         * on verifie que les date sont valide et toutes remplies et on affiche un balise html pour indiquer à l'utilisateur
          * les informations modifiées avant l'ajout dans son calendrier
          * @returns {number}
          */
         function changeDateAndLocation() {
             let areFieldsFilled = false;
-
-
             if ($date_start.val() && $date_end.val() && $time_start.val() && $time_end.val()) {
 
                 chosenDateStart = $date_start.val();
@@ -155,7 +184,7 @@ rcmail.addEventListener('init', function (evt) {
                     }
                 } else {
                     window.alert(rcmail.gettext('error_date_inf', 'roundcube_caldav'));
-                    return;
+                    return 0;
                 }
             }
             if ($location.val()) {
@@ -178,7 +207,7 @@ rcmail.addEventListener('init', function (evt) {
 
 
         // Spécification des propriétés de la popup de dialogue
-        dialog = $(this).find($(".dialog-form")).dialog({
+        dialog = $event.find($(".dialog-form")).dialog({
             autoOpen: false,
             height: 'auto',
             width: 350,
@@ -209,38 +238,12 @@ rcmail.addEventListener('init', function (evt) {
             changeDateAndLocation();
         });
 
-        $(this).find($(".open_dialog")).button().on("click", function () {
+        $event.find($(".open_dialog")).button().on("click", function () {
             dialog.dialog("open");
         });
     })
 
 
-    /**
-     * Récupère le status de l'événement si l'utilisateur le possede déja dans son calendrier
-     * @param response
-     */
-    function change_status(response) {
-        let status = response.request;
-        if (isEqual(status, 'CONFIRMED')) {
-            let confirm = $(this).find($('.confirm_button'));
-            if (confirm) {
-                confirm.attr('disabled', true);
-                confirm.html(rcmail.gettext('confirmed', 'roundcube_caldav'));
-            }
-        } else if (isEqual(status, 'TENTATIVE')) {
-            let tentative = $(this).find($('.tentative_button'));
-            if (tentative) {
-                tentative.attr('disabled', true);
-                tentative.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
-            }
-        } else if (isEqual(status, 'CANCELLED')) {
-            let decline = $(this).find($('.decline_button'));
-            if (decline) {
-                decline.attr('disabled', true);
-                decline.html(rcmail.gettext('declined', 'roundcube_caldav'));
 
-            }
-        }
-    }
 
 });
