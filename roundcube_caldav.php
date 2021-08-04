@@ -38,6 +38,8 @@ class roundcube_caldav extends rcube_plugin
     protected $previous_and_next_catch_meeting = 86400;
     protected $attendees = array();
     protected $arrayOfCalendars;
+    protected $all_events = array();
+    protected $connected = false;
 
     function init()
     {
@@ -115,14 +117,19 @@ class roundcube_caldav extends rcube_plugin
     {
         if (!empty($_url_base) && !empty($_login) && !empty($_password)) {
             // Récupération du mot de passe chiffré dans la bdd et décodage
+
             $cipher = new password_encryption();
+
             $plain_password = $cipher->decrypt($_password, $this->rcube->config->get('des_key'), true);
 
+
             //  Connexion au serveur calDAV et récupération des calendriers dispos
-            $client = new SimpleCalDAVClient();
+
+            $this->client = new SimpleCalDAVClient();
+
             try {
-                $client->connect($_url_base, $_login, $plain_password);
-            } catch (CalDAVException $e) {
+                $this->client->connect($_url_base, $_login, $plain_password, ['timeout' => 1]); // 0.6s
+            } catch (Exception $e) {
                 return false;
             }
             return true;
@@ -223,7 +230,7 @@ class roundcube_caldav extends rcube_plugin
         );
 
         try {
-            $this->connection_to_server_calDAV();
+            $this->connection_to_calDAV_server();
 
             foreach ($this->arrayOfCalendars as $cal) {
                 $print = null;
@@ -274,7 +281,13 @@ class roundcube_caldav extends rcube_plugin
         foreach ($message->attachments as &$attachment) {
             if ($attachment->mimetype == 'text/calendar') {
                 try {
+
+
+
                     $this->process_attachment($content, $message, $attachment);
+
+
+
                 } catch (\Exception $e) {
                 }
             }
@@ -301,9 +314,13 @@ class roundcube_caldav extends rcube_plugin
      */
     function process_attachment(&$content, &$message, &$attachments)
     {
+        $this->connection_to_calDAV_server();
+        $this->get_all_events();
+
         $ics = $message->get_part_body($attachments->mime_id);
         $ical = new \ICal\ICal($ics);
         $events = $ical->events();
+
 
         $recurrent_events = array();
         foreach ($events as $event) {
@@ -313,22 +330,24 @@ class roundcube_caldav extends rcube_plugin
 
         $same_uid = $events[0]->uid;
 
-        $this->connection_to_server_calDAV();
+
+
         foreach ($events as $i => &$event) {
             $used_event = $event;
-
-
-            $found_advance = $this->is_server_in_advance($event);
-            if($found_advance){
-                $used_event = $found_advance[1];
-                $found_on_calendar = $found_advance[2];
-            }
 
             if ($same_uid == $used_event->uid && $i != 0) {
                 continue;
             } else {
                 $same_uid = $used_event->uid;
             }
+
+            $found_advance = $this->is_server_in_advance($event);
+
+            if ($found_advance) {
+                $used_event = $found_advance[1];
+                $found_on_calendar = $found_advance[2];
+            }
+
 
             $date_start = $used_event->dtstart_array[1];
             $date_end = $used_event->dtend_array[1];
@@ -373,7 +392,10 @@ class roundcube_caldav extends rcube_plugin
 
 
             // On affiche les autres informations concernant notre server caldav
-            $display_caldav_info = $this->display_caldav_server_related_information($used_event);
+
+            $display_caldav_info = $this->display_caldav_server_related_information($used_event); // 1
+
+
 
             $server = $this->rcube->config->get('server_caldav');
             $_used_calendars = $server['_used_calendars'];
@@ -384,7 +406,6 @@ class roundcube_caldav extends rcube_plugin
             include("plugins/roundcube_caldav/roundcube_caldav_display.php");
             $html = ob_get_clean();
             $content[] = $html;
-
         }
 
     }
@@ -406,17 +427,12 @@ class roundcube_caldav extends rcube_plugin
         $_used_calendars = $server['_used_calendars'];
 
 
-        try {
-            $meeting_collision = $this->meeting_collision_with_current_event_by_calendars($_main_calendar, $_used_calendars, $current_event);
-
-            $previous_meeting = $this->get_previous_and_next_meeting_by_calendars($_main_calendar, $_used_calendars, $current_event);
-
-        } catch (Exception $e) {
-            echo $e;
-        }
+        $meeting_collision = $this->meeting_collision_with_current_event_by_calendars($_main_calendar, $_used_calendars, $current_event); // 0.04s
         $info_cal_dav_server['collision'] = $meeting_collision;
-        $info_cal_dav_server['close_meeting'] = $previous_meeting;
+        $close_meeting = $this->get_previous_and_next_meeting_by_calendars($_main_calendar, $_used_calendars, $current_event); //0.025s
+        $info_cal_dav_server['close_meeting'] = $close_meeting;
         return $info_cal_dav_server;
+
     }
 
     /**
@@ -426,51 +442,42 @@ class roundcube_caldav extends rcube_plugin
      * @param $_used_calendars
      * @param $current_event
      * @return array
-     * @throws CalDAVException
      */
     function meeting_collision_with_current_event_by_calendars($_main_calendar, $_used_calendars, $current_event)
     {
 
         $display_meeting_collision = array();
-        $meeting_collision = '';
-        $has_collision = false;
 
         foreach ($this->arrayOfCalendars as $calendar) {
 
             // On récupère les calendriers et on travaille qu'avec ceux définit dans les paramètres
             if ($calendar->getCalendarID() == $_main_calendar || array_key_exists($calendar->getCalendarID(), $_used_calendars)) {
 
-                $this->client->setCalendar($this->arrayOfCalendars[$calendar->getCalendarID()]);
 
-
-                //On preselectionne les fichiers ics en collision avec la date du fichier reçu
-                $curr_date_start_with_offset = date("Ymd\THis\Z", $current_event->dtstart_array[2] - $this->time_zone_offset);
-                $curr_date_end_with_offset = date("Ymd\THis\Z", $current_event->dtend_array[2] - $this->time_zone_offset);
-
-                $rapport = $this->client->getEvents($curr_date_start_with_offset, $curr_date_end_with_offset);
-
-                $display_meeting_collision[$calendar->getCalendarID()] = array();
+                $display_meeting_collision[$calendar->getDisplayName()] = array();
                 $has_collision_by_calendars = false;
-                foreach ($rapport as $event_found_ics) {
+
+                foreach ($this->all_events[$calendar->getCalendarID()] as $event_found_ics) {
 
                     // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
                     $event_found_ical = new ICal\ICal($event_found_ics->getData());
 
                     // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
                     foreach ($event_found_ical->events() as &$event_found) {
+
                         if ($event_found->uid != $current_event->uid) {
                             if ($this->is_there_an_overlap($current_event->dtstart_array[1], $current_event->dtend_array[1],
                                 $event_found->dtstart_array[1], $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
 
                                 // Affichage de l'événement
-                                $display_meeting_collision[$calendar->getCalendarID()][] = $event_found;
+                                $display_meeting_collision[$calendar->getDisplayName()][] = $event_found;
                                 $has_collision_by_calendars = true;
                             }
                         }
                     }
                 }
                 if (!$has_collision_by_calendars) {
-                    unset($display_meeting_collision[$calendar->getCalendarID()]);
+                    unset($display_meeting_collision[$calendar->getDisplayName()]);
                 }
             }
         }
@@ -499,24 +506,14 @@ class roundcube_caldav extends rcube_plugin
                     // On definit le calendrier courant
                     $this->client->setCalendar($this->arrayOfCalendars[$calendar->getCalendarID()]);
 
-                    // On convertit la date de l'événement courant dans le GMT
-                    $current_dtstart_with_offset = date("Ymd\THis\Z", $current_event->dtstart_array[2] - $this->time_zone_offset);
-                    $current_dtend_with_offset = date("Ymd\THis\Z", $current_event->dtend_array[2] - $this->time_zone_offset);
 
                     $current_dtstart_minus_24h = date("Ymd\THis\Z", $current_event->dtstart_array[2] - $this->time_zone_offset - $this->previous_and_next_catch_meeting);
                     $current_dtend_plus_24h = date("Ymd\THis\Z", $current_event->dtend_array[2] - $this->time_zone_offset + $this->previous_and_next_catch_meeting);
 
 
-                    //On preselectionne les fichiers ics en collision avec la date du fichier reçu
-                    $get_all_previous_meeting_found = $this->client->getEvents($current_dtstart_minus_24h, $current_dtstart_with_offset);
-                    $get_all_next_meeting_found = $this->client->getEvents($current_dtend_with_offset, $current_dtend_plus_24h);
 
-                    // On prepare le nom du calendrier que l'on affichera uniquement si un evenement est prévu  pour ce calendrier
-                    $calendar_name = $calendar->getDisplayName();
-
-                    // On recherche enfin l'evement le plus proche
-                    $prev_res = $this->display_closest_meeting_by_calendars($get_all_previous_meeting_found, $current_event, $current_dtstart_minus_24h, $calendar_name, 'previous');
-                    $next_res = $this->display_closest_meeting_by_calendars($get_all_next_meeting_found, $current_event, $current_dtend_plus_24h, $calendar_name);
+                    $prev_res = $this->display_closest_meeting_by_calendars($current_event, $current_dtstart_minus_24h, $calendar, 'previous');
+                    $next_res = $this->display_closest_meeting_by_calendars($current_event, $current_dtend_plus_24h, $calendar);
 
                     $previous_meeting[$prev_res['uid']] = $prev_res;
                     $next_meeting[$next_res['uid']] = $next_res;
@@ -552,12 +549,12 @@ class roundcube_caldav extends rcube_plugin
      * @param string $opt 'next' pour avoir le meeting suivant ; 'previous' pour avoir le meeting précédant
      * @return array
      */
-    function display_closest_meeting_by_calendars($get_all_close_meeting_found, $current_event, $offset, $calendar_name, $opt = 'next')
+    function display_closest_meeting_by_calendars($current_event, $offset, $calendar, $opt = 'next')
     {
-        $closest_meeting = array();
+
         $stock_closest_events = array();
         $has_meeting_by_calendars = false;
-        foreach ($get_all_close_meeting_found as $event_found_ics) {
+        foreach ($this->all_events[$calendar->getCalendarID()] as $event_found_ics) {
             // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
             $event_found_ical = new ICal\ICal($event_found_ics->getData());
 
@@ -566,27 +563,26 @@ class roundcube_caldav extends rcube_plugin
 
                 if ($event_found->uid != $current_event->uid) {
                     if (strcmp($opt, 'next') == 0) {
-                        if ($this->is_there_an_overlap($current_event->dtend_array[1], $offset, $event_found->dtstart_array[1],
-                            $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
+
+                        if ($this->is_after($current_event->dtend_array[1], $offset, $event_found->dtstart_array[1], $current_event->dtstart_array[2])) {
 
                             // On stocke tous les événements trouvés dans un tableau pour effectuer un tri ensuite
                             $stock_closest_events[$event_found->uid]['summary'] = $event_found->summary;
                             $stock_closest_events[$event_found->uid]['date_start'] = $event_found->dtstart_array[1];
                             $stock_closest_events[$event_found->uid]['date_end'] = $event_found->dtend_array[1];
                             $stock_closest_events[$event_found->uid]['uid'] = $event_found->uid;
-                            $stock_closest_events[$event_found->uid]['calendar'] = $calendar_name;
+                            $stock_closest_events[$event_found->uid]['calendar'] = $calendar->getDisplayName();
 
                             $has_meeting_by_calendars = true;
                         }
                     } else {
-                        if ($this->is_there_an_overlap($offset, $current_event->dtstart_array[1],
-                            $event_found->dtstart_array[1], $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
+                        if ($this->is_before( $current_event->dtstart_array[1],$offset, $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
 
                             $stock_closest_events[$event_found->uid]['summary'] = $event_found->summary;
                             $stock_closest_events[$event_found->uid]['date_start'] = $event_found->dtstart_array[1];
                             $stock_closest_events[$event_found->uid]['date_end'] = $event_found->dtend_array[1];
                             $stock_closest_events[$event_found->uid]['uid'] = $event_found->uid;
-                            $stock_closest_events[$event_found->uid]['calendar'] = $calendar_name;
+                            $stock_closest_events[$event_found->uid]['calendar'] = $calendar->getDisplayName();
 
 
                             $has_meeting_by_calendars = true;
@@ -622,6 +618,16 @@ class roundcube_caldav extends rcube_plugin
                 && (strtotime($date_start, $base_timestamp) < strtotime($current_date_end, $base_timestamp))) ||
             ((strtotime($date_end, $base_timestamp) >= strtotime($current_date_start, $base_timestamp))
                 && (strtotime($date_end, $base_timestamp) < strtotime($current_date_end, $base_timestamp))));
+    }
+    function is_after( $current_date_end,$current_date_end_with_offset, $date_start, $base_timestamp)
+    {
+        return strtotime($date_start, $base_timestamp) >= strtotime($current_date_end, $base_timestamp)
+                && (strtotime($date_start, $base_timestamp) < strtotime($current_date_end_with_offset, $base_timestamp));
+    }
+    function is_before( $current_date_start,$current_date_start_with_offset, $date_end, $base_timestamp)
+    {
+        return strtotime($date_end, $base_timestamp) <= strtotime($current_date_start, $base_timestamp)
+            && (strtotime($date_end, $base_timestamp) > strtotime($current_date_start_with_offset, $base_timestamp));
     }
 
     /**
@@ -674,6 +680,7 @@ class roundcube_caldav extends rcube_plugin
      */
     function import_action()
     {
+
         $mail_uid = rcube_utils::get_input_value('_mail_uid', rcube_utils::INPUT_POST);
         $event_uid = rcube_utils::get_input_value('_event_uid', rcube_utils::INPUT_POST);
         $mbox = rcube_utils::get_input_value('_mbox', rcube_utils::INPUT_POST);
@@ -698,14 +705,15 @@ class roundcube_caldav extends rcube_plugin
         $plain_password = $cipher->decrypt($_password, $this->rcube->config->get('des_key'), true);
 
 
-        $this->connection_to_server_calDAV();
+        $this->connection_to_calDAV_server(); // ~2s
+        $this->get_all_events();
+
         // Formatage de l'url du calendrier
         $calendar_id = explode('/', $this->arrayOfCalendars[$chosen_calendar]->getUrl());
         array_pop($calendar_id);
         $calendar_id = array_pop($calendar_id);
 
-
-
+        $this->rcmail->output->command('plugin.affichage', array('request' => $chosen_location));
 
         foreach ($message->attachments as &$attachment) {
             if ($attachment->mimetype == 'text/calendar') {
@@ -716,23 +724,21 @@ class roundcube_caldav extends rcube_plugin
 
                     $ical = new \ICal\ICal($ics);
                     $array_event = $ical->events();
-                    foreach ($array_event as $e){
-                        if($e->uid == $event_uid){
+                    foreach ($array_event as $e) {
+                        if ($e->uid == $event_uid) {
                             $event = $e;
                         }
                     }
 
-                    $found_advance = $this->is_server_in_advance($event);
-                    $this->rcmail->output->command('plugin.affichage', array('request' => $found_advance));
+                    $found_advance = $this->is_server_in_advance($event); //1s
 
-                    if($found_advance){
+                    if ($found_advance) {
                         $ics = $found_advance[0];
                         $event = $found_advance[1];
                     }
 
                     $has_modif = false;
                     $new_ics = $this->extract_event_ics($ics, $event_uid);
-                    $this->rcmail->output->command('plugin.affichage', array('request' => $new_ics));
 
                     // On parse la date puis on remplace par la nouvelle date dans le fichier ics
                     if ($chosen_date_start && $chosen_date_end && $chosen_time_start && $chosen_time_end) {
@@ -768,17 +774,19 @@ class roundcube_caldav extends rcube_plugin
                         $new_ics = $this->change_last_modified_ics($new_ics);
 
                     }
-
+                    $this->rcmail->output->command('plugin.affichage', array('request' => $new_ics));
 
                     // On cherche si le serveur possède déja un événement avec cet uid
-
-                    $found_event_with_good_uid = $this->find_event_with_matching_uid($event, $chosen_calendar);
+                    $found_event_with_good_uid = $this->find_event_with_matching_uid($event, $chosen_calendar); //0.5
 
                     // On ajoute le fichier au serveur calDAV
-                    if (empty($found_event_with_good_uid)) {
-                        $res = $this->add_ics_event_to_caldav_server($new_ics, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password);
+                    if ($found_event_with_good_uid) {
+
+                        $res = $this->add_ics_event_to_caldav_server($new_ics, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password); // 0.6
+
+
                     } else {
-                        $res = $this->add_ics_event_to_caldav_server($new_ics, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password, $found_event_with_good_uid[0]->getHref());
+                        $res = $this->add_ics_event_to_caldav_server($new_ics, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password, $found_event_with_good_uid->getHref());
                     }
 
                 } catch (CalDAVException $e) {
@@ -792,6 +800,7 @@ class roundcube_caldav extends rcube_plugin
         } else {
             $this->rcmail->output->command('display_message', $this->gettext('something_happened') . $res, 'error');
         }
+
         return $res;
     }
 
@@ -870,7 +879,7 @@ class roundcube_caldav extends rcube_plugin
 
         // Récupération du mail
         $message = new rcube_message($uid, $mbox);
-        $this->connection_to_server_calDAV();
+        $this->connection_to_calDAV_server();
         foreach ($message->attachments as &$attachment) {
             if ($attachment->mimetype == 'text/calendar') {
                 try {
@@ -880,7 +889,7 @@ class roundcube_caldav extends rcube_plugin
 
                         $ics_found = $this->find_event_with_matching_uid($event, $chosen_calendar);
                         if (!empty($ics_found)) {
-                            $ical = new ICal\ICal($ics_found[0]->getData());
+                            $ical = new ICal\ICal($ics_found->getData());
                             foreach ($ical->events() as &$event_found) {
                                 // Si l'on a trouvé un événement avec le meme uid sur le serveur on indique au client quel status pour qu'il puisse afficher correctement les boutons
                                 if (isset($event_found->status)) {
@@ -895,44 +904,24 @@ class roundcube_caldav extends rcube_plugin
         }
     }
 
-
     /**
      * récupération des événements possédant le même uid sur le serveur si il existe
      * @param $event
-     * @return array
+     * @param $calendar
+     * @return mixed
      */
-    function find_event_with_matching_uid($event, $calendar)
+    function find_event_with_matching_uid($event, $calendar) //0.5
     {
-        try {
-            //La fonction getEvent renvoie un tableau d'événement entre deux date pour être sur de ne pas en louper je
-            // met une periode de 10ans arbitrairement
-            $max_time_interval = 315360000;
+        foreach ($this->all_events[$calendar] as $event_found) {
+            $uid = array();
+            preg_match("/UID:(\S+)/", $event_found->getData(), $uid);
 
-            // formatage des dates pour la fonction getEvent()
-            $current_dtstart_with_offset = date("Ymd\THis\Z", $event->dtstart_array[2] - $max_time_interval);
-            $current_dtend_with_offset = date("Ymd\THis\Z", $event->dtend_array[2] + $max_time_interval);
+            if ($uid[1] == $event->uid) {
+                return $event_found;
 
-
-            $this->client->setCalendar($this->arrayOfCalendars[$calendar]);
-
-            $found_events = $this->client->getEvents($current_dtstart_with_offset, $current_dtend_with_offset);
-
-            $found_event_with_good_uid = array();
-            foreach ($found_events as &$event_found_ics) {
-                $event_found_ical = new ICal\ICal($event_found_ics->getData());
-
-                // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
-                foreach ($event_found_ical->events() as &$event_found) {
-                    if ($event_found->uid == $event->uid) {
-                        $found_event_with_good_uid[] = $event_found_ics;
-                    }
-                }
             }
-            return $found_event_with_good_uid;
-        } catch (Exception $e) {
-            return null;
         }
-
+        return null;
 
     }
 
@@ -1105,8 +1094,6 @@ class roundcube_caldav extends rcube_plugin
         $num_sequence = array();
         if (preg_match("@SEQUENCE:([0-9]+)@", $ics, $num_sequence) == 1) {
             $num_sequence = intval($num_sequence[1]) + 1;
-            $this->rcmail->output->command('plugin.affichage', array('request' => $num_sequence));
-
             $ics = preg_replace("@SEQUENCE:[0-9]+@", "SEQUENCE:" . $num_sequence, $ics);
         } else {
             $ics = preg_replace("@END:VEVENT@", "SEQUENCE:1\nEND:VEVENT", $ics);
@@ -1116,35 +1103,36 @@ class roundcube_caldav extends rcube_plugin
     }
 
     /**
-     * @return mixed
+     * Gere la connexion au serveur calDAV et retourne la valeur de succes ou d'echec et initialise les calendriers
+     * @return bool
      * @throws Exception
      */
-    public function connection_to_server_calDAV()
+    public function connection_to_calDAV_server()
     {
+
         $server = $this->rcube->config->get('server_caldav');
         $_login = $server['_login'];
         $_password = $server['_password'];
         $_url_base = $server['_url_base'];
         $_connexion = $server['_connexion_status'];
 
-        $succes = false;
-        if (!empty($_url_base) && !empty($_login) && !empty($_password) && $_connexion) {
-
-            // Récupération du mot de passe chiffré dans la bdd et décodage
-            $cipher = new password_encryption();
-            $plain_password = $cipher->decrypt($_password, $this->rcube->config->get('des_key'), true);
-
-            //  Connexion au serveur calDAV et récupération des calendriers dispos
-            $this->client = new SimpleCalDAVClient();
-            try {
-                $this->client->connect($_url_base, $_login, $plain_password);
-                $this->arrayOfCalendars = $this->client->findCalendars();
-                $succes = true;
-            } catch (CalDAVException $e) {
-                exit();
+        if ($this->connected) {
+            return true;
+        } elseif ($_connexion) {
+            try{
+                $success = $this->try_connection($_login, $_password, $_url_base); //0.86
+                $this->arrayOfCalendars = $this->client->findCalendars(); //1.53
+                $this->connected = true;
+                return $success;
+            }catch (Exception $e){
+                return false;
             }
+        } else {
+            return false;
         }
-        return $succes;
+
+
+
     }
 
     /**
@@ -1186,43 +1174,69 @@ class roundcube_caldav extends rcube_plugin
     //PAS TRES PROPRE
 
     /**
+     * On vérifie qu'il n'existe pas d'autre événement plus récent sur notre serveur.
+     * On retourne [ ics de l'evt, Objet Evt parsé, le calendrier auquel apartient l'evt ] ou false dans
+     * le cas ou aucun n'evt plus récent n'est trouvé
      * @param $event
      * @return array|false
      */
-    public function is_server_in_advance($event)
+    public function is_server_in_advance($event) // 1.5
     {
         $is_server_in_advance = array();
         $stockage_ics = array();
 
-        foreach ($this->arrayOfCalendars as $calendar => $val) {
+        // On regarde dans tous les calendriers
+        foreach ($this->arrayOfCalendars as $calendar ) {
+            // On trouve les événements qui matchent dans chacun des calendriers
+            $event_found_on_server = $this->find_event_with_matching_uid($event, $calendar->getCalendarID()); // 0.5 *2 = 1s
 
-            $event_found_on_server = $this->find_event_with_matching_uid($event, $calendar);
-            if (!empty($event_found_on_server)) {
-                $event_ics = $event_found_on_server[0]->getData();
+            if ($event_found_on_server) {
+                $event_ics = $event_found_on_server->getData();
                 $ical_found = new \ICal\ICal($event_ics);
+                // On parse l'evt trouvé pour avoir sa séquence
                 $event_found = $ical_found->events()[0];
 
+
+                // On compare les séquence avec l'evt courant et on stocke les evt avec une séquence supérieure
                 if ($event->sequence < $event_found->sequence) {
-                    $is_server_in_advance[$calendar] = $event_found;
-                    $stockage_ics[$calendar] = $event_ics;
+                    $is_server_in_advance[$calendar->getDisplayName()] = $event_found;
+                    $stockage_ics[$calendar->getDisplayName()] = $event_ics;
                 }
             }
+
         }
         if (!empty($is_server_in_advance)) {
+            // On initialise les valeurs avec le premier elt des tableaux
             $found_on_calendar = array_key_first($is_server_in_advance);
             $event_with_higher_sequence = array_shift($is_server_in_advance);
             $ics_to_return = array_shift($stockage_ics);
 
+
+            // On compare toutes les evt obtenu selon leur séquence
             foreach ($is_server_in_advance as $calendar => $event_found) {
                 if ($event_with_higher_sequence->sequence < $event_found->sequence) {
                     $event_with_higher_sequence = $event_found;
                     $ics_to_return = $stockage_ics[$calendar];
+
                     $found_on_calendar = $calendar;
                 }
             }
-            return [$ics_to_return,$event_with_higher_sequence,$found_on_calendar];
+
+            return [$ics_to_return, $event_with_higher_sequence, $found_on_calendar];
         } else {
             return false;
+        }
+    }
+
+    public function get_all_events(): void
+    {
+        $begin_of_unix_timestamp = date("Ymd\THis\Z", 0);
+        $end_of_unix_timestamp = date("Ymd\THis\Z", 2 ** 31);
+        foreach ($this->arrayOfCalendars as $calendar) {
+            $this->client->setCalendar($this->arrayOfCalendars[$calendar->getCalendarID()]);
+
+            $this->all_events[$calendar->getCalendarID()] = $this->client->getEvents($begin_of_unix_timestamp, $end_of_unix_timestamp);
+
         }
     }
 

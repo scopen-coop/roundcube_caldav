@@ -49,11 +49,6 @@ rcmail.addEventListener('init', function (evt) {
     $(".conteneur").each(function (index) {
         $event = $(this);
         let dialog, form,
-            chosenDateStart = null,
-            chosenDateEnd = null,
-            chosenTimeStart = null,
-            chosenTimeEnd = null,
-            chosenLocation = null,
             $current_uid = $event.find($('.uid')).html();
 
         // On récupère le calendrier choisi dans le menu select
@@ -86,11 +81,6 @@ rcmail.addEventListener('init', function (evt) {
                     _calendar: calendar,
                     _event_uid: $current_uid,
                     _type: 'CONFIRMED',
-                    _chosenDateStart: chosenDateStart,
-                    _chosenDateEnd: chosenDateEnd,
-                    _chosenTimeStart: chosenTimeStart,
-                    _chosenTimeEnd: chosenTimeEnd,
-                    _chosenLocation: chosenLocation,
                 });
                 confirm.attr('disabled', 'true');
                 confirm.html(rcmail.gettext('confirmed', 'roundcube_caldav'));
@@ -108,11 +98,6 @@ rcmail.addEventListener('init', function (evt) {
                     _calendar: calendar,
                     _type: 'TENTATIVE',
                     _event_uid: $current_uid,
-                    _chosenDateStart: chosenDateStart,
-                    _chosenDateEnd: chosenDateEnd,
-                    _chosenTimeStart: chosenTimeStart,
-                    _chosenTimeEnd: chosenTimeEnd,
-                    _chosenLocation: chosenLocation,
                 });
                 tentative.attr('disabled', 'true');
                 tentative.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
@@ -131,12 +116,6 @@ rcmail.addEventListener('init', function (evt) {
                     _calendar: calendar,
                     _type: 'CANCELLED',
                     _event_uid: $current_uid,
-                    _chosenDateStart: chosenDateStart,
-                    _chosenDateEnd: chosenDateEnd,
-                    _chosenTimeStart: chosenTimeStart,
-                    _chosenTimeEnd: chosenTimeEnd,
-                    _chosenLocation: chosenLocation,
-
                 });
                 decline.attr('disabled', 'true');
                 decline.html(rcmail.gettext('declined', 'roundcube_caldav'));
@@ -154,7 +133,8 @@ rcmail.addEventListener('init', function (evt) {
             $time_start = $event.find($('.time_start')),
             $date_end = $event.find($('.date_end')),
             $time_end = $event.find($('.time_end')),
-            $divtoadd = $event.find($('.if_rescheduled'));
+            $div_to_add = $event.find($('.if_rescheduled'));
+
         /**
          * Lorsque l'utilisateur décide de reprogrammer l'évenement,
          * on verifie que les date sont valide et toutes remplies et on affiche un balise html pour indiquer à l'utilisateur
@@ -165,10 +145,10 @@ rcmail.addEventListener('init', function (evt) {
             let areFieldsFilled = false;
             if ($date_start.val() && $date_end.val() && $time_start.val() && $time_end.val()) {
 
-                chosenDateStart = $date_start.val();
-                chosenDateEnd = $date_end.val();
-                chosenTimeStart = $time_start.val();
-                chosenTimeEnd = $time_end.val();
+                var chosenDateStart = $date_start.val();
+                var chosenDateEnd = $date_end.val();
+                var chosenTimeStart = $time_start.val();
+                var chosenTimeEnd = $time_end.val();
 
                 let datestr = new Date(chosenDateStart + ' ' + chosenTimeStart).getTime();
                 let dateend = new Date(chosenDateEnd + ' ' + chosenTimeEnd).getTime();
@@ -177,10 +157,10 @@ rcmail.addEventListener('init', function (evt) {
                     areFieldsFilled = true;
                     if (isEqual(chosenDateStart, chosenDateEnd)) {
                         $event.find($(".msg_date")).remove();
-                        $divtoadd.append('<p class="msg_date" >' + chosenDateStart + ' ' + chosenTimeStart + ' - ' + chosenTimeEnd + '</p>');
+                        $div_to_add.append('<p class="msg_date" >' + chosenDateStart + ' ' + chosenTimeStart + ' - ' + chosenTimeEnd + '</p>');
                     } else {
                         $event.find($(".msg_date")).remove();
-                        $divtoadd.append('<p class="msg_date">' + chosenDateStart + ' ' + chosenTimeStart + ' / ' + chosenDateEnd + ' ' + chosenTimeEnd + '</p>');
+                        $div_to_add.append('<p class="msg_date">' + chosenDateStart + ' ' + chosenTimeStart + ' / ' + chosenDateEnd + ' ' + chosenTimeEnd + '</p>');
                     }
                 } else {
                     window.alert(rcmail.gettext('error_date_inf', 'roundcube_caldav'));
@@ -188,15 +168,36 @@ rcmail.addEventListener('init', function (evt) {
                 }
             }
             if ($location.val()) {
+                var chosenLocation = $location.val();
+
                 areFieldsFilled = true;
-                chosenLocation = $location.val();
                 $event.find($(".msg_location")).remove();
-                $divtoadd.append('<p class="msg_location">' + rcmail.gettext('location', 'roundcube_caldav') + $location.val() + '</p>');
+                $div_to_add.append('<p class="msg_location">' + rcmail.gettext('location', 'roundcube_caldav') + $location.val() + '</p>');
             }
             if (areFieldsFilled) {
-                $divtoadd.show();
-                // Si les informations ont correctement été remplies on peut fermer la boite de dialogue
+                $div_to_add.show();
                 dialog.dialog("close");
+                // Si les informations ont correctement été remplies on peut fermer la boite de dialogue
+                tentative.attr('disabled', 'true');
+                tentative.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
+                confirm.removeAttr('disabled');
+                confirm.html(rcmail.gettext('confirm', 'roundcube_caldav'));
+                decline.removeAttr('disabled');
+                decline.html(rcmail.gettext('decline', 'roundcube_caldav'));
+
+                rcmail.http_post('plugin.import_action', {
+                    _mail_uid: rcmail.env.uid,
+                    _mbox: rcmail.env.mailbox,
+                    _calendar: calendar,
+                    _type: 'TENTATIVE',
+                    _event_uid: $current_uid,
+                    _chosenDateStart: chosenDateStart,
+                    _chosenDateEnd: chosenDateEnd,
+                    _chosenTimeStart: chosenTimeStart,
+                    _chosenTimeEnd: chosenTimeEnd,
+                    _chosenLocation: chosenLocation,
+                });
+
 
             } else {
                 window.alert(rcmail.gettext('error_incomplete_field', 'roundcube_caldav'));
@@ -242,8 +243,6 @@ rcmail.addEventListener('init', function (evt) {
             dialog.dialog("open");
         });
     })
-
-
 
 
 });
