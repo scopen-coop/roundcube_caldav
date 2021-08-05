@@ -44,6 +44,13 @@ function change_status(response) {
     }
 }
 
+// function sendmail(response){
+//     attachment = response.request;
+//     rcmail.http_post('plugin.reply', {
+//         _attachment:att
+//     });
+// }
+
 
 rcmail.addEventListener('init', function (evt) {
     $(".conteneur").each(function (index) {
@@ -65,7 +72,7 @@ rcmail.addEventListener('init', function (evt) {
 
         // On récupère la réponse au post çi dessus
         rcmail.addEventListener('plugin.change_status', change_status)
-
+        // rcmail.addEventListener('plugin.sendmail',sendmail)
 
         let confirm = $event.find($('.confirm_button'));
         let tentative = $event.find($('.tentative_button'));
