@@ -11,8 +11,12 @@ function affichage(response) {
  * @returns {boolean}
  */
 function isEqual(str1, str2) {
-    return str1.toUpperCase() === str2.toUpperCase()
+    if (str1 && str2) {
+        return str1.toUpperCase() === str2.toUpperCase();
+    }
+    return false;
 }
+
 
 /**
  * Parse la date recus sous le format yyyymmdd\Thhii(Z)
@@ -127,7 +131,6 @@ function undirect_rendering(response) {
     }
 
 
-
     // On affiche la date
     if (array_response['same_date']) {
         $event.find($('.different_date')).hide();
@@ -148,25 +151,34 @@ function undirect_rendering(response) {
         $dif_date_end.children('.h').html(array_response['date_hours_end']);
     }
 
+
     // On affiche la description et le lieu de l'evt
     let $location = $event.find($('.location'));
+    let $description = $event.find($('.description'));
     if (!used_event['description'] && !used_event['location']) {
         $event.find($('.location_description')).hide();
     } else {
-        if (!used_event['description']) {
-            $event.find($('.description')).hide();
+        if (used_event['description'] && used_event['location']) {
             $location.append(used_event['location']);
-        } else {
+            $description.append(used_event['description']);
+        } else if (used_event['description']) {
             $location.hide();
-            $event.find($('.description')).append(used_event['description']);
+            $description.append(used_event['description']);
+        } else {
+            $description.hide();
+            $location.append(used_event['location']);
         }
     }
 
     // On regarde s'il s'agit d'un evt reccurent
-    let reccurent_event = array_response['recurrent_events'][used_event['uid']];
-    if (reccurent_event.length > 1) {
-        for (let pretty_date_evt of reccurent_event) {
-            $event.find($('.repeated')).append(pretty_date_evt + '<br>');
+    let recurrent_event = array_response['recurrent_events'][used_event['uid']];
+    if (recurrent_event.length > 1) {
+        // on affiche seulement les dix premier evt
+        for (let i = 0; i < 10; i++ ) {
+            $event.find($('.repeated')).append(recurrent_event[i] + '<br>');
+            if (i == 9){
+                $event.find($('.repeated')).append('...');
+            }
         }
     } else {
         $event.find($('.repeated')).hide();
@@ -195,14 +207,22 @@ function undirect_rendering(response) {
     let collisions = array_response['display_caldav_info']['collision'];
     if (prev || next || collisions) {
         if (prev) {
-            $event.find($('.previous')).append(prev['summary'] + ': ' + '<i>' + '('
+            let summary = prev['summary'];
+            if (!prev['summary']) {
+                summary = rcmail.gettext('missing_summary', 'roundcube_caldav');
+            }
+            $event.find($('.previous')).append(summary + ': ' + '<i>' + '('
                 + prev['calendar'] + ')' + '</i><br>' + prev['pretty_date']);
         } else {
             $event.find($('.previous')).hide();
         }
 
         if (next) {
-            $event.find($('.next')).append(next['summary'] + ': ' + '<i>' + '('
+            let summary = next['summary'];
+            if (!next['summary']) {
+                summary = rcmail.gettext('missing_summary', 'roundcube_caldav');
+            }
+            $event.find($('.next')).append(summary + ': ' + '<i>' + '('
                 + next['calendar'] + ')' + '</i><br>' + next['pretty_date']);
         } else {
             $event.find($('.next')).hide();
@@ -217,7 +237,11 @@ function undirect_rendering(response) {
                     let collided_event = collided_events[collided];
                     let display_date = pretty_date(parse_date(collided_event['dtstart'], collided_event['dtend']));
                     bool = true;
-                    $event.find($('.meeting_collision')).append(collided_event['summary'] + ':  ' + display_date + ' <i>' + '('
+                    let summary = collided_event['summary'];
+                    if (!collided_event['summary']) {
+                        summary = rcmail.gettext('missing_summary', 'roundcube_caldav');
+                    }
+                    $event.find($('.meeting_collision')).append(summary + ':  ' + display_date + ' <i>' + '('
                         + calendar_name + ')' + '</i><br>');
                 }
 
@@ -256,8 +280,6 @@ function undirect_rendering(response) {
     let $location_input = $event.find($('.location_input'));
 
 
-
-
     // Spécification des propriétés de la popup de dialogue
     let dialog = $event.find($(".dialog-form")).dialog({
         autoOpen: false,
@@ -284,11 +306,11 @@ function undirect_rendering(response) {
             form[0].reset();
         }
     });
-
     let form = dialog.find("form").on("submit", function (event) {
         event.preventDefault();
         changeDateAndLocation();
     });
+
 
     $event.find($(".open_dialog")).button().on("click", function () {
         $event.find($(".form_reschedule")).show();
@@ -435,6 +457,10 @@ function undirect_rendering(response) {
 }
 
 
+function direct_rendering(response) {
+
+}
+
 rcmail.addEventListener('init', function (evt) {
 
 
@@ -443,14 +469,17 @@ rcmail.addEventListener('init', function (evt) {
         // Dans la cas ou il y a plusieurs événements on aura donc plusieurs affichages différents.
         $event = $(this);
 
-        // On demande les informations au serveur concernant ce mail
-        rcmail.http_post('plugin.get_info_server', {
-            _uid: rcmail.env.uid,
-            _mbox: rcmail.env.mailbox,
-        });
+        if ($("#loading")) {
+            // On demande les informations au serveur concernant ce mail
+            rcmail.http_post('plugin.get_info_server', {
+                _uid: rcmail.env.uid,
+                _mbox: rcmail.env.mailbox,
+            });
 
-        // On récupère toutes ces information et on affiche la bannière
-        rcmail.addEventListener('plugin.undirect_rendering_js', undirect_rendering);
+            // On récupère toutes ces information et on affiche la bannière
+            rcmail.addEventListener('plugin.undirect_rendering_js', undirect_rendering);
+        }
+
 
         // Fonction de debug A SUPPRIMER
         rcmail.addEventListener('plugin.affichage', affichage);

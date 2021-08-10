@@ -10,7 +10,7 @@
     flex-direction: column;
 }
 
-#invitation {
+.invitation {
     padding: 20px;
     text-align: center;
 }
@@ -24,7 +24,6 @@
 
 .info_ics {
     padding: 20px;
-    width: 15em;
     text-align: justify;
     text-justify: inter-word;
 
@@ -81,24 +80,24 @@
     color: black;
 }
 
-#date_event {
+.date_event {
     display: inline-flex;
     text-align: center;
     padding: 10px;
 }
 
-#alone {
+.alone {
     margin: auto;
     width: 7em
 }
 
-#reply_all {
+.reply_all {
     padding: 10px;
     text-align: center;
 }
 
 
-#titre_current {
+.titre_current {
     font-size: xx-large;
 }
 
@@ -134,14 +133,15 @@
 
 .repeated {
     text-align: center;
+    width: 20em;
 
 }
 
-#info_caldav_server {
+.info_caldav_server {
     padding-left: 40px;
 }
 
-#info_caldav_server div {
+.info_caldav_server div {
     margin: -8px;
     text-align: center
 }
@@ -158,11 +158,11 @@
 }
 
 
-#dialog-form label, input {
+.dialog-form label, input {
     display: block;
 }
 
-#dialog-form input.text {
+.dialog-form input.text {
     margin-bottom: 12px;
     width: 95%;
     padding: .4em;

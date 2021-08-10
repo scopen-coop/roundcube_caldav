@@ -60,14 +60,19 @@ class roundcube_caldav extends rcube_plugin
         $this->add_hook('preferences_sections_list', array($this, 'modify_section'));
         $this->add_hook('preferences_list', array($this, 'preferences_list'));
         $this->add_hook('preferences_save', array($this, 'preferences_save'));
-        $this->add_hook('message_objects', array($this, 'message_objects'));
+
+
         // on affiche les informations ics uniquement si l'on a une configuration fonctionnelle qui permet de se connecter au serveur
-        if ($_connexion && ($server['_main_calendar'] != null || !empty($server['_used_calendars']))) {
+        $empty_calendars_selection = true;
+        if (array_key_first($server['_used_calendars']) != '' || count($server['_used_calendars']) > 1) {
+            $empty_calendars_selection = false;
+        }
+
+        if ($_connexion && ($server['_main_calendar'] != null || !$empty_calendars_selection)) {
+            $this->add_hook('message_objects', array($this, 'message_objects'));
             $this->register_action('plugin.get_info_server', array($this, 'get_info_server'));
             $this->register_action('plugin.import_action', array($this, 'import_action'));
         }
-
-
     }
 
 
@@ -144,9 +149,11 @@ class roundcube_caldav extends rcube_plugin
                 if ($this->rcube->config->get('server_caldav')['_connexion_status'] || $save_params['prefs']['server_caldav']['_connexion_status']) {
                     // on récupère le calendrier principal que l'on ajoute également à la liste des calendriers utilisés
                     $main_calendar = rcube_utils::get_input_value('_define_main_calendar', rcube_utils::INPUT_POST);
-                    $save_params['prefs']['server_caldav']['_main_calendar'] = $main_calendar;
-                    $save_params['prefs']['server_caldav']['_used_calendars'][$main_calendar] = $main_calendar;
 
+                    if ($main_calendar) {
+                        $save_params['prefs']['server_caldav']['_main_calendar'] = $main_calendar;
+                        $save_params['prefs']['server_caldav']['_used_calendars'][$main_calendar] = $main_calendar;
+                    }
                     $chosen_calendars = array(rcube_utils::get_input_value('_define_used_calendars', rcube_utils::INPUT_POST));
                     foreach ($chosen_calendars[0] as $cal) {
                         $save_params['prefs']['server_caldav']['_used_calendars'][$cal] = $cal;
@@ -172,19 +179,15 @@ class roundcube_caldav extends rcube_plugin
      */
     function message_objects($args)
     {
+
         // Get arguments
         $content = $args['content'];
         $message = $args['message'];
 
         foreach ($message->attachments as &$attachment) {
             if ($attachment->mimetype == 'text/calendar') {
-                try {
-                    $this->direct_rendering($content, $message, $attachment);
-//                    $this->process_attachment($content, $message, $attachment);
+                $this->direct_rendering($content);
 
-
-                } catch (\Exception $e) {
-                }
             }
         }
 
@@ -192,10 +195,8 @@ class roundcube_caldav extends rcube_plugin
     }
 
 
-    function direct_rendering(&$content, &$message, &$attachment)
+    function direct_rendering(&$content)
     {
-
-
         ob_start();
         echo "<div class='body'><h3 id='loading'>Chargement...</h3>";
         include("plugins/roundcube_caldav/roundcube_caldav_display.php");
@@ -358,7 +359,6 @@ class roundcube_caldav extends rcube_plugin
             }
         }
 
-
         return $res;
     }
 
@@ -369,6 +369,8 @@ class roundcube_caldav extends rcube_plugin
      */
     public function connection_to_calDAV_server()
     {
+
+
 
         $server = $this->rcube->config->get('server_caldav');
         $_login = $server['_login'];
@@ -384,7 +386,6 @@ class roundcube_caldav extends rcube_plugin
                 $success = $this->try_connection($_login, $_password, $_url_base); //0.86
 
                 $this->arrayOfCalendars = $this->client->findCalendars(); //1.53
-
                 $this->connected = true;
                 return $success;
             } catch (Exception $e) {
@@ -418,8 +419,11 @@ class roundcube_caldav extends rcube_plugin
             $this->client = new SimpleCalDAVClient();
 
             try {
-
                 $this->client->connect($_url_base, $_login, $plain_password); // 0.6s
+                $a = microtime(true);
+                sleep(3);
+                $this->rcmail->output->command('plugin.affichage', array('request' => (microtime(true) - $a) ));
+
 
             } catch (Exception $e) {
                 return false;
@@ -1102,6 +1106,12 @@ class roundcube_caldav extends rcube_plugin
                     $attendees_email[] = $attendee_or_email;
                 }
             }
+        }
+        if (strpos($orig_subject, $this->gettext('MODIFIED')) >= 0 || strpos($orig_subject, $this->gettext('CONFIRMED')) >= 0
+            || strpos($orig_subject, $this->gettext('TENTATIVE')) >= 0 || strpos($orig_subject, $this->gettext('CANCELLED')) >= 0) {
+            $orig_subject = preg_replace('@\[.*?:@', '', $orig_subject);
+
+
         }
 
         if (!empty($attendees_email) || strcmp($organizer_email, '') != 0) {

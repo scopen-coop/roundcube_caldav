@@ -190,4 +190,10 @@ function change_last_modified_ics($ics)
 }
 
 
+function str_start_with($string, $startstring)
+{
+    $len = strlen($startstring);
+    return (substr($string, 0, $len) === $startstring);
+}
+
 ?>

@@ -55,6 +55,7 @@ $labels['if_rescheduled_msg'] = 'You have rescheduled this event :';
 $labels['error_date_inf'] = 'Warning! you can\'t choose a begin date superior to end date';
 $labels['error_incomplete_field'] = "Warning  you have not filled in the necessary fields (either the field place or all fields date)";
 $labels['modified_event']= " the displayed event is not the one you received, it is a newer version found on the calendar ";
+$labels['missing_summary'] = "Untitled";
 $labels['CONFIRMED'] = '[CONFIRMED]: ';
 $labels['TENTATIVE'] = '[TENTATIVE]: ';
 $labels['CANCELLED'] = "[DECLINED]: ";

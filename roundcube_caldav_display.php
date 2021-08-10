@@ -1,7 +1,5 @@
 <div class="conteneur alert ui">
     <template class="display">
-
-        <!--        <div class="uid" hidden>--><?php //echo $used_event->uid ?><!--</div>-->
         <div id="invitation">
             <h3><?php echo $this->gettext('invitation') ?></h3>
         </div>
