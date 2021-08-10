@@ -175,7 +175,13 @@ function undirect_rendering(response) {
     if (recurrent_event.length > 1) {
         // on affiche seulement les dix premier evt
         for (let i = 0; i < 10; i++ ) {
-            $event.find($('.repeated')).append(recurrent_event[i] + '<br>');
+            if(recurrent_event[i]){
+                $event.find($('.repeated')).append(recurrent_event[i] + '<br>');
+            }else{
+                $event.find($('.repeated')).append('...');
+                break;
+            }
+
             if (i == 9){
                 $event.find($('.repeated')).append('...');
             }

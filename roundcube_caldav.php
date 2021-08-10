@@ -386,6 +386,7 @@ class roundcube_caldav extends rcube_plugin
                 $success = $this->try_connection($_login, $_password, $_url_base); //0.86
 
                 $this->arrayOfCalendars = $this->client->findCalendars(); //1.53
+
                 $this->connected = true;
                 return $success;
             } catch (Exception $e) {
@@ -419,10 +420,8 @@ class roundcube_caldav extends rcube_plugin
             $this->client = new SimpleCalDAVClient();
 
             try {
-                $this->client->connect($_url_base, $_login, $plain_password); // 0.6s
-                $a = microtime(true);
-                sleep(3);
-                $this->rcmail->output->command('plugin.affichage', array('request' => (microtime(true) - $a) ));
+
+                $this->client->connect($_url_base, $_login, $plain_password); // 0.6s // 3.8s
 
 
 
