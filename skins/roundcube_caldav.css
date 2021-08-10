@@ -1,9 +1,13 @@
+.body {
+    display: flex;
+    justify-content: space-around;
+    flex-direction: column;
+}
+
 .conteneur {
     display: flex;
     justify-content: space-around;
     flex-direction: column;
-
-
 }
 
 #invitation {
@@ -11,7 +15,7 @@
     text-align: center;
 }
 
-#content {
+.content_event {
     display: flex;
     justify-content: space-around;
     align-items: center;
@@ -20,7 +24,7 @@
 
 .info_ics {
     padding: 20px;
-    width:15em;
+    width: 15em;
     text-align: justify;
     text-justify: inter-word;
 
@@ -120,6 +124,12 @@
 
 .attendee_link {
     margin-left: 20px;
+
+}
+
+.attendee{
+    margin-right: 50px;
+    overflow: auto;
 }
 
 .repeated {
@@ -168,6 +178,6 @@ fieldset {
     padding: .3em;
 }
 
-.label_popup{
+.label_popup {
     margin-top: 1.5em;
 }

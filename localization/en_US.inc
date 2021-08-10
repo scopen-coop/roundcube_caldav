@@ -40,7 +40,7 @@ $labels['declined'] = "Declined";
 $labels['location'] = "Place: ";
 $labels['description'] = "Description: ";
 $labels['chose_calendar'] = "Add this event to :";
-$labels['repeated_event'] = "This event repeat itself through several occurences";
+$labels['repeated_event'] = "This event repeat itself through several occurrences";
 $labels['use_this_calendar'] = "Use the calendar ";
 $labels['make_this_calendar_default1'] = "Select the ";
 $labels['make_this_calendar_default2'] = " calendar by default";
@@ -54,6 +54,9 @@ $labels['new_location'] = 'Choose a new location';
 $labels['if_rescheduled_msg'] = 'You have rescheduled this event :';
 $labels['error_date_inf'] = 'Warning! you can\'t choose a begin date superior to end date';
 $labels['error_incomplete_field'] = "Warning  you have not filled in the necessary fields (either the field place or all fields date)";
-$labels['modified_event']= " the displayed event is not the one you received, it is a newer version found on the calendar "
-
+$labels['modified_event']= " the displayed event is not the one you received, it is a newer version found on the calendar ";
+$labels['CONFIRMED'] = '[CONFIRMED]: ';
+$labels['TENTATIVE'] = '[TENTATIVE]: ';
+$labels['CANCELLED'] = "[DECLINED]: ";
+$labels['MODIFIED'] = '[MODIFIED]: ';
 ?>

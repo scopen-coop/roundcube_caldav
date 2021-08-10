@@ -55,5 +55,9 @@ $labels['new_location'] = 'Choisir un nouveau lieu pour cet événement';
 $labels['if_rescheduled_msg'] = 'Vous avez reprogrammé cet événement :';
 $labels['error_date_inf'] = 'Attention vous ne pouvez pas mettre une date de fin supérieure à la date de début';
 $labels['error_incomplete_field'] = "Attention vous n'avez pas remplis les champs nécessaires (soit le champs lieu soit tous les champs date) ";
-$labels['modified_event']= "Attention l'événement affiché n'est pas celui que vous avez reçu, il s'agit d'une version plus récente trouvée sur le calendrier "
+$labels['modified_event']= "Attention l'événement affiché n'est pas celui que vous avez reçu, il s'agit d'une version plus récente trouvée sur le calendrier ";
+$labels['CONFIRMED'] = '[CONFIRMÉ]: ';
+$labels['TENTATIVE'] = '[CONF.PROV.]: ';
+$labels['CANCELLED'] = "[DÉCLINÉ]: ";
+$labels['MODIFIED'] = '[MODIFIÉ]: ';
 ?>
