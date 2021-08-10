@@ -56,12 +56,13 @@ class roundcube_caldav extends rcube_plugin
         $server = $this->rcube->config->get('server_caldav');
         $_connexion = $server['_connexion_status'];
 
+
         $this->add_hook('preferences_sections_list', array($this, 'modify_section'));
         $this->add_hook('preferences_list', array($this, 'preferences_list'));
         $this->add_hook('preferences_save', array($this, 'preferences_save'));
         $this->add_hook('message_objects', array($this, 'message_objects'));
         // on affiche les informations ics uniquement si l'on a une configuration fonctionnelle qui permet de se connecter au serveur
-        if ($_connexion) {
+        if ($_connexion && ($server['_main_calendar'] != null || !empty($server['_used_calendars']))) {
             $this->register_action('plugin.get_info_server', array($this, 'get_info_server'));
             $this->register_action('plugin.import_action', array($this, 'import_action'));
         }
@@ -140,7 +141,7 @@ class roundcube_caldav extends rcube_plugin
                     $save_params['prefs']['server_caldav']['_connexion_status'] = $this->rcube->config->get('server_caldav')['_connexion_status'];
                 }
 
-                if ($this->rcube->config->get('server_caldav')['_connexion_status']){
+                if ($this->rcube->config->get('server_caldav')['_connexion_status'] || $save_params['prefs']['server_caldav']['_connexion_status']) {
                     // on récupère le calendrier principal que l'on ajoute également à la liste des calendriers utilisés
                     $main_calendar = rcube_utils::get_input_value('_define_main_calendar', rcube_utils::INPUT_POST);
                     $save_params['prefs']['server_caldav']['_main_calendar'] = $main_calendar;
@@ -150,7 +151,7 @@ class roundcube_caldav extends rcube_plugin
                     foreach ($chosen_calendars[0] as $cal) {
                         $save_params['prefs']['server_caldav']['_used_calendars'][$cal] = $cal;
                     }
-                }else{
+                } else {
                     $this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
                 }
 
@@ -374,7 +375,6 @@ class roundcube_caldav extends rcube_plugin
         $_password = $server['_password'];
         $_url_base = $server['_url_base'];
         $_connexion = $server['_connexion_status'];
-
 
 
         if ($this->connected) {
