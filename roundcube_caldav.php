@@ -425,6 +425,7 @@ class roundcube_caldav extends rcube_plugin
                 $this->rcmail->output->command('plugin.affichage', array('request' => (microtime(true) - $a) ));
 
 
+
             } catch (Exception $e) {
                 return false;
             }
