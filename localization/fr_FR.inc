@@ -62,4 +62,5 @@ $labels['TENTATIVE'] = '[CONF.PROV.]: ';
 $labels['CANCELLED'] = "[DÉCLINÉ]: ";
 $labels['MODIFIED'] = '[MODIFIÉ]: ';
 $labels['all_day'] = 'Journée';
+$labels['loading'] = 'Chargement...';
 ?>

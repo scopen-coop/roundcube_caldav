@@ -140,7 +140,13 @@ class roundcube_caldav extends rcube_plugin
                 if (!empty($_POST['_define_password'])) {
                     $ciphered_password = $cipher->encrypt(rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST), $this->rcube->config->get('des_key'), true);
                     $save_params['prefs']['server_caldav']['_password'] = $ciphered_password;
-                    $save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $ciphered_password, $urlbase);
+                    if ($connexion_status = $this->try_connection($login, $ciphered_password, $urlbase)){
+                        $save_params['prefs']['server_caldav']['_connexion_status'] = $connexion_status;
+                    }else{
+                        $this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
+                        $save_params['abort']=true;
+                        $save_params['result']=false;
+                    }
                 } elseif (array_key_exists('_password', $this->rcube->config->get('server_caldav'))) {
                     $save_params['prefs']['server_caldav']['_password'] = $this->rcube->config->get('server_caldav')['_password'];
                     $save_params['prefs']['server_caldav']['_connexion_status'] = $this->rcube->config->get('server_caldav')['_connexion_status'];
@@ -190,17 +196,17 @@ class roundcube_caldav extends rcube_plugin
 
             }
         }
-
+        $this->rcmail->output->command('plugin.affichage', array('request' => 'ok'));
         return array('content' => $content);
     }
 
 
     function direct_rendering(&$content)
     {
-        ob_start();
 
+        ob_start();
         include("plugins/roundcube_caldav/roundcube_caldav_display.php");
-        echo "<p id='loading'>Chargement...</p>";
+        echo "<p id='loading'>" . $this->gettext("loading") . "</p>";
         $html = ob_get_clean();
         $content[] = $html;
 
@@ -222,7 +228,6 @@ class roundcube_caldav extends rcube_plugin
                 }
             }
         } catch (Exception $e) {
-
         }
     }
 
@@ -300,8 +305,6 @@ class roundcube_caldav extends rcube_plugin
                     $new_ics = extract_event_ics($ics, $event_uid);
 
 
-
-
                     $has_modif = false;
                     // On parse la date puis on remplace par la nouvelle date dans le fichier ics
                     if ($chosen_date_start && $chosen_date_end && $chosen_time_start && $chosen_time_end) {
@@ -333,7 +336,6 @@ class roundcube_caldav extends rcube_plugin
                     $identity = $this->rcmail->user->list_identities(null, true);
                     $email = $identity[0]['email'];
                     $new_ics = change_status_ics($status, $new_ics, $email);
-
 
 
                     // On change la date de dernière modif
@@ -537,8 +539,6 @@ class roundcube_caldav extends rcube_plugin
 
 
         $this->connection_to_calDAV_server();
-
-
         $this->get_all_events();
 
         $ics = $message->get_part_body($attachments->mime_id);

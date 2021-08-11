@@ -119,7 +119,7 @@ function undirect_rendering(response) {
     let used_event = array_response['used_event'];
 
     // On affiche le titre
-    $event.find('.invitation').append('<h3>'+used_event['summary']+'</h3>');
+    $event.find('.invitation').append('<h3>' + used_event['summary'] + '</h3>');
 
     // On regarde si le serveur est en avance
     if (!array_response['found_advance']) {
@@ -147,7 +147,7 @@ function undirect_rendering(response) {
         let $dif_date_start = $event.find('.different_dat,.start');
         $dif_date_start.children('.d').html(array_response['date_day_start']);
         $dif_date_start.children('.m').html(array_response['date_month_start']);
-        if (!isStringEquals(array_response['date_hours_start'], '0:00') ) {
+        if (!isStringEquals(array_response['date_hours_start'], '0:00')) {
             $dif_date_start.children('.h').html(array_response['date_hours_start']);
         } else {
             $dif_date_start.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
@@ -157,7 +157,7 @@ function undirect_rendering(response) {
         let $dif_date_end = $event.find('.different_date,.end');
         $dif_date_end.children('.d').html(array_response['date_day_end']);
         $dif_date_end.children('.m').html(array_response['date_month_end']);
-        if (!isStringEquals(array_response['date_hours_end'], '0:00') ) {
+        if (!isStringEquals(array_response['date_hours_end'], '0:00')) {
             $dif_date_start.children('.h').html(array_response['date_hours_end']);
         } else {
             $dif_date_start.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
@@ -474,31 +474,25 @@ function undirect_rendering(response) {
         }
 
     }
+
     $("#message-objects").append($event);
 }
 
 
-
-
 rcmail.addEventListener('init', function (evt) {
-
-
-    if ($("#loading").val()) {
-        console.log('loading ok ?')
-        // On demande les informations au serveur concernant ce mail
-        rcmail.http_post('plugin.get_info_server', {
-            _uid: rcmail.env.uid,
-            _mbox: rcmail.env.mailbox,
-        });
-
-        // On récupère toutes ces information et on affiche la bannière
-        rcmail.addEventListener('plugin.undirect_rendering_js', undirect_rendering);
-    }
-
 
     // Fonction de debug A SUPPRIMER
     rcmail.addEventListener('plugin.affichage', affichage);
 
+    if($('#loading').length>0){
+       rcmail.http_post('plugin.get_info_server', {
+            _uid: rcmail.env.uid,
+            _mbox: rcmail.env.mailbox,
+        });
+    }
+
+    // On récupère toutes ces information et on affiche la bannière
+    rcmail.addEventListener('plugin.undirect_rendering_js', undirect_rendering);
 });
 
 
