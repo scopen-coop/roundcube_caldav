@@ -371,7 +371,6 @@ class roundcube_caldav extends rcube_plugin
     {
 
 
-
         $server = $this->rcube->config->get('server_caldav');
         $_login = $server['_login'];
         $_password = $server['_password'];
@@ -422,7 +421,6 @@ class roundcube_caldav extends rcube_plugin
             try {
 
                 $this->client->connect($_url_base, $_login, $plain_password); // 0.6s // 3.8s
-
 
 
             } catch (Exception $e) {
@@ -605,24 +603,29 @@ class roundcube_caldav extends rcube_plugin
             } else {
                 $participants = $used_event->attendee_array;
             }
+
+            $all_adresses = '';
             foreach ($participants as $participant) {
                 if (!is_string($participant) && array_key_exists('CN', $participant)) {
                     $response['attendee'][$id]['name'] = $participant['CN'];
-                    $response['attendee'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . rcube::JQ(format_email_recipient($participant["email"], $participant['name'])) . "',this)";
                 } elseif (str_start_with($participant, 'mailto:')) {
                     $response['attendee'][$id]['email'] = substr($participant, 7);
+                    $response['attendee'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendee'][$id]['email'] . "',this)";
+                    $all_adresses .= $response['attendee'][$id]['email'] . ';';
                     $id++;
 
                 }
+
             }
 
+            $all_adresses = substr($all_adresses, 0, -1);
 
             // On affiche un bouton pour répondre à tous
             $response['attr_reply_all'] = array(
                 'href' => 'reply_all',
-                'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('reply-all','" . $this->gettext('reply_all') . "',this)"
+                'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $all_adresses . "','" . $this->gettext('reply_all') . "',this)"
             );
-
+            $this->rcmail->output->command('plugin.affichage', array('request' =>$response['attr_reply_all']));
             // On affiche les autres informations concernant notre server caldav
 
             $response['display_caldav_info'] = $this->display_caldav_server_related_information($used_event); // 1
