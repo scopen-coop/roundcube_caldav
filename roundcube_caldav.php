@@ -70,8 +70,8 @@ class roundcube_caldav extends rcube_plugin
 
         if ($_connexion && ($server['_main_calendar'] != null || !$empty_calendars_selection)) {
             $this->add_hook('message_objects', array($this, 'message_objects'));
-            $this->register_action('plugin.get_info_server', array($this, 'get_info_server'));
-            $this->register_action('plugin.import_action', array($this, 'import_action'));
+            $this->register_action('plugin.roundcube_caldav_get_info_server', array($this, 'get_info_server'));
+            $this->register_action('plugin.roundcube_caldav_import_action', array($this, 'import_action'));
         }
     }
 
@@ -178,7 +178,7 @@ class roundcube_caldav extends rcube_plugin
 
     /**
      * Vérifie que le mail que l'on veux regarder contient ou non une pièce jointe de type text/calendar
-     * si oui on peut proceder à l'affichage des informations
+     * si oui on peut proceder au chargement de la page (qui sera récupéré par le javascript)
      * @param $args
      * @return array
      *
@@ -192,8 +192,11 @@ class roundcube_caldav extends rcube_plugin
 
         foreach ($message->attachments as &$attachment) {
             if ($attachment->mimetype == 'text/calendar') {
-                $this->direct_rendering($content);
-
+                ob_start();
+                include("plugins/roundcube_caldav/roundcube_caldav_display.php");
+                echo "<p id='loading'>" . $this->gettext("loading") . "</p>";
+                $html = ob_get_clean();
+                $content[] = $html;
             }
         }
         $this->rcmail->output->command('plugin.affichage', array('request' => 'ok'));
@@ -201,17 +204,10 @@ class roundcube_caldav extends rcube_plugin
     }
 
 
-    function direct_rendering(&$content)
-    {
-
-        ob_start();
-        include("plugins/roundcube_caldav/roundcube_caldav_display.php");
-        echo "<p id='loading'>" . $this->gettext("loading") . "</p>";
-        $html = ob_get_clean();
-        $content[] = $html;
-
-    }
-
+    /**
+     * Récupération de toutes les informations neccessaires à l'affichage de l'événement
+     * et envoi des réponses au client.
+     */
     function get_info_server()
     {
         $uid = rcube_utils::get_input_value('_uid', rcube_utils::INPUT_POST);

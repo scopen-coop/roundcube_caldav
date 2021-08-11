@@ -104,6 +104,11 @@ function change_status(status, $event) {
     }
 }
 
+
+/**
+ * Affichage de la banière de l'événement
+ * @param response
+ */
 function undirect_rendering(response) {
 
     $("#loading").hide();
@@ -345,7 +350,7 @@ function undirect_rendering(response) {
         // Et on modifie le texte dans les boutons
         confirm.bind('click', function evt() {
 
-            rcmail.http_post('plugin.import_action', {
+            rcmail.http_post('plugin.roundcube_caldav_import_action', {
                 _mail_uid: rcmail.env.uid,
                 _mbox: rcmail.env.mailbox,
                 _calendar: select.val(),
@@ -362,7 +367,7 @@ function undirect_rendering(response) {
     }
     if (tentative) {
         tentative.bind('click', function evt() {
-            rcmail.http_post('plugin.import_action', {
+            rcmail.http_post('plugin.roundcube_caldav_import_action', {
                 _mail_uid: rcmail.env.uid,
                 _mbox: rcmail.env.mailbox,
                 _calendar: select.val(),
@@ -380,7 +385,7 @@ function undirect_rendering(response) {
     if (decline) {
         decline.bind('click', function evt() {
 
-            rcmail.http_post('plugin.import_action', {
+            rcmail.http_post('plugin.roundcube_caldav_import_action', {
                 _mail_uid: rcmail.env.uid,
                 _mbox: rcmail.env.mailbox,
                 _calendar: select.val(),
@@ -457,7 +462,7 @@ function undirect_rendering(response) {
 
 
             // On demande au serveur d'enregistrer notre changement sur le serveur avec le status provisoire
-            rcmail.http_post('plugin.import_action', {
+            rcmail.http_post('plugin.roundcube_caldav_import_action', {
                 _mail_uid: rcmail.env.uid,
                 _mbox: rcmail.env.mailbox,
                 _calendar: select.val(),
@@ -484,8 +489,9 @@ rcmail.addEventListener('init', function (evt) {
     // Fonction de debug A SUPPRIMER
     rcmail.addEventListener('plugin.affichage', affichage);
 
-    if($('#loading').length>0){
-       rcmail.http_post('plugin.get_info_server', {
+    // Si la page indique qu'elle est en train de charger on fait un appel au serveur pour récupérer les donnée
+    if ($('#loading').length > 0) {
+        rcmail.http_post('plugin.roundcube_caldav_get_info_server', {
             _uid: rcmail.env.uid,
             _mbox: rcmail.env.mailbox,
         });
