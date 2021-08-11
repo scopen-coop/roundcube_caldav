@@ -1,15 +1,15 @@
-<div class="conteneur alert ui">
-    <template class="display">
-        <div id="invitation">
-            <h3><?php echo $this->gettext('invitation') ?></h3>
+<template id="display" style="display: none">
+    <div class="content_invitation">
+        <div class="invitation">
+            <h4><?php echo $this->gettext('invitation') ?></h4>
         </div>
 
         <div class="found_advance">
         </div>
 
         <div class="content_event">
-            <div id="date_event">
-                <div class="icon_date same_date" id="alone">
+            <div class="date_event">
+                <div class="icon_date same_date" class="alone">
                     <div class="d"></div>
                     <div class="m"></div>
                     <div class="h"></div>
@@ -39,7 +39,7 @@
 
 
             <div class="info_ics attendee">
-                <b><?php echo $this->gettext("attendee"); ?></b><br>
+                <b><?php echo $this->gettext("attendee"); ?></b><br><br>
                 <div class='attendee_link'>
 
                 </div>
@@ -47,16 +47,16 @@
             </div>
             <div class="info_caldav_server">
                 <div class="close_meeting previous">
-                    <p><b><?php echo $this->gettext('previous_meeting') ?></b><br/></p>
+                    <p><b><?php echo $this->gettext('previous_meeting') ?></b></p>
                 </div>
-                <br/>
+
                 <div class="meeting_collision">
                     <p><?php echo $this->gettext('same_hour_meeting') ?></p>
                 </div>
 
-                <br/>
+
                 <div class="close_meeting next">
-                    <p><b><?php echo $this->gettext('next_meeting') ?></b><br/></p>
+                    <p><b><?php echo $this->gettext('next_meeting') ?></b></p>
                 </div>
 
             </div>
@@ -66,7 +66,7 @@
         </div>
         <div class="action_button">
             <form method="post" name="chosen_cal">
-                <label>
+                <label class="calendar_choice">
                     <?php echo $this->gettext("chose_calendar") ?>
                     <select class="choose_calendar_to_add_event custom-select">
                     </select>
@@ -78,13 +78,17 @@
                     <fieldset>
                         <label for="location_input"><?php echo $this->gettext("new_location") ?></label>
                         <input type="text" name="location" class="location_input">
-                        <label class="label_popup" for="date_start"><?php echo $this->gettext("new_date_start") ?></label>
+                        <label class="label_popup"
+                               for="date_start"><?php echo $this->gettext("new_date_start") ?></label>
                         <input class="date_start" type="date">
-                        <label class="label_popup" for="time_start"><?php echo $this->gettext("new_time_start") ?></label>
+                        <label class="label_popup"
+                               for="time_start"><?php echo $this->gettext("new_time_start") ?></label>
                         <input class="time_start" type="time">
-                        <label class="label_popup" for="date_end"><?php echo $this->gettext("new_date_end") ?></label>
-                        <input class="date_end" type="date" >
-                        <label class="label_popup" for="time_end"><?php echo $this->gettext("new_time_end") ?></label>
+                        <label class="label_popup"
+                               for="date_end"><?php echo $this->gettext("new_date_end") ?></label>
+                        <input class="date_end" type="date">
+                        <label class="label_popup"
+                               for="time_end"><?php echo $this->gettext("new_time_end") ?></label>
                         <input class="time_end" type="time">
                     </fieldset>
                 </form>
@@ -95,6 +99,7 @@
             <button class="action_buttons tentative_button btn btn-secondary"><?php echo $this->gettext('tentative') ?></button>
             <button class="action_buttons decline_button btn btn-secondary"><?php echo $this->gettext('decline') ?></button>
         </div>
-    </template>
-</div>
+    </div>
+</template>
+
 

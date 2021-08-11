@@ -100,7 +100,7 @@ function change_location_ics($location, $ics)
     $sections = preg_split('@(\n(?! ))@m', $ics);
     $is_location_present = false;
     foreach ($sections as &$section) {
-        if (preg_match('@LOCATION:@', $section) > 0) {
+        if (preg_match('@^LOCATION:@m', $section) > 0) {
             $section = substr($section, 0, 9) . implode($splited_location);
             $is_location_present = true;
         }

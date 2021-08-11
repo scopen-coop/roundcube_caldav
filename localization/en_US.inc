@@ -14,7 +14,7 @@
 
 $labels = array();
 $labels['server_caldav'] = 'Configuration of CalDAV server';
-$labels['url_base'] = 'Specify the url of your calDAV server ';
+$labels['url_base'] = "Specify the url of your calDAV server under the form : \n https://my_caldav_server/remote.php/calendars/my_name";
 $labels['login'] = 'Specify your server login';
 $labels['password'] = 'Specify your password';
 $labels['save_error_msg'] = 'Your information are incorrect or incomplete';
@@ -44,7 +44,7 @@ $labels['repeated_event'] = "This event repeat itself through several occurrence
 $labels['use_this_calendar'] = "Use the calendar ";
 $labels['make_this_calendar_default1'] = "Select the ";
 $labels['make_this_calendar_default2'] = " calendar by default";
-$labels['reschedule_meeting']= "Reschedule this meeting ";
+$labels['reschedule_meeting'] = "Reschedule this meeting ";
 $labels['cancel'] = "Cancel";
 $labels['new_date_start'] = 'New begin date for this event';
 $labels['new_time_start'] = 'Start times';
@@ -54,10 +54,11 @@ $labels['new_location'] = 'Choose a new location';
 $labels['if_rescheduled_msg'] = 'You have rescheduled this event :';
 $labels['error_date_inf'] = 'Warning! you can\'t choose a begin date superior to end date';
 $labels['error_incomplete_field'] = "Warning  you have not filled in the necessary fields (either the field place or all fields date)";
-$labels['modified_event']= " the displayed event is not the one you received, it is a newer version found on the calendar ";
+$labels['modified_event'] = " the displayed event is not the one you received, it is a newer version found on the calendar ";
 $labels['missing_summary'] = "Untitled";
 $labels['CONFIRMED'] = '[CONFIRMED]: ';
 $labels['TENTATIVE'] = '[TENTATIVE]: ';
 $labels['CANCELLED'] = "[DECLINED]: ";
 $labels['MODIFIED'] = '[MODIFIED]: ';
+$labels['all_day'] = 'All Day';
 ?>

@@ -198,9 +198,9 @@ class roundcube_caldav extends rcube_plugin
     function direct_rendering(&$content)
     {
         ob_start();
-        echo "<div class='body'><h3 id='loading'>Chargement...</h3>";
+
         include("plugins/roundcube_caldav/roundcube_caldav_display.php");
-        echo "</div>";
+        echo "<p id='loading'>Chargement...</p>";
         $html = ob_get_clean();
         $content[] = $html;
 
@@ -288,7 +288,6 @@ class roundcube_caldav extends rcube_plugin
                             $event = $e;
                         }
                     }
-
                     // On Regarde si le serveur est en avance sur cet événement par rapport à l'ics
                     // et si oui on récupère la version la plus récente pour nos modifs
                     $found_advance = $this->is_server_in_advance($event); //1s
@@ -299,6 +298,9 @@ class roundcube_caldav extends rcube_plugin
 
                     // On reforme un fichier ics avec uniquement l'événement qui nous interesse
                     $new_ics = extract_event_ics($ics, $event_uid);
+
+
+
 
                     $has_modif = false;
                     // On parse la date puis on remplace par la nouvelle date dans le fichier ics
@@ -323,6 +325,7 @@ class roundcube_caldav extends rcube_plugin
                         $has_modif = true;
                         $new_ics = change_location_ics($chosen_location, $new_ics);
 
+
                     }
 
 
@@ -331,12 +334,15 @@ class roundcube_caldav extends rcube_plugin
                     $email = $identity[0]['email'];
                     $new_ics = change_status_ics($status, $new_ics, $email);
 
+
+
                     // On change la date de dernière modif
                     $new_ics = change_last_modified_ics($new_ics);
 
 
                     // On cherche si le serveur possède déjà un événement avec cet uid
                     $found_event_with_good_uid = $this->find_event_with_matching_uid($event, $chosen_calendar);
+
 
                     // On ajoute le fichier au serveur calDAV
                     if (!$found_event_with_good_uid) {
@@ -615,19 +621,17 @@ class roundcube_caldav extends rcube_plugin
                     $id++;
 
                 }
-
             }
 
-            $all_adresses = substr($all_adresses, 0, -1);
-
             // On affiche un bouton pour répondre à tous
+            $all_adresses = substr($all_adresses, 0, -1);
             $response['attr_reply_all'] = array(
                 'href' => 'reply_all',
                 'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $all_adresses . "','" . $this->gettext('reply_all') . "',this)"
             );
-            $this->rcmail->output->command('plugin.affichage', array('request' =>$response['attr_reply_all']));
-            // On affiche les autres informations concernant notre server caldav
 
+
+            // On affiche les autres informations concernant notre server caldav
             $response['display_caldav_info'] = $this->display_caldav_server_related_information($used_event); // 1
 
 

@@ -1,29 +1,35 @@
-.body {
-    display: flex;
-    justify-content: space-around;
-    flex-direction: column;
+#loading {
+    text-align: center;
+    font-size: 1.5em;
 }
 
-.conteneur {
+.content_invitation {
+    background-color: #EAF8FEFF;
+    margin: 0.5em;
     display: flex;
     justify-content: space-around;
     flex-direction: column;
+    border: none;
 }
 
 .invitation {
-    padding: 20px;
+    padding-top: 3em;
     text-align: center;
 }
 
 .content_event {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
 
 }
 
+.found_advance{
+    text-align: center;
+}
+
 .info_ics {
-    padding: 20px;
+    padding: 1.5em;
     text-align: justify;
     text-justify: inter-word;
 
@@ -83,7 +89,7 @@
 .date_event {
     display: inline-flex;
     text-align: center;
-    padding: 10px;
+    padding: 1.5em;
 }
 
 .alone {
@@ -92,8 +98,8 @@
 }
 
 .reply_all {
-    padding: 10px;
-    text-align: center;
+    padding: 1em;
+
 }
 
 
@@ -102,34 +108,34 @@
 }
 
 .action_button {
-    padding-top: 30px;
-    padding-bottom: 30px;
+    padding:0 3em 1em 3em;
     display: flex;
+
 }
 
 .action_button button {
-    margin-left: 30px;
+    margin: 1em;
 }
 
 .arrow-right {
-    width: 20px;
-    height: 30px;
+    width: 2em;
+    height: 2em;
     background-color: #404f54;
     position: relative;
     clip-path: polygon(0 0, 0 100%, 100% 50%);
-    margin: 0.4em;
-    margin-top: 2.5em;
-}
-
-.attendee_link {
-    margin-left: 20px;
+    margin: 2.5em 0.4em 0.4em;
 
 }
 
-.attendee{
-    margin-right: 50px;
+.calendar_choice{
+    margin: 1em;
+}
+
+.attendee {
+    text-align: center;
     overflow: auto;
 }
+
 
 .repeated {
     text-align: center;
@@ -138,22 +144,23 @@
 }
 
 .info_caldav_server {
-    padding-left: 40px;
+    width: auto;
+    padding: 1.5em;
 }
 
 .info_caldav_server div {
-    margin: -8px;
+
     text-align: center
 }
 
 .meeting_display {
-    padding-left: 20px;
+    padding-left: 2em;
 }
 
 .meeting_collision {
     color: #752361;
     background-color: #f7d6d9;
-    padding: 10px;
+    padding: 1em;
     border-radius: 0.5em;
 }
 
@@ -163,7 +170,7 @@
 }
 
 .dialog-form input.text {
-    margin-bottom: 12px;
+    margin-bottom: 1.2em;
     width: 95%;
     padding: .4em;
 }
@@ -171,7 +178,7 @@
 fieldset {
     padding: 0;
     border: 0;
-    margin-top: 25px;
+    margin-top: 2.5em;
 }
 
 .ui-dialog .ui-state-error {
@@ -180,4 +187,7 @@ fieldset {
 
 .label_popup {
     margin-top: 1.5em;
+}
+.if_rescheduled{
+    text-align: center;
 }
