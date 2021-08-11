@@ -478,14 +478,13 @@ function undirect_rendering(response) {
 }
 
 
-function direct_rendering(response) {
 
-}
 
 rcmail.addEventListener('init', function (evt) {
 
 
-    if ($("#loading")) {
+    if ($("#loading").val()) {
+        console.log('loading ok ?')
         // On demande les informations au serveur concernant ce mail
         rcmail.http_post('plugin.get_info_server', {
             _uid: rcmail.env.uid,
