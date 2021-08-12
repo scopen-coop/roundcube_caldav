@@ -63,4 +63,8 @@ $labels['CANCELLED'] = "[DÉCLINÉ]: ";
 $labels['MODIFIED'] = '[MODIFIÉ]: ';
 $labels['all_day'] = 'Journée';
 $labels['loading'] = 'Chargement...';
+$labels['something_happened_while_getting_events'] = "La récupération des événements sur le serveur caldav a renconrtée une erreur";
+$labels['invitation_modification'] = "Vous avez reçus un proposition de modification pour cet événement";
+$labels['confirm_modification'] = "Confirmer les modifications";
+$labels['decline_modification'] = "Decliner les modifications";
 ?>

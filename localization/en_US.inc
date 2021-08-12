@@ -62,4 +62,9 @@ $labels['CANCELLED'] = "[DECLINED]: ";
 $labels['MODIFIED'] = '[MODIFIED]: ';
 $labels['all_day'] = 'All Day';
 $labels['loading'] = 'Loading...';
+$labels['something_happened_while_getting_events'] = "Something happened while getting events on calDAV server";
+$labels['invitation_modification'] = "You just receive a modification for your invitation";
+$labels['confirm_modification'] = "Confirm modifications";
+$labels['decline_modification'] = "Decline modifications";
+
 ?>

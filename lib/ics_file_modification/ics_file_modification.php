@@ -1,7 +1,6 @@
 <?php
 
 
-
 /**
  * Extraction de l'évenement choisi (dans le cas ou il y en a plusieurs) pour reformer un fichier ics avec lui seul a l'interieur
  * @param $ics
@@ -46,7 +45,7 @@ function extract_event_ics($ics, $uid)
  * @param null $offset_end
  * @return string
  */
-function change_date_ics($new_date_start, $new_date_end, $ics,$time_zone_offset, $offset_start = null, $offset_end = null)
+function change_date_ics($new_date_start, $new_date_end, $ics, $time_zone_offset, $offset_start = null, $offset_end = null)
 {
     $head_match = array();
     preg_match("@(.*?)(?=BEGIN:VEVENT)(.*)@s", $ics, $head_match);
@@ -120,7 +119,7 @@ function change_location_ics($location, $ics)
  * @param $ics
  * @return string le fichier ics mis a jour
  */
-function change_status_ics($status, $ics,$email)
+function change_status_ics($status, $ics, $email)
 {
     $pos_status = strpos($ics, 'STATUS:');
     if ($pos_status > 0) {
@@ -176,7 +175,12 @@ function delete_status_section_for_sending($ics)
 function change_last_modified_ics($ics)
 {
     $new_date = gmdate("Ymd\THis\Z");
-    $ics = preg_replace("@LAST-MODIFIED:.*@", "LAST-MODIFIED:" . $new_date, $ics);
+
+    return preg_replace("@LAST-MODIFIED:.*@", "LAST-MODIFIED:" . $new_date, $ics);
+}
+
+function change_sequence_ics($ics)
+{
 
     $num_sequence = array();
     if (preg_match("@SEQUENCE:([0-9]+)@", $ics, $num_sequence) == 1) {
@@ -187,8 +191,20 @@ function change_last_modified_ics($ics)
     }
 
     return $ics;
+
 }
 
+
+function change_method_ics($ics, $method)
+{
+    if (preg_match('/^METHOD:.*/m', $ics) == 1) {
+        $ics = preg_replace('/^METHOD:.*/m', 'METHOD:' . $method, $ics);
+    } else {
+        $ics = preg_replace('/BEGIN:VCALENDAR/', "BEGIN:VCALENDAR\nMETHOD:" . $method, $ics);
+    }
+    return $ics;
+
+}
 
 function str_start_with($string, $startstring)
 {

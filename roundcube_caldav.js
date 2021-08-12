@@ -115,23 +115,32 @@ function undirect_rendering(response) {
 
 
     // On copie le template html et l'on cache la partie chargement...
-    let $event = $($('template#display').html());
+
 
     // On recupère la réponse du serveur
     let array_response = response.request;
 
+    let $event;
+    let isOrganizer = isStringEquals(array_response['identity']['role'], 'ORGANIZER');
+
+    $event = $($('template#display').html());
+
+
     // On récupère l'evt
     let used_event = array_response['used_event'];
+
 
     // On affiche le titre
     $event.find('.invitation').append('<h3>' + used_event['summary'] + '</h3>');
 
-    // On regarde si le serveur est en avance
-    if (!array_response['found_advance']) {
-        $event.find('.found_advance').hide();
-    } else {
-        $event.find('.found_advance').html(rcmail.gettext('modified_event', 'roundcube_caldav') + array_response['found_on_calendar']);
-        change_status(array_response['found_advance'][1].status, $event);
+    if (!isOrganizer) {
+        // On regarde si le serveur est en avance
+        if (!array_response['found_advance']) {
+            $event.find('.found_advance').hide();
+        } else {
+            $event.find('.found_advance').html(rcmail.gettext('modified_event', 'roundcube_caldav') + array_response['found_on_calendar']);
+            change_status(array_response['found_advance'][1].status, $event);
+        }
     }
 
 
@@ -211,10 +220,10 @@ function undirect_rendering(response) {
     // On affiche les boutons de réponse aux autres participants..
     if (array_response['attendee'] !== undefined) {
         for (let attendee of array_response['attendee']) {
+            let display = attendee['name'] ? attendee['name'] : attendee["email"];
             let link = `<a href='mailto` + attendee["email"] + `' aria-haspopup="false" onClick="` + attendee["onclick"]
-                + `">` + attendee['name'] + `</a><br>`;
+                + `">` + display + `</a><br>`;
             $event.find('.attendee_link').append(link);
-
         }
 
         let attribut = array_response['attr_reply_all'];
@@ -224,6 +233,7 @@ function undirect_rendering(response) {
     } else {
         $event.find('.attendee').hide();
     }
+
 
     // On regarde les evt en colision / avant / apres
     let prev = array_response['display_caldav_info']['close_meeting']['previous'];
@@ -280,12 +290,13 @@ function undirect_rendering(response) {
         $event.find('.info_caldav_server').hide();
     }
 
+
     // On récupère la valeur du champs select ou l'on selectionne les calendriers
     let select = $event.find('.choose_calendar_to_add_event');
-    for (let calendar in array_response['used_calendar']) {
-        let selected = isStringEquals(calendar, array_response['main_calendar']) ? 'selected' : '';
+    for (let [calendar_id, calendar_name] of Object.entries(array_response['used_calendar'])) {
+        let selected = isStringEquals(calendar_name, array_response['main_calendar_name']) ? 'selected' : '';
         select.append(
-            `<option value="` + calendar + `"` + selected + '>' + calendar + '</option>'
+            `<option value="` + calendar_id + `"` + selected + '>' + calendar_name + '</option>'
         );
     }
 
@@ -341,65 +352,115 @@ function undirect_rendering(response) {
         dialog.dialog("open");
     });
 
-    // On récupère les boutons
-    let confirm = $event.find('.confirm_button');
-    let tentative = $event.find('.tentative_button');
-    let decline = $event.find('.decline_button');
-    if (confirm) {
-        // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
-        // Et on modifie le texte dans les boutons
-        confirm.bind('click', function evt() {
 
-            rcmail.http_post('plugin.roundcube_caldav_import_action', {
-                _mail_uid: rcmail.env.uid,
-                _mbox: rcmail.env.mailbox,
-                _calendar: select.val(),
-                _event_uid: used_event['uid'],
-                _type: 'CONFIRMED',
-            });
-            confirm.attr('disabled', 'true');
-            confirm.html(rcmail.gettext('confirmed', 'roundcube_caldav'));
-            tentative.removeAttr('disabled');
-            tentative.html(rcmail.gettext('tentative', 'roundcube_caldav'));
-            decline.removeAttr('disabled');
-            decline.html(rcmail.gettext('decline', 'roundcube_caldav'));
-        });
-    }
-    if (tentative) {
-        tentative.bind('click', function evt() {
-            rcmail.http_post('plugin.roundcube_caldav_import_action', {
-                _mail_uid: rcmail.env.uid,
-                _mbox: rcmail.env.mailbox,
-                _calendar: select.val(),
-                _type: 'TENTATIVE',
-                _event_uid: used_event['uid'],
-            });
-            tentative.attr('disabled', 'true');
-            tentative.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
-            confirm.removeAttr('disabled');
-            confirm.html(rcmail.gettext('confirm', 'roundcube_caldav'));
-            decline.removeAttr('disabled');
-            decline.html(rcmail.gettext('decline', 'roundcube_caldav'));
-        });
-    }
-    if (decline) {
-        decline.bind('click', function evt() {
+    if (!isOrganizer) {
+        // On cache les boutons destinés à l'organisateur
+        $event.find('.confirm_button_organizer').hide();
+        $event.find('.decline_button_organizer').hide();
+        // On récupère les boutons
+        let confirm = $event.find('.confirm_button');
+        let tentative = $event.find('.tentative_button');
+        let decline = $event.find('.decline_button');
+        if (confirm) {
+            // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
+            // Et on modifie le texte dans les boutons
+            confirm.bind('click', function evt() {
 
-            rcmail.http_post('plugin.roundcube_caldav_import_action', {
-                _mail_uid: rcmail.env.uid,
-                _mbox: rcmail.env.mailbox,
-                _calendar: select.val(),
-                _type: 'CANCELLED',
-                _event_uid: used_event['uid'],
+                rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
+                    _mail_uid: rcmail.env.uid,
+                    _mbox: rcmail.env.mailbox,
+                    _calendar: select.val(),
+                    _event_uid: used_event['uid'],
+                    _status: 'CONFIRMED',
+                    _role: array_response['identity']['role'],
+                });
+                confirm.attr('disabled', 'true');
+                confirm.html(rcmail.gettext('confirmed', 'roundcube_caldav'));
+                tentative.removeAttr('disabled');
+                tentative.html(rcmail.gettext('tentative', 'roundcube_caldav'));
+                decline.removeAttr('disabled');
+                decline.html(rcmail.gettext('decline', 'roundcube_caldav'));
             });
-            decline.attr('disabled', 'true');
-            decline.html(rcmail.gettext('declined', 'roundcube_caldav'));
-            confirm.removeAttr('disabled');
-            confirm.html(rcmail.gettext('confirm', 'roundcube_caldav'));
-            tentative.removeAttr('disabled');
-            tentative.html(rcmail.gettext('tentative', 'roundcube_caldav'));
-        });
+        }
+        if (tentative) {
+            tentative.bind('click', function evt() {
+                rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
+                    _mail_uid: rcmail.env.uid,
+                    _mbox: rcmail.env.mailbox,
+                    _calendar: select.val(),
+                    _status: 'TENTATIVE',
+                    _role: array_response['identity']['role'],
+                    _event_uid: used_event['uid'],
+                });
+                tentative.attr('disabled', 'true');
+                tentative.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
+                confirm.removeAttr('disabled');
+                confirm.html(rcmail.gettext('confirm', 'roundcube_caldav'));
+                decline.removeAttr('disabled');
+                decline.html(rcmail.gettext('decline', 'roundcube_caldav'));
+            });
+        }
+        if (decline) {
+            decline.bind('click', function evt() {
+
+                rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
+                    _mail_uid: rcmail.env.uid,
+                    _mbox: rcmail.env.mailbox,
+                    _calendar: select.val(),
+                    _status: 'CANCELLED',
+                    _role: array_response['identity']['role'],
+                    _event_uid: used_event['uid'],
+                });
+                decline.attr('disabled', 'true');
+                decline.html(rcmail.gettext('declined', 'roundcube_caldav'));
+                confirm.removeAttr('disabled');
+                confirm.html(rcmail.gettext('confirm', 'roundcube_caldav'));
+                tentative.removeAttr('disabled');
+                tentative.html(rcmail.gettext('tentative', 'roundcube_caldav'));
+            });
+        }
+
+    } else {
+        // On cache les boutons destinés aux participants
+        $event.find('.confirm_button').hide();
+        $event.find('.tentative_button').hide();
+        $event.find('.decline_button').hide();
+        // On récupère les boutons
+        let confirm_organizer = $event.find('.confirm_button_organizer');
+        let decline_organizer = $event.find('.decline_button_organizer');
+        if (confirm_organizer) {
+            // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
+            // Et on modifie le texte dans les boutons
+            confirm_organizer.bind('click', function evt() {
+                rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
+                    _mail_uid: rcmail.env.uid,
+                    _mbox: rcmail.env.mailbox,
+                    _calendar: select.val(),
+                    _event_uid: used_event['uid'],
+                    _status: 'CONFIRMED',
+                    _role: array_response['identity']['role'],
+                });
+                confirm_organizer.attr('disabled', 'true');
+                confirm_organizer.html(rcmail.gettext('confirmed', 'roundcube_caldav'));
+                decline_organizer.removeAttr('disabled');
+                decline_organizer.html(rcmail.gettext('decline', 'roundcube_caldav'));
+            });
+        }
+        if (decline_organizer) {
+            decline_organizer.bind('click', function evt() {
+                rcmail.http_post('plugin.roundcube_caldav_decline_counter', {
+                    _mail_uid: rcmail.env.uid,
+                    _mbox: rcmail.env.mailbox,
+                    _event_uid: used_event['uid'],
+                });
+                decline_organizer.attr('disabled', 'true');
+                decline_organizer.html(rcmail.gettext('declined', 'roundcube_caldav'));
+                confirm_organizer.removeAttr('disabled');
+                confirm_organizer.html(rcmail.gettext('confirm', 'roundcube_caldav'));
+            });
+        }
     }
+
 
     /**
      * Lorsque l'utilisateur décide de reprogrammer l'évenement,
@@ -462,11 +523,12 @@ function undirect_rendering(response) {
 
 
             // On demande au serveur d'enregistrer notre changement sur le serveur avec le status provisoire
-            rcmail.http_post('plugin.roundcube_caldav_import_action', {
+            rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
                 _mail_uid: rcmail.env.uid,
                 _mbox: rcmail.env.mailbox,
                 _calendar: select.val(),
-                _type: 'TENTATIVE',
+                _status: 'TENTATIVE',
+                _role: array_response['identity']['role'],
                 _event_uid: used_event['uid'],
                 _chosenDateStart: chosenDateStart,
                 _chosenDateEnd: chosenDateEnd,
@@ -486,8 +548,6 @@ function undirect_rendering(response) {
 
 rcmail.addEventListener('init', function (evt) {
 
-    // Fonction de debug A SUPPRIMER
-    rcmail.addEventListener('plugin.affichage', affichage);
 
     // Si la page indique qu'elle est en train de charger on fait un appel au serveur pour récupérer les donnée
     if ($('#loading').length > 0) {
@@ -496,9 +556,12 @@ rcmail.addEventListener('init', function (evt) {
             _mbox: rcmail.env.mailbox,
         });
     }
-
     // On récupère toutes ces information et on affiche la bannière
     rcmail.addEventListener('plugin.undirect_rendering_js', undirect_rendering);
+
+
+    // Fonction de debug A SUPPRIMER
+    rcmail.addEventListener('plugin.affichage', affichage);
 });
 
 

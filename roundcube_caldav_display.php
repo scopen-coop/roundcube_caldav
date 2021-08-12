@@ -98,8 +98,12 @@
             <button class="action_buttons confirm_button btn btn-secondary"><?php echo $this->gettext('confirm') ?></button>
             <button class="action_buttons tentative_button btn btn-secondary"><?php echo $this->gettext('tentative') ?></button>
             <button class="action_buttons decline_button btn btn-secondary"><?php echo $this->gettext('decline') ?></button>
+
+            <button class="action_buttons confirm_button_organizer btn btn-secondary"><?php echo $this->gettext('confirm_modification') ?></button>
+            <button class="action_buttons decline_button_organizer btn btn-secondary"><?php echo $this->gettext('decline_modification') ?></button>
         </div>
     </div>
 </template>
+
 
 
