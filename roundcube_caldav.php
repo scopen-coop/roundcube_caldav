@@ -199,7 +199,6 @@ class roundcube_caldav extends rcube_plugin
                 $content[] = $html;
             }
         }
-        $this->rcmail->output->command('plugin.affichage', array('request' => 'ok'));
         return array('content' => $content);
     }
 
@@ -1099,17 +1098,6 @@ class roundcube_caldav extends rcube_plugin
             }
         }
 
-
-        // On récupère les adresses mail des participant pour les mettre en CC
-        $attendees_email = array();
-        foreach ($event->attendee_array as $attendee_or_email) {
-            if (is_string($attendee_or_email) && str_start_with($attendee_or_email, 'mailto:')) {
-                $attendee_or_email = substr($attendee_or_email, strlen('mailto:'));
-                if (strcmp($attendee_or_email, $my_email) != 0) {
-                    $attendees_email[] = $attendee_or_email;
-                }
-            }
-        }
         if (strpos($orig_subject, $this->gettext('MODIFIED')) >= 0 || strpos($orig_subject, $this->gettext('CONFIRMED')) >= 0
             || strpos($orig_subject, $this->gettext('TENTATIVE')) >= 0 || strpos($orig_subject, $this->gettext('CANCELLED')) >= 0) {
             $orig_subject = preg_replace('@\[.*?:@', '', $orig_subject);
@@ -1117,7 +1105,9 @@ class roundcube_caldav extends rcube_plugin
 
         }
 
-        if (!empty($attendees_email) || strcmp($organizer_email, '') != 0) {
+        if (!empty($organizer_email)) {
+            $this->rcmail->output->command('plugin.affichage', array('request' => 'ok'));
+
             // On modifie l'objet du mail
             if ($has_modif) {
                 $prefix = $this->gettext('MODIFIED');
@@ -1127,17 +1117,15 @@ class roundcube_caldav extends rcube_plugin
             $header = [
                 'date' => $this->rcmail->user_date(),
                 'from' => $my_email,
-                'to' => empty($organizer_email) ? '' : $organizer_email,
-                'cc' => empty($attendees_email) ? '' : $attendees_email,
+                'to' => $organizer_email,
                 'subject' => $prefix . $orig_subject,
                 'reply-to' => $organizer_email,
             ];
 
-            $attendees_email[] = $organizer_email;
             $options = [
                 'sendmail' => true,
                 'from' => $my_email,
-                'mailto' => empty($attendees_email) ? '' : $attendees_email,
+                'mailto' => $organizer_email,
                 'charset' => 'utf8mb'
             ];
 
