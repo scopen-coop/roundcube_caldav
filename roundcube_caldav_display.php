@@ -1,13 +1,10 @@
 <template id="display" style="display: none">
     <div class="content_invitation">
         <div class="invitation">
-            <h4><?php echo $this->gettext('invitation') ?></h4>
-        </div>
 
-        <div class="found_advance">
         </div>
-
         <div class="content_event">
+
             <div class="date_event">
                 <div class="icon_date same_date" class="alone">
                     <div class="d"></div>
@@ -26,10 +23,31 @@
                     <div class="h"></div>
                 </div>
             </div>
+            <div class="arrow-right new " style="display: none"></div>
+            <div class="new_date_event new" style="display: none">
 
+                <div class="icon_date same_date" class="alone">
+                    <div class="d"></div>
+                    <div class="m"></div>
+                    <div class="h"></div>
+                </div>
+                <div class="icon_date different_date start">
+                    <div class="d"></div>
+                    <div class="m"></div>
+                    <div class="h"></div>
+                </div>
+                <div class="arrow-right different_date"></div>
+                <div class="icon_date different_date end">
+                    <div class="d"></div>
+                    <div class="m"></div>
+                    <div class="h"></div>
+                </div>
+            </div>
             <div class="info_ics location_description">
-                <p class="location"><b><?php echo $this->gettext("location") ?></b></p>
-                <p class="description"><b><?php echo $this->gettext("description") ?></b></p>
+                <p class="location" style="display: none"><b><?php echo $this->gettext("location") ?></b></p>
+                <p class="if_new_location new" style="display: none"><b><?php echo $this->gettext("new_location_proposal") ?></b></p>
+                <p class="description" style="display: none"><b><?php echo $this->gettext("description") ?></b></p>
+                <p class="if_new_description new" style="display: none"><b><?php echo $this->gettext("new_description_proposal") ?></b></p>
             </div>
 
 
@@ -64,10 +82,10 @@
         <div class="if_rescheduled" style="display:none">
             <p><b><?php echo $this->gettext("if_rescheduled_msg") ?></b></p>
         </div>
+        <div class="if_modification new"><?php echo $this->gettext("if_modification") ?></div>
         <div class="action_button">
             <form method="post" name="chosen_cal">
                 <label class="calendar_choice">
-                    <?php echo $this->gettext("chose_calendar") ?>
                     <select class="choose_calendar_to_add_event custom-select">
                     </select>
                 </label>

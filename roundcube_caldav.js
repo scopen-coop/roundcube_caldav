@@ -3,7 +3,7 @@ function affichage(response) {
 }
 
 /**
- * teste légalité de deux string
+ * teste l'égalité de deux string
  * @param str1
  * @param str2
  * @returns {boolean}
@@ -15,6 +15,13 @@ function isStringEquals(str1, str2) {
     return false;
 }
 
+function find_sender_among_attendee(sender_email, attendees) {
+    for (let attendee of attendees) {
+        if (isStringEquals(attendee['email'], sender_email)) {
+            return attendee;
+        }
+    }
+}
 
 /**
  * Parse la date recus sous le format yyyymmdd\Thhii(Z)
@@ -111,19 +118,21 @@ function change_status(status, $event) {
  */
 function undirect_rendering(response) {
 
-    $("#loading").hide();
-
-
     // On copie le template html et l'on cache la partie chargement...
-
+    let $event_template_html;
+    $event_template_html = $($('template#display').html());
+    $("#loading").hide();
 
     // On recupère la réponse du serveur
     let array_response = response.request;
 
-    let $event;
     let isOrganizer = isStringEquals(array_response['identity']['role'], 'ORGANIZER');
+    let isMailACounter = isStringEquals(array_response['METHOD'], 'COUNTER');
+    let isMailAReply = isStringEquals(array_response['METHOD'], 'REPLY');
 
-    $event = $($('template#display').html());
+    if (array_response['attendees']) {
+        sender = find_sender_among_attendee(array_response['sender_email'], array_response['attendees']);
+    }
 
 
     // On récupère l'evt
@@ -131,23 +140,45 @@ function undirect_rendering(response) {
 
 
     // On affiche le titre
-    $event.find('.invitation').append('<h3>' + used_event['summary'] + '</h3>');
-
-    if (!isOrganizer) {
-        // On regarde si le serveur est en avance
-        if (!array_response['found_advance']) {
-            $event.find('.found_advance').hide();
+    let $invitation = $event_template_html.find('.invitation')
+    if (isOrganizer && isMailACounter) {
+        $invitation.append('<h4>' + rcmail.gettext('invitation_modification', 'roundcube_caldav') + '</h4>')
+    } else if (isOrganizer && isMailAReply) {
+        let display_name = sender['name'] ? sender['name'] : sender['email'];
+        if (isStringEquals(sender['partstat'], 'ACCEPTED')) {
+            $invitation.append('<h4>' + display_name + rcmail.gettext('invitation_accepted', 'roundcube_caldav') + '</h4>')
         } else {
-            $event.find('.found_advance').html(rcmail.gettext('modified_event', 'roundcube_caldav') + array_response['found_on_calendar']);
-            change_status(array_response['found_advance'][1].status, $event);
+            $invitation.append('<h4>' + display_name + rcmail.gettext('invitation_declined', 'roundcube_caldav') + '</h4>')
+        }
+    } else {
+
+        $invitation.append('<h4>' + rcmail.gettext('invitation', 'roundcube_caldav') + '</h4>')
+    }
+    $invitation.append('<h3>' + used_event['summary'] + '</h3>');
+
+
+    if (isMailACounter) {
+        $event_template_html.find('.if_modification').show();
+    }
+
+    // On regarde si le serveur est en avance uniquement si l'utilisateur n'est pas l'organisateur
+    if (!isOrganizer) {
+
+        if (!array_response['found_advance']) {
+            $event_template_html.find('.found_advance').hide();
+        } else {
+            if (!array_response['is_sequences_equal']) {
+                $event_template_html.find('.found_advance').html(rcmail.gettext('modified_event', 'roundcube_caldav') + array_response['found_on_calendar']);
+            }
+            change_status(array_response['found_advance'][1].status, $event_template_html);
         }
     }
 
 
     // On affiche la date
     if (array_response['same_date']) {
-        $event.find('.different_date').hide();
-        let $same_date = $event.find('.same_date');
+        $event_template_html.find('.different_date').hide();
+        let $same_date = $event_template_html.find('.same_date');
         $same_date.children('.d').html(array_response['date_day_start']);
         $same_date.children('.m').html(array_response['date_month_start']);
         if (!isStringEquals(array_response['date_hours_start'], '0:00') || !isStringEquals(array_response['date_hours_end'], '0:00')) {
@@ -155,10 +186,9 @@ function undirect_rendering(response) {
         } else {
             $same_date.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
         }
-
     } else {
-        $event.find('.same_date').hide();
-        let $dif_date_start = $event.find('.different_dat,.start');
+        $event_template_html.find('.same_date').hide();
+        let $dif_date_start = $event_template_html.find('.different_dat,.start');
         $dif_date_start.children('.d').html(array_response['date_day_start']);
         $dif_date_start.children('.m').html(array_response['date_month_start']);
         if (!isStringEquals(array_response['date_hours_start'], '0:00')) {
@@ -168,7 +198,7 @@ function undirect_rendering(response) {
         }
 
 
-        let $dif_date_end = $event.find('.different_date,.end');
+        let $dif_date_end = $event_template_html.find('.different_date,.end');
         $dif_date_end.children('.d').html(array_response['date_day_end']);
         $dif_date_end.children('.m').html(array_response['date_month_end']);
         if (!isStringEquals(array_response['date_hours_end'], '0:00')) {
@@ -178,25 +208,80 @@ function undirect_rendering(response) {
         }
 
     }
+    if (isMailACounter){
+        if(array_response['new_date']){
+            // On affiche la nouvelle  date
+            $event_template_html.find('.arrow-right.new').show()
+            let $new_date = $event_template_html.find('.new_date_event');
+            $new_date.show();
+            if (array_response['new_date']['same_date']) {
+                $new_date.children('.different_date').hide();
+                let $same_date = $new_date.children('.same_date');
+                $same_date.children('.d').html(array_response['new_date']['date_day_start']);
+                $same_date.children('.m').html(array_response['new_date']['date_month_start']);
+                if (!isStringEquals(array_response['new_date']['date_hours_start'], '0:00') || !isStringEquals(array_response['new_date']['date_hours_end'], '0:00')) {
+                    $same_date.children('.h').html(array_response['new_date']['date_hours_start'] + ' : ' + array_response['new_date']['date_hours_end']);
+                } else {
+                    $same_date.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
+                }
+            } else {
+                $new_date.children('.same_date').hide();
+                let $dif_date_start = $new_date.children('.different_dat,.start');
+                $dif_date_start.children('.d').html(array_response['new_date']['date_day_start']);
+                $dif_date_start.children('.m').html(array_response['new_date']['date_month_start']);
+                if (!isStringEquals(array_response['new_date']['date_hours_start'], '0:00')) {
+                    $dif_date_start.children('.h').html(array_response['new_date']['date_hours_start']);
+                } else {
+                    $dif_date_start.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
+                }
+
+
+                let $dif_date_end = $new_date.children('.different_date,.end');
+                $dif_date_end.children('.d').html(array_response['new_date']['date_day_end']);
+                $dif_date_end.children('.m').html(array_response['new_date']['date_month_end']);
+                if (!isStringEquals(array_response['new_date']['date_hours_end'], '0:00')) {
+                    $dif_date_start.children('.h').html(array_response['new_date']['date_hours_end']);
+                } else {
+                    $dif_date_start.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
+                }
+
+            }
+        }
+    }
+
 
 
     // On affiche la description et le lieu de l'evt
-    let $location = $event.find('.location');
-    let $description = $event.find('.description');
-    if (!used_event['description'] && !used_event['location']) {
-        $event.find('.location_description').hide();
-    } else {
-        if (used_event['description'] && used_event['location']) {
-            $location.append(used_event['location']);
-            $description.append(used_event['description']);
-        } else if (used_event['description']) {
-            $location.hide();
-            $description.append(used_event['description']);
-        } else {
-            $description.hide();
-            $location.append(used_event['location']);
+    let $location = $event_template_html.find('.location');
+    let $description = $event_template_html.find('.description');
+    let $div_location_description = $event_template_html.find('.location_description');
+    if (array_response['description']) {
+        $div_location_description.show();
+        $description.show();
+        $description.append(array_response['description']);
+    }
+    if (array_response['location']) {
+        $div_location_description.show();
+        $location.show();
+        $location.append(array_response['location']);
+    }
+
+    if(isMailACounter){
+        let $new_location = $event_template_html.find('.if_new_location');
+        let $new_description = $event_template_html.find('.if_new_description');
+        if (array_response['new_location']) {
+            $div_location_description.show();
+            $new_location.show();
+            $new_location.append(array_response['new_location'])
+        }
+        if (array_response['new_description']) {
+            $div_location_description.show();
+            $new_description.show();
+            $new_description.append(array_response['new_description'])
         }
     }
+
+
 
     // On regarde s'il s'agit d'un evt reccurent
     let recurrent_event = array_response['recurrent_events'][used_event['uid']];
@@ -204,34 +289,34 @@ function undirect_rendering(response) {
         // on affiche seulement les dix premier evt si il yen a plus
         for (let i = 0; i < 10; i++) {
             if (recurrent_event[i]) {
-                $event.find('.repeated').append(recurrent_event[i] + '<br>');
+                $event_template_html.find('.repeated').append(recurrent_event[i] + '<br>');
             } else {
                 break;
             }
 
             if (i == 9) {
-                $event.find('.repeated').append('...');
+                $event_template_html.find('.repeated').append('...');
             }
         }
     } else {
-        $event.find('.repeated').hide();
+        $event_template_html.find('.repeated').hide();
     }
 
     // On affiche les boutons de réponse aux autres participants..
-    if (array_response['attendee'] !== undefined) {
-        for (let attendee of array_response['attendee']) {
+    if (array_response['attendees'] !== undefined) {
+        for (let attendee of array_response['attendees']) {
             let display = attendee['name'] ? attendee['name'] : attendee["email"];
             let link = `<a href='mailto` + attendee["email"] + `' aria-haspopup="false" onClick="` + attendee["onclick"]
                 + `">` + display + `</a><br>`;
-            $event.find('.attendee_link').append(link);
+            $event_template_html.find('.attendee_link').append(link);
         }
 
         let attribut = array_response['attr_reply_all'];
         let link = `<a href='` + attribut["href"] + `' aria-haspopup="false" onClick="` + attribut["onclick"] + `">`
             + rcmail.gettext('reply_all', 'roundcube_caldav') + `</a><br>`;
-        $event.find('.reply_all').append(link);
+        $event_template_html.find('.reply_all').append(link);
     } else {
-        $event.find('.attendee').hide();
+        $event_template_html.find('.attendee').hide();
     }
 
 
@@ -245,10 +330,10 @@ function undirect_rendering(response) {
             if (!prev['summary']) {
                 summary = rcmail.gettext('missing_summary', 'roundcube_caldav');
             }
-            $event.find('.previous').append(summary + ': ' + '<i>' + '('
+            $event_template_html.find('.previous').append(summary + ': ' + '<i>' + '('
                 + prev['calendar'] + ')' + '</i><br>' + prev['pretty_date']);
         } else {
-            $event.find('.previous').hide();
+            $event_template_html.find('.previous').hide();
         }
 
         if (next) {
@@ -256,10 +341,10 @@ function undirect_rendering(response) {
             if (!next['summary']) {
                 summary = rcmail.gettext('missing_summary', 'roundcube_caldav');
             }
-            $event.find('.next').append(summary + ': ' + '<i>' + '('
+            $event_template_html.find('.next').append(summary + ': ' + '<i>' + '('
                 + next['calendar'] + ')' + '</i><br>' + next['pretty_date']);
         } else {
-            $event.find('.next').hide();
+            $event_template_html.find('.next').hide();
         }
 
         if (collisions !== undefined) {
@@ -275,48 +360,138 @@ function undirect_rendering(response) {
                     if (!collided_event['summary']) {
                         summary = rcmail.gettext('missing_summary', 'roundcube_caldav');
                     }
-                    $event.find('.meeting_collision').append(summary + ':  ' + display_date + ' <i>' + '('
+                    $event_template_html.find('.meeting_collision').append(summary + ':  ' + display_date + ' <i>' + '('
                         + calendar_name + ')' + '</i><br>');
                 }
 
             }
             if (!bool) {
-                $event.find('.meeting_collision').hide();
+                $event_template_html.find('.meeting_collision').hide();
             }
         } else {
-            $event.find('.meeting_collision').hide();
+            $event_template_html.find('.meeting_collision').hide();
         }
     } else {
-        $event.find('.info_caldav_server').hide();
+        $event_template_html.find('.info_caldav_server').hide();
     }
 
 
     // On récupère la valeur du champs select ou l'on selectionne les calendriers
-    let select = $event.find('.choose_calendar_to_add_event');
-    for (let [calendar_id, calendar_name] of Object.entries(array_response['used_calendar'])) {
-        let selected = isStringEquals(calendar_name, array_response['main_calendar_name']) ? 'selected' : '';
-        select.append(
-            `<option value="` + calendar_id + `"` + selected + '>' + calendar_name + '</option>'
-        );
+    let $calendar_choice = $event_template_html.find('.calendar_choice');
+    let select = $event_template_html.find('.choose_calendar_to_add_event');
+    if (!isOrganizer || (isMailACounter && !array_response['found_advance'])) {
+        if (!isOrganizer) {
+            $calendar_choice.prepend(rcmail.gettext('choose_calendar_to_add', 'roundcube_caldav'));
+        } else if (isMailACounter && !array_response['found_advance']) {
+            $calendar_choice.prepend(rcmail.gettext('event_not_found_which_calendar_to_add', 'roundcube_caldav'));
+        }
+        for (let [calendar_id, calendar_name] of Object.entries(array_response['used_calendar'])) {
+            let selected = isStringEquals(calendar_name, array_response['main_calendar_name']) ? 'selected' : '';
+            select.append(
+                `<option value="` + calendar_id + `"` + selected + '>' + calendar_name + '</option>'
+            );
+        }
+    } else {
+        $calendar_choice.hide();
     }
 
-    let $date_start = $event.find('.date_start'),
-        $time_start = $event.find('.time_start'),
-        $date_end = $event.find('.date_end'),
-        $time_end = $event.find('.time_end');
 
     // On rajoute les dates des anciens evt comme valeur par défaut dans les inputs
     let date = parse_date(used_event['dtstart_array'][1], used_event['dtend_array'][1])
-    $date_start.attr("value", date[0]['year'] + '-' + date[0]['month'] + '-' + date[0]['day']);
-    $date_end.attr("value", date[1]['year'] + '-' + date[1]['month'] + '-' + date[1]['day']);
+    $event_template_html.find('.date_start').attr("value", date[0]['year'] + '-' + date[0]['month'] + '-' + date[0]['day']);
+    $event_template_html.find('.date_end').attr("value", date[1]['year'] + '-' + date[1]['month'] + '-' + date[1]['day']);
 
-    //
-    let $div_to_add = $event.find('.if_rescheduled');
-    let $location_input = $event.find('.location_input');
+    var $div_to_add = $event_template_html.find('.if_rescheduled'),
+        $location_input = $event_template_html.find('.location_input'),
+        $date_start = $event_template_html.find('.date_start'),
+        $time_start = $event_template_html.find('.time_start'),
+        $date_end = $event_template_html.find('.date_end'),
+        $time_end = $event_template_html.find('.time_end');
 
+    /**
+     * Lorsque l'utilisateur décide de reprogrammer l'évenement,
+     * on verifie que les date sont valide et toutes remplies et on affiche un balise html pour indiquer à l'utilisateur
+     * les informations modifiées avant l'ajout dans son calendrier
+     * @returns {number}
+     */
+    function changeDateAndLocation() {
+
+        let areFieldsFilled = false;
+
+
+        // Si tous les champs dates sont remplis
+        if ($date_start.val() && $date_end.val() && $time_start.val() && $time_end.val()) {
+
+            var chosenDateStart = $date_start.val();
+            var chosenDateEnd = $date_end.val();
+            var chosenTimeStart = $time_start.val();
+            var chosenTimeEnd = $time_end.val();
+
+            let datestr = new Date(chosenDateStart + ' ' + chosenTimeStart).getTime();
+            let dateend = new Date(chosenDateEnd + ' ' + chosenTimeEnd).getTime();
+
+            // On vérifie que la date est valide
+            if (dateend > datestr) {
+                areFieldsFilled = true;
+
+                if (isStringEquals(chosenDateStart, chosenDateEnd)) {
+                    $event_template_html.find(".msg_date").remove();
+                    $div_to_add.append('<p class="msg_date" >' + chosenDateStart + ' ' + chosenTimeStart + ' - '
+                        + chosenTimeEnd + '</p>');
+                } else {
+                    $event_template_html.find(".msg_date").remove();
+                    $div_to_add.append('<p class="msg_date">' + chosenDateStart + ' ' + chosenTimeStart + ' / '
+                        + chosenDateEnd + ' ' + chosenTimeEnd + '</p>');
+                }
+            } else {
+                window.alert(rcmail.gettext('error_date_inf', 'roundcube_caldav'));
+                return 0;
+            }
+        }
+
+        // Si le champs location est rempli
+        if ($location_input.val()) {
+            areFieldsFilled = true;
+            var chosenLocation = $location_input.val();
+            $event_template_html.find(".msg_location").remove();
+            $div_to_add.append('<p class="msg_location">' + rcmail.gettext('location', 'roundcube_caldav') + $location_input.val() + '</p>');
+        }
+        console.log(areFieldsFilled)
+        // Si au moins un des deux est rempli
+        if (areFieldsFilled) {
+            $div_to_add.show();
+            dialog.dialog("close");
+            // Si les informations ont correctement été remplies on peut fermer la boite de dialogue
+            tentative.attr('disabled', 'true');
+            tentative.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
+            confirm.removeAttr('disabled');
+            confirm.html(rcmail.gettext('confirm', 'roundcube_caldav'));
+            decline.removeAttr('disabled');
+            decline.html(rcmail.gettext('decline', 'roundcube_caldav'));
+
+
+            // On demande au serveur d'enregistrer notre changement sur le serveur avec le status provisoire
+            rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
+                _mail_uid: rcmail.env.uid,
+                _mbox: rcmail.env.mailbox,
+                _calendar: select.val(),
+                _status: 'TENTATIVE',
+                _role: array_response['identity']['role'],
+                _event_uid: used_event['uid'],
+                _chosenDateStart: chosenDateStart,
+                _chosenDateEnd: chosenDateEnd,
+                _chosenTimeStart: chosenTimeStart,
+                _chosenTimeEnd: chosenTimeEnd,
+                _chosenLocation: chosenLocation,
+            });
+        } else {
+            window.alert(rcmail.gettext('error_incomplete_field', 'roundcube_caldav'));
+        }
+
+    }
 
     // Spécification des propriétés de la popup de dialogue
-    let dialog = $event.find(".dialog-form").dialog({
+    let dialog = $event_template_html.find(".dialog-form").dialog({
         autoOpen: false,
         height: 'auto',
         width: 350,
@@ -347,20 +522,22 @@ function undirect_rendering(response) {
     });
 
 
-    $event.find(".open_dialog").button().on("click", function () {
-        $event.find(".form_reschedule").show();
+    $event_template_html.find(".open_dialog").button().on("click", function () {
+        $event_template_html.find(".form_reschedule").show();
         dialog.dialog("open");
     });
 
-
+    let confirm = $event_template_html.find('.confirm_button');
+    let tentative = $event_template_html.find('.tentative_button');
+    let decline = $event_template_html.find('.decline_button');
+    let confirm_organizer = $event_template_html.find('.confirm_button_organizer');
+    let decline_organizer = $event_template_html.find('.decline_button_organizer');
     if (!isOrganizer) {
         // On cache les boutons destinés à l'organisateur
-        $event.find('.confirm_button_organizer').hide();
-        $event.find('.decline_button_organizer').hide();
+        confirm_organizer.hide();
+        decline_organizer.hide();
         // On récupère les boutons
-        let confirm = $event.find('.confirm_button');
-        let tentative = $event.find('.tentative_button');
-        let decline = $event.find('.decline_button');
+
         if (confirm) {
             // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
             // Et on modifie le texte dans les boutons
@@ -420,14 +597,13 @@ function undirect_rendering(response) {
             });
         }
 
-    } else {
-        // On cache les boutons destinés aux participants
-        $event.find('.confirm_button').hide();
-        $event.find('.tentative_button').hide();
-        $event.find('.decline_button').hide();
+    } else if (isMailACounter) {
+        // On cache les boutons destinés aux participants normaux
+        confirm.hide();
+        tentative.hide();
+        decline.hide();
         // On récupère les boutons
-        let confirm_organizer = $event.find('.confirm_button_organizer');
-        let decline_organizer = $event.find('.decline_button_organizer');
+
         if (confirm_organizer) {
             // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
             // Et on modifie le texte dans les boutons
@@ -435,7 +611,7 @@ function undirect_rendering(response) {
                 rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
                     _mail_uid: rcmail.env.uid,
                     _mbox: rcmail.env.mailbox,
-                    _calendar: select.val(),
+                    _calendar: array_response['found_advance'] ? array_response['found_advance'][2] : select.val(),
                     _event_uid: used_event['uid'],
                     _status: 'CONFIRMED',
                     _role: array_response['identity']['role'],
@@ -459,90 +635,16 @@ function undirect_rendering(response) {
                 confirm_organizer.html(rcmail.gettext('confirm', 'roundcube_caldav'));
             });
         }
+    } else if (isMailAReply) {
+        confirm.hide();
+        tentative.hide();
+        decline.hide();
+        confirm_organizer.hide();
+        decline_organizer.hide();
     }
 
 
-    /**
-     * Lorsque l'utilisateur décide de reprogrammer l'évenement,
-     * on verifie que les date sont valide et toutes remplies et on affiche un balise html pour indiquer à l'utilisateur
-     * les informations modifiées avant l'ajout dans son calendrier
-     * @returns {number}
-     */
-    function changeDateAndLocation() {
-        let areFieldsFilled = false;
-
-        // Si tous les champs dates sont remplis
-        if ($date_start.val() && $date_end.val() && $time_start.val() && $time_end.val()) {
-
-            var chosenDateStart = $date_start.val();
-            var chosenDateEnd = $date_end.val();
-            var chosenTimeStart = $time_start.val();
-            var chosenTimeEnd = $time_end.val();
-
-            let datestr = new Date(chosenDateStart + ' ' + chosenTimeStart).getTime();
-            let dateend = new Date(chosenDateEnd + ' ' + chosenTimeEnd).getTime();
-
-            // On vérifie que la date est valide
-            if (dateend > datestr) {
-                areFieldsFilled = true;
-
-                if (isStringEquals(chosenDateStart, chosenDateEnd)) {
-                    $event.find(".msg_date").remove();
-                    $div_to_add.append('<p class="msg_date" >' + chosenDateStart + ' ' + chosenTimeStart + ' - '
-                        + chosenTimeEnd + '</p>');
-                } else {
-                    $event.find(".msg_date").remove();
-                    $div_to_add.append('<p class="msg_date">' + chosenDateStart + ' ' + chosenTimeStart + ' / '
-                        + chosenDateEnd + ' ' + chosenTimeEnd + '</p>');
-                }
-            } else {
-                window.alert(rcmail.gettext('error_date_inf', 'roundcube_caldav'));
-                return 0;
-            }
-        }
-        // Si le champs location est rempli
-        if ($location_input.val()) {
-            areFieldsFilled = true;
-
-            var chosenLocation = $location_input.val();
-            $event.find(".msg_location").remove();
-            $div_to_add.append('<p class="msg_location">' + rcmail.gettext('location', 'roundcube_caldav') + $location_input.val() + '</p>');
-        }
-
-        // Si au moins un des deux est rempli
-        if (areFieldsFilled) {
-            $div_to_add.show();
-            dialog.dialog("close");
-            // Si les informations ont correctement été remplies on peut fermer la boite de dialogue
-            tentative.attr('disabled', 'true');
-            tentative.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
-            confirm.removeAttr('disabled');
-            confirm.html(rcmail.gettext('confirm', 'roundcube_caldav'));
-            decline.removeAttr('disabled');
-            decline.html(rcmail.gettext('decline', 'roundcube_caldav'));
-
-
-            // On demande au serveur d'enregistrer notre changement sur le serveur avec le status provisoire
-            rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
-                _mail_uid: rcmail.env.uid,
-                _mbox: rcmail.env.mailbox,
-                _calendar: select.val(),
-                _status: 'TENTATIVE',
-                _role: array_response['identity']['role'],
-                _event_uid: used_event['uid'],
-                _chosenDateStart: chosenDateStart,
-                _chosenDateEnd: chosenDateEnd,
-                _chosenTimeStart: chosenTimeStart,
-                _chosenTimeEnd: chosenTimeEnd,
-                _chosenLocation: chosenLocation,
-            });
-        } else {
-            window.alert(rcmail.gettext('error_incomplete_field', 'roundcube_caldav'));
-        }
-
-    }
-
-    $("#message-objects").append($event);
+    $("#message-objects").append($event_template_html);
 }
 
 

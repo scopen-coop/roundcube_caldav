@@ -39,7 +39,9 @@ $labels['tentatived'] = 'Provisionally confirmed';
 $labels['declined'] = "Declined";
 $labels['location'] = "Place: ";
 $labels['description'] = "Description: ";
-$labels['chose_calendar'] = "Add this event to :";
+$labels['choose_calendar_to_add'] = "Add this event to :";
+$labels['event_not_found_which_calendar_to_add'] = "Event not found in your calendars even if you are organizer, so \n
+in which calendar you want this event into ?";
 $labels['repeated_event'] = "This event repeat itself through several occurrences";
 $labels['use_this_calendar'] = "Use the calendar ";
 $labels['make_this_calendar_default1'] = "Select the ";
@@ -66,5 +68,9 @@ $labels['something_happened_while_getting_events'] = "Something happened while g
 $labels['invitation_modification'] = "You just receive a modification for your invitation";
 $labels['confirm_modification'] = "Confirm modifications";
 $labels['decline_modification'] = "Decline modifications";
-
+$labels['invitation_accepted'] = " accepted your invitation for the event:  ";
+$labels['invitation_declined'] = "  declined your invitation for the event:";
+$labels['new_date_proposal'] = "New schedule proposal: ";
+$labels['new_location_proposal'] = "New location proposal: ";
+$labels['if_modification'] = "Modifications are displayed green";
 ?>

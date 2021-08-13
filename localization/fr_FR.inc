@@ -40,7 +40,9 @@ $labels['tentatived'] = 'Confirmé Provisoirement';
 $labels['declined'] = "L'invitation est déclinée";
 $labels['location'] = "Lieu: ";
 $labels['description'] = "Description: ";
-$labels['chose_calendar'] = "Evénement à ajouter au calendrier: ";
+$labels['choose_calendar_to_add'] = "Evénement à ajouter au calendrier: ";
+$labels['event_not_found_which_calendar_to_add'] = "Nous n'avons pas trouvé cet événement dans votre calendrier bien que \n
+vous en soyez l'organisateur, à quel calendrier voulez vous l'ajouter?";
 $labels['repeated_event'] = "L'événement se répète à plusieurs occurrences: ";
 $labels['use_this_calendar'] = "Utiliser le calendrier ";
 $labels['make_this_calendar_default1'] = "Sélectionner le calendrier ";
@@ -64,7 +66,13 @@ $labels['MODIFIED'] = '[MODIFIÉ]: ';
 $labels['all_day'] = 'Journée';
 $labels['loading'] = 'Chargement...';
 $labels['something_happened_while_getting_events'] = "La récupération des événements sur le serveur caldav a renconrtée une erreur";
-$labels['invitation_modification'] = "Vous avez reçus un proposition de modification pour cet événement";
+$labels['invitation_modification'] = "Vous avez reçu un proposition de modification pour cet événement";
 $labels['confirm_modification'] = "Confirmer les modifications";
 $labels['decline_modification'] = "Decliner les modifications";
+$labels['invitation_accepted'] = " a accepté votre invitation à: ";
+$labels['invitation_declined'] = " a décliné votre invitation à: ";
+$labels['new_date_proposal'] = "Proposition de nouveaux horaires: ";
+$labels['new_location_proposal'] = "Emplacement proposé: ";
+$labels['new_description_proposal'] = "Description proposée: ";
+$labels['if_modification'] = "Les modifications sont indiquée en vert";
 ?>

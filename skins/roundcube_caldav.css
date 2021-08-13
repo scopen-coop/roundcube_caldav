@@ -17,6 +17,11 @@
     text-align: center;
 }
 
+.new{
+    color: #04a96d;
+}
+
+
 .content_event {
     display: flex;
     justify-content: center;
@@ -71,6 +76,18 @@
     background-color: rgb(55, 189, 254);
 }
 
+.new .icon_date .m {
+    font-size: 1.2em;
+    position: absolute;
+    top: 0;
+    padding: 0.1em 0 !important;
+    color: #fff;
+    background-color: #04a96d;
+}
+
+
+
+
 .icon_date .h {
     font-size: 1.1em;
     position: absolute;
@@ -92,6 +109,9 @@
     padding: 1.5em;
 }
 
+.new_date_event{
+    padding:1.5em;
+}
 .alone {
     margin: auto;
     width: 7em
@@ -124,9 +144,14 @@
     background-color: #404f54;
     position: relative;
     clip-path: polygon(0 0, 0 100%, 100% 50%);
-    margin: 2.5em 0.4em 0.4em;
+    margin: 2em 0 2em;
 
 }
+.new.arrow-right  {
+    background-color: #04a96d;
+}
+
+
 
 .calendar_choice{
     margin: 1em;

@@ -306,7 +306,7 @@ class roundcube_caldav extends rcube_plugin
 
         foreach ($message->attachments as &$attachment) {
             if ($attachment->mimetype == 'text/calendar') {
-
+                $is_organizer = strcmp($role, 'ORGANIZER') == 0;
 
                 // On récupère la PJ
                 $ics = $message->get_part_body($attachment->mime_id);
@@ -333,6 +333,15 @@ class roundcube_caldav extends rcube_plugin
                 $new_ics = extract_event_ics($ics, $event_uid);
                 if ($new_ics) {
                     $has_modif = false;
+
+                    // On change le status de l'événement en celui qui nous convient
+                    $identity = $this->rcmail->user->list_identities(null, true);
+                    $email = $identity[0]['email'];
+                    $new_ics = change_status_ics($status, $new_ics, $email);
+                    if (!$is_organizer) {
+                        $ics_to_save = $new_ics;
+                    }
+
                     // On parse la date puis on remplace par la nouvelle date dans le fichier ics
                     if ($chosen_date_start && $chosen_date_end && $chosen_time_start && $chosen_time_end) {
                         $has_modif = true;
@@ -350,26 +359,21 @@ class roundcube_caldav extends rcube_plugin
                         }
                     }
 
+
                     // On remplace par le nouveau lieu dans le fichier ics
                     if ($chosen_location) {
                         $has_modif = true;
                         $new_ics = change_location_ics($chosen_location, $new_ics);
-
-
                     }
-
-
-                    // On change le status de l'événement en celui qui nous convient
-                    $identity = $this->rcmail->user->list_identities(null, true);
-                    $email = $identity[0]['email'];
-                    $new_ics = change_status_ics($status, $new_ics, $email);
-
 
                     // On change la date de dernière modif
                     $new_ics = change_last_modified_ics($new_ics);
+                    if (!$is_organizer) {
+                        $ics_to_save = change_last_modified_ics($ics_to_save);
+                    }
 
 
-                    if (strcmp($role, 'ORGANIZER') == 0) {
+                    if ($is_organizer) {
                         // On change le numéro de sequence si l'utilisateur est l'organisateur de l'evenement
                         $new_ics = change_sequence_ics($new_ics);
                         $new_ics = change_method_ics($new_ics, 'REQUEST');
@@ -387,11 +391,14 @@ class roundcube_caldav extends rcube_plugin
                     $found_event_with_good_uid = $this->find_event_with_matching_uid($event, $chosen_calendar);
 
 
+                    if ($is_organizer) {
+                        $ics_to_save = $new_ics;
+                    }
                     // On ajoute le fichier au serveur calDAV
                     if (!$found_event_with_good_uid) {
-                        $res = $this->add_ics_event_to_caldav_server($new_ics, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password); // 0.6
+                        $res = $this->add_ics_event_to_caldav_server($ics_to_save, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password); // 0.6
                     } else {
-                        $res = $this->add_ics_event_to_caldav_server($new_ics, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password, $found_event_with_good_uid->getHref());
+                        $res = $this->add_ics_event_to_caldav_server($ics_to_save, $_urlbase, $calendar_id, $event_uid, $_login, $plain_password, $found_event_with_good_uid->getHref());
                     }
 
                     // On affiche une confirmation de l'ajout de l'événement
@@ -582,6 +589,9 @@ class roundcube_caldav extends rcube_plugin
 
         $ics = $message->get_part_body($attachments->mime_id);
         $ical = new \ICal\ICal($ics);
+
+        $response['sender_email'] = $message->get_header('from');
+
         $events = $ical->events();
 
 
@@ -594,22 +604,27 @@ class roundcube_caldav extends rcube_plugin
 
 
         foreach ($events as $i => &$event) {
-            $used_event = $event;
 
-            if ($same_uid == $used_event->uid && $i != 0) {
+            // Si l'evenement à le même uid que son prédecesseur on ne l'affiche pas
+            if ($same_uid == $event->uid && $i != 0) {
                 continue;
             } else {
-                $same_uid = $used_event->uid;
+                $same_uid = $event->uid;
             }
 
 
+            // On remplis le tableau avec tous les participants
             $id = 0;
-            foreach ($used_event->attendee_array as $participant) {
-                if (!is_string($participant) && array_key_exists('CN', $participant)) {
-                    $response['attendee_array'][$id]['name'] = $participant['CN'];
-                    $response['attendee_array'][$id]['RSVP'] = $participant['RSVP'];
-                } elseif (str_start_with($participant, 'mailto:')) {
-                    $response['attendee_array'][$id]['email'] = substr($participant, strlen('mailto:'));
+            $all_adresses = '';
+            foreach ($event->attendee_array as $attendee) {
+                if (!is_string($attendee) && array_key_exists('CN', $attendee)) {
+                    $response['attendees'][$id]['name'] = $attendee['CN'];
+                    $response['attendees'][$id]['RSVP'] = $attendee['RSVP'];
+                    $response['attendees'][$id]['partstat'] = $attendee['PARTSTAT'];
+                } elseif (str_start_with($attendee, 'mailto:')) {
+                    $response['attendees'][$id]['email'] = substr($attendee, strlen('mailto:'));
+                    $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendees'][$id]['email'] . "',this)";
+                    $all_adresses .= $response['attendees'][$id]['email'] . ';';
                     $id++;
                 }
             }
@@ -617,105 +632,119 @@ class roundcube_caldav extends rcube_plugin
             // On récupère l'adresse adresse email correspondant à l'identité qui a été solicité dans le champs attendee
             // ou dans le champs organizer
             $my_identities = $this->rcmail->user->list_identities(null, true);
-
             // On initialise avec la premère identité en cas d'echec
             $my_identity['email'] = $my_identities[0]['email'];
             $my_identity['name'] = $my_identities[0]['name'];
-
             // On boucle sur les attendee pour recuperer la bonne identity
-            if (!empty($response['attendee_array'])) {
-                foreach ($response['attendee_array'] as $attendee) {
+            if (!empty($response['attendees'])) {
+                foreach ($response['attendees'] as $attendee) {
                     foreach ($my_identities as $identity) {
                         if (strcmp($attendee['email'], $identity['email']) == 0) {
                             $my_identity['email'] = $identity['email'];
                             $my_identity['name'] = $identity['name'];
                             $my_identity['role'] = 'ATTENDEE';
-                            $my_identity['RSVP'] = $attendee['RSVP'];
                             break;
                         }
                     }
                 }
             }
-            if (!empty($used_event->organizer_array)) {
+            // On cherche toujours l'identité de l'utilisateur mais on en profite pour remplir les information de l'organisateur
+            if (!empty($event->organizer_array)) {
+                $organizer_array = [];
                 foreach ($event->organizer_array as $organizer) {
-                    $found = false;
                     if (is_string($organizer) && str_start_with($organizer, 'mailto:')) {
-                        $organizer = substr($organizer, strlen('mailto:'));
+                        $organizer_email = substr($organizer, strlen('mailto:'));
                         foreach ($my_identities as $identity) {
-                            if (strcmp($organizer, $identity['email']) == 0) {
+                            if (strcmp($organizer_email, $identity['email']) == 0) {
                                 $my_identity['email'] = $identity['email'];
                                 $my_identity['name'] = $identity['name'];
                                 $my_identity['role'] = 'ORGANIZER';
-                                $found = true;
                                 break;
                             }
                         }
-                    }
-                    if ($found) {
-                        break;
+                        $organizer_array['email'] = $organizer_email;
+                        $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $organizer_email . "',this)";
+                        $all_adresses .= $organizer_email . ';';
+                    } else {
+                        $organizer_array['name'] = $organizer['CN'];
                     }
                 }
+                $response['attendees'][] = $organizer_array;
             }
+
 
             $response['identity'] = $my_identity;
 
 
-            $found_advance = $this->is_server_in_advance($event);
-
-            if ($found_advance) {
-                $used_event = $found_advance[1];
-                $found_on_calendar = $found_advance[2];
+            if ($ical->cal['VCALENDAR']['METHOD']) {
+                $response['METHOD'] = $ical->cal['VCALENDAR']['METHOD'];
+            } elseif (strcmp($my_identity['role'], 'ORGANIZER') == 0) {
+                $response['METHOD'] = 'REPLY';
+            } else {
+                $response['METHOD'] = 'REQUEST';
             }
-            $response['found_advance'] = $found_advance;
-            $response['found_on_calendar'] = $found_on_calendar;
-            $response['used_event'] = $used_event;
+
+            // A SIMPLIFIER
+            $found_advance = $this->is_server_in_advance($event);
+            if ($found_advance) {
+                $response['found_advance'] = $found_advance;
+                $response['found_on_calendar'] = $found_advance[2];
+                $response['used_event'] = $found_advance[1];
+                $response['is_sequences_equal'] = $found_advance[3];
+
+            } else {
+                $response['used_event'] = $event;
+            }
+
+            if ($found_advance && strcmp($response['METHOD'], 'COUNTER') == 0) {
+                if (strcmp($response['used_event']->location, $event->location) != 0) {
+                    $response['new_location'] = $event->location;
+                }
+                if (strcmp($response['used_event']->dtstart_array[1], $event->dtstart_array[1]) != 0
+                    || strcmp($response['used_event']->dtend_array[1], $event->dtend_array[1]) != 0) {
+
+                    $response['new_date']['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
+                    $response['new_date']['date_day_start'] = date("d", $event->dtstart_array[2]);
+                    $response['new_date']['date_hours_start'] = date("G:i", $event->dtstart_array[2]);
+
+                    $response['new_date']['date_month_end'] = date("M/Y", $event->dtend_array[2]);
+                    $response['new_date']['date_day_end'] = date("d", $event->dtend_array[2]);
+                    $response['new_date']['date_hours_end'] = date("G:i", $event->dtend_array[2]);
+                    $same_date = false;
+                    if (strcmp(substr($event->dtstart_array[1], 0, -6), substr($event->dtend_array[1], 0, -6)) == 0) {
+                        $same_date = true;
+                    }
+                    $response['new_date']['same_date']= $same_date;
+                }
+                if (strcmp($response['used_event']->description, $event->description) != 0) {
+                    $response['new_description'] = $event->description;
+                }
+                if (count($new_attendees = array_diff($response['used_event']->attendee_array, $event->attendee_array)) > 0) {
+                    $response['new_attendees'] = $new_attendees;
+                }
+
+            }
+
+            $event = $response['used_event'];
 
 
-            $response['date_month_start'] = date("M/Y", $used_event->dtstart_array[2]);
-            $response['date_day_start'] = date("d", $used_event->dtstart_array[2]);
-            $response['date_hours_start'] = date("G:i", $used_event->dtstart_array[2]);
+            $response['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
+            $response['date_day_start'] = date("d", $event->dtstart_array[2]);
+            $response['date_hours_start'] = date("G:i", $event->dtstart_array[2]);
 
-            $response['date_month_end'] = date("M/Y", $used_event->dtend_array[2]);
-            $response['date_day_end'] = date("d", $used_event->dtend_array[2]);
-            $response['date_hours_end'] = date("G:i", $used_event->dtend_array[2]);
-
-
-            $response['date_end'] = $used_event->dtend_array[2];
+            $response['date_month_end'] = date("M/Y", $event->dtend_array[2]);
+            $response['date_day_end'] = date("d", $event->dtend_array[2]);
+            $response['date_hours_end'] = date("G:i", $event->dtend_array[2]);
 
 
             $same_date = false;
-            if (strcmp(substr($used_event->dtstart_array[1], 0, -6), substr($used_event->dtend_array[1], 0, -6)) == 0) {
+            if (strcmp(substr($event->dtstart_array[1], 0, -6), substr($event->dtend_array[1], 0, -6)) == 0) {
                 $same_date = true;
             }
             $response['same_date'] = $same_date;
             // On récupère la time_zone qui va nous servir plus tard dans une autre fonction
-            $this->time_zone_offset = $ical->iCalDateToDateTime($used_event->dtstart_array[1])->getOffset();
+            $this->time_zone_offset = $ical->iCalDateToDateTime($event->dtstart_array[1])->getOffset();
 
-
-            $id = 0;
-            if (!empty($used_event->organizer_array)) {
-                $participants = array_merge($used_event->organizer_array, $used_event->attendee_array);
-
-            } else {
-                $participants = $used_event->attendee_array;
-            }
-            // Les tableaux $event->attendee_array & $event->organizer_array ont une structure
-            // [1] => array() : attendee1_infos
-            // [2] => string : attendee1_email
-            // [3] => array() : attendee2_infos
-            // ...
-            // D'ou cette partie pour regrouper le mail et le nom d'un participant au sein du même sous tableau
-            $all_adresses = '';
-            foreach ($participants as $participant) {
-                if (!is_string($participant) && array_key_exists('CN', $participant)) {
-                    $response['attendee'][$id]['name'] = $participant['CN'];
-                } elseif (str_start_with($participant, 'mailto:')) {
-                    $response['attendee'][$id]['email'] = substr($participant, 7);
-                    $response['attendee'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendee'][$id]['email'] . "',this)";
-                    $all_adresses .= $response['attendee'][$id]['email'] . ';';
-                    $id++;
-                }
-            }
 
             // On affiche un bouton pour répondre à tous
             $all_adresses = substr($all_adresses, 0, -1);
@@ -726,12 +755,19 @@ class roundcube_caldav extends rcube_plugin
 
 
             // On affiche les autres informations concernant notre server caldav
-            $response['display_caldav_info'] = $this->display_caldav_server_related_information($used_event); // 1
+            $response['display_caldav_info'] = $this->display_caldav_server_related_information($event); // 1
 
+            if ($event->description) {
+                $response['description'] = implode("<br/>", str_split($event->description, 40));
+            }
+            if ($event->location) {
+                $response['location'] = implode("<br/>", str_split($event->location, 40));
+            }
 
             $server = $this->rcube->config->get('server_caldav');
 
             foreach ($server['_used_calendars'] as $used_calendars) {
+
                 $response['used_calendar'][$used_calendars] = $this->arrayOfCalendars[$used_calendars]->getDisplayName();
 
             }
@@ -1123,7 +1159,7 @@ class roundcube_caldav extends rcube_plugin
                 $event_found = $ical_found->events()[0];
 
 
-                // On compare les séquence avec l'evt courant et on stocke les evt avec une séquence supérieure
+                // On compare les séquence avec l'evt courant et on stocke les evt avec une séquence supérieure ou égale
                 if ($event->sequence <= $event_found->sequence) {
                     $is_server_in_advance[$calendar->getDisplayName()] = $event_found;
                     $stockage_ics[$calendar->getDisplayName()] = $event_ics;
@@ -1132,23 +1168,27 @@ class roundcube_caldav extends rcube_plugin
 
         }
         if (!empty($is_server_in_advance)) {
-            // On initialise les valeurs avec le premier elt des tableaux
+            // On initialise les valeurs avec le premiers elt des tableaux
             $found_on_calendar = array_key_first($is_server_in_advance);
             $event_with_higher_sequence = array_shift($is_server_in_advance);
             $ics_to_return = array_shift($stockage_ics);
 
-
+            $is_sequences_equal = false;
             // On compare toutes les evt obtenu selon leur séquence
             foreach ($is_server_in_advance as $calendar => $event_found) {
                 if ($event_with_higher_sequence->sequence < $event_found->sequence) {
                     $event_with_higher_sequence = $event_found;
                     $ics_to_return = $stockage_ics[$calendar];
-
                     $found_on_calendar = $calendar;
+
+
                 }
             }
+            if ($event_with_higher_sequence->sequence == $event->sequence) {
+                $is_sequences_equal = true;
+            }
 
-            return [$ics_to_return, $event_with_higher_sequence, $found_on_calendar];
+            return [$ics_to_return, $event_with_higher_sequence, $found_on_calendar, $is_sequences_equal];
         } else {
             return false;
         }
@@ -1240,6 +1280,7 @@ class roundcube_caldav extends rcube_plugin
         } else {
             $reply_to = $message->get_header('from');
         }
+//        var_dump($reply_to ); exit;
 
 
         // A CHANGER
