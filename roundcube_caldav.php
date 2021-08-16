@@ -621,14 +621,23 @@ class roundcube_caldav extends rcube_plugin
         foreach ($events as $i => &$event) {
 
 
-            if($event->duration){
-                var_dump(calculate_duration($event->duration));exit;
-            }
+
+
             // Si l'evenement à le même uid que son prédecesseur on ne l'affiche pas
             if ($same_uid == $event->uid && $i != 0) {
                 continue;
             } else {
                 $same_uid = $event->uid;
+            }
+
+
+            if($event->duration){
+                $offset = calculate_duration($event->duration);
+                $event->dtend_array = [
+                    [],
+                    date("Ymd\THis", $event->dtstart_array[2] + $offset),
+                    $event->dtstart_array[2]+$offset,
+                ];
             }
 
 
@@ -717,6 +726,7 @@ class roundcube_caldav extends rcube_plugin
                 $response['used_event'] = $event;
             }
 
+
             if ($found_advance && strcmp($response['METHOD'], 'COUNTER') == 0) {
                 if (strcmp($response['used_event']->location, $event->location) != 0) {
                     $response['new_location'] = $event->location;
@@ -732,6 +742,7 @@ class roundcube_caldav extends rcube_plugin
                     $response['new_date']['date_day_end'] = date("d", $event->dtend_array[2]);
                     $response['new_date']['date_hours_end'] = date("G:i", $event->dtend_array[2]);
                     $same_date = false;
+
                     if (strcmp(substr($event->dtstart_array[1], 0, -6), substr($event->dtend_array[1], 0, -6)) == 0) {
                         $same_date = true;
                     }
@@ -744,8 +755,16 @@ class roundcube_caldav extends rcube_plugin
                     $response['new_attendees'] = $new_attendees;
                 }
 
-            }
+                if($response['used_event']->duration){
+                    $offset = calculate_duration($response['used_event']->duration);
+                    $response['used_event']->dtend_array = [
+                        [],
+                        date("Ymd\THis", $response['used_event']->dtstart_array[2] + $offset),
+                        $response['used_event']->dtstart_array[2]+$offset,
+                    ];
+                }
 
+            }
             $event = $response['used_event'];
 
 
@@ -756,7 +775,6 @@ class roundcube_caldav extends rcube_plugin
             $response['date_month_end'] = date("M/Y", $event->dtend_array[2]);
             $response['date_day_end'] = date("d", $event->dtend_array[2]);
             $response['date_hours_end'] = date("G:i", $event->dtend_array[2]);
-
 
             $same_date = false;
             if (strcmp(substr($event->dtstart_array[1], 0, -6), substr($event->dtend_array[1], 0, -6)) == 0) {

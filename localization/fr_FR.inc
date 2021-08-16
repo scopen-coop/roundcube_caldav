@@ -73,6 +73,7 @@ $labels['confirm_modification'] = "Confirmer les modifications";
 $labels['decline_modification'] = "Decliner les modifications";
 $labels['invitation_accepted'] = " a accepté votre invitation à: ";
 $labels['invitation_declined'] = " a décliné votre invitation à: ";
+$labels['unknown_reply'] = " à répondu à votre invitation mais ne fait pas partie des participants";
 $labels['new_date_proposal'] = "Proposition de nouveaux horaires: ";
 $labels['new_location_proposal'] = "Emplacement proposé: ";
 $labels['new_description_proposal'] = "Description proposée: ";

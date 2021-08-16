@@ -73,6 +73,7 @@ $labels['confirm_modification'] = "Confirm modifications";
 $labels['decline_modification'] = "Decline modifications";
 $labels['invitation_accepted'] = " accepted your invitation for the event:  ";
 $labels['invitation_declined'] = "  declined your invitation for the event:";
+$labels['unknown_reply'] = " reply to your invitation without being in the attendee list";
 $labels['new_date_proposal'] = "New schedule proposal: ";
 $labels['new_location_proposal'] = "New location proposal: ";
 $labels['if_modification'] = "Modifications are displayed green";

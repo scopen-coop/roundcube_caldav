@@ -136,9 +136,11 @@ function undirect_rendering(response) {
 
 
     // On récupère les participants qui sont respectivement l'expediteur et le destinataire de l'email
+    let sender;
+    let receiver;
     if (array_response['attendees'].length > 0) {
-        var sender = find_among_attendee(array_response['sender_email'], array_response['attendees']);
-        var receiver = find_among_attendee(array_response['receiver_email'], array_response['attendees']);
+        sender = find_among_attendee(array_response['sender_email'], array_response['attendees']);
+        receiver = find_among_attendee(array_response['receiver_email'], array_response['attendees']);
     }
 
     // On récupère l'evt
@@ -161,11 +163,16 @@ function undirect_rendering(response) {
     if (isOrganizer && isACounter) {
         $invitation.append('<h3>' + rcmail.gettext('invitation_modification', 'roundcube_caldav') + '</h3>')
     } else if (isOrganizer && isAReply) {
-        if (isStringEquals(sender['partstat'], 'ACCEPTED')) {
-            $invitation.append('<h3>' + sender_name + rcmail.gettext('invitation_accepted', 'roundcube_caldav') + '</h3>')
-        } else {
-            $invitation.append('<h3>' + sender_name + rcmail.gettext('invitation_declined', 'roundcube_caldav') + '</h3>')
+        if(sender){
+            if (isStringEquals(sender['partstat'], 'ACCEPTED')) {
+                $invitation.append('<h3>' + sender_name + rcmail.gettext('invitation_accepted', 'roundcube_caldav') + '</h3>')
+            } else {
+                $invitation.append('<h3>' + sender_name + rcmail.gettext('invitation_declined', 'roundcube_caldav') + '</h3>')
+            }
+        }else{
+            $invitation.append('<h3>'+array_response['sender_email'] +rcmail.gettext('unknown_reply', 'roundcube_caldav') + '</h3>')
         }
+
     } else if (isOrganizer && isARequest) {
         $invitation.append('<h3>' + rcmail.gettext('invitation_send', 'roundcube_caldav') + '</h3>')
     } else if (isOrganizer && isADeclineCounter) {
