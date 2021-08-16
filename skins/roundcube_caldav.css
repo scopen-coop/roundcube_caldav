@@ -40,6 +40,11 @@
 
 }
 
+.date_container{
+    display: flex;
+    flex-direction: row;
+}
+
 .icon_date {
     margin: auto;
     font-size: 1em; /* change icon size */
@@ -144,14 +149,23 @@
     background-color: #404f54;
     position: relative;
     clip-path: polygon(0 0, 0 100%, 100% 50%);
-    margin: 2em 0 2em;
+    margin: 2.5em 1em 2em 1em;
 
 }
 .new.arrow-right  {
     background-color: #04a96d;
+    margin: 3.7em 0 0 0 !important;
 }
 
+.new.arrow-down {
+    background-color: #04a96d;
+    width: 2em;
+    height: 2em;
+    position: relative;
+    clip-path: polygon(0 0,100% 0, 50% 100%);
+    margin-left: 9.5em;
 
+}
 
 .calendar_choice{
     margin: 1em;
@@ -215,5 +229,9 @@ fieldset {
     margin-top: 1.5em;
 }
 .if_rescheduled{
+    text-align: center;
+}
+
+.if_modification{
     text-align: center;
 }

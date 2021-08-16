@@ -15,9 +15,10 @@ function isStringEquals(str1, str2) {
     return false;
 }
 
-function find_sender_among_attendee(sender_email, attendees) {
+function find_among_attendee(email_to_find, attendees) {
+
     for (let attendee of attendees) {
-        if (isStringEquals(attendee['email'], sender_email)) {
+        if (isStringEquals(attendee['email'], email_to_find)) {
             return attendee;
         }
     }
@@ -126,14 +127,19 @@ function undirect_rendering(response) {
     // On recupère la réponse du serveur
     let array_response = response.request;
 
+    // On récupère le role du participant et la methode du fichier reçu
     let isOrganizer = isStringEquals(array_response['identity']['role'], 'ORGANIZER');
-    let isMailACounter = isStringEquals(array_response['METHOD'], 'COUNTER');
-    let isMailAReply = isStringEquals(array_response['METHOD'], 'REPLY');
+    let isACounter = isStringEquals(array_response['METHOD'], 'COUNTER');
+    let isAReply = isStringEquals(array_response['METHOD'], 'REPLY');
+    let isARequest = isStringEquals(array_response['METHOD'], 'REQUEST');
+    let isADeclineCounter = isStringEquals(array_response['METHOD'], 'DECLINECOUNTER');
 
-    if (array_response['attendees']) {
-        sender = find_sender_among_attendee(array_response['sender_email'], array_response['attendees']);
+
+    // On récupère les participants qui sont respectivement l'expediteur et le destinataire de l'email
+    if (array_response['attendees'].length > 0) {
+        var sender = find_among_attendee(array_response['sender_email'], array_response['attendees']);
+        var receiver = find_among_attendee(array_response['receiver_email'], array_response['attendees']);
     }
-
 
     // On récupère l'evt
     let used_event = array_response['used_event'];
@@ -141,24 +147,43 @@ function undirect_rendering(response) {
 
     // On affiche le titre
     let $invitation = $event_template_html.find('.invitation')
-    if (isOrganizer && isMailACounter) {
-        $invitation.append('<h4>' + rcmail.gettext('invitation_modification', 'roundcube_caldav') + '</h4>')
-    } else if (isOrganizer && isMailAReply) {
-        let display_name = sender['name'] ? sender['name'] : sender['email'];
-        if (isStringEquals(sender['partstat'], 'ACCEPTED')) {
-            $invitation.append('<h4>' + display_name + rcmail.gettext('invitation_accepted', 'roundcube_caldav') + '</h4>')
-        } else {
-            $invitation.append('<h4>' + display_name + rcmail.gettext('invitation_declined', 'roundcube_caldav') + '</h4>')
-        }
-    } else {
-
-        $invitation.append('<h4>' + rcmail.gettext('invitation', 'roundcube_caldav') + '</h4>')
+    let sender_name ='';
+    if(sender){
+        sender_name = sender['name'] ? sender['name'] : sender['email'];
     }
-    $invitation.append('<h3>' + used_event['summary'] + '</h3>');
 
+    let receiver_name = '';
+    if(receiver){
+        receiver_name = receiver['name'] ? receiver['name'] : receiver['email'];
+    }
 
-    if (isMailACounter) {
-        $event_template_html.find('.if_modification').show();
+    // On affiche des titres différents selon le role ou la methode
+    if (isOrganizer && isACounter) {
+        $invitation.append('<h3>' + rcmail.gettext('invitation_modification', 'roundcube_caldav') + '</h3>')
+    } else if (isOrganizer && isAReply) {
+        if (isStringEquals(sender['partstat'], 'ACCEPTED')) {
+            $invitation.append('<h3>' + sender_name + rcmail.gettext('invitation_accepted', 'roundcube_caldav') + '</h3>')
+        } else {
+            $invitation.append('<h3>' + sender_name + rcmail.gettext('invitation_declined', 'roundcube_caldav') + '</h3>')
+        }
+    } else if (isOrganizer && isARequest) {
+        $invitation.append('<h3>' + rcmail.gettext('invitation_send', 'roundcube_caldav') + '</h3>')
+    } else if (isOrganizer && isADeclineCounter) {
+        $invitation.append('<h3>' + rcmail.gettext('invitation_decline_modifications1', 'roundcube_caldav') + receiver_name
+            + rcmail.gettext('invitation_decline_modifications2', 'roundcube_caldav') + '</h3>')
+    } else {
+        $invitation.append('<h3>' + rcmail.gettext('invitation', 'roundcube_caldav') + '</h3>')
+    }
+    $invitation.append('<h4>' + used_event['summary'] + '</h4>');
+
+    // Si il y a des modifications on affiche un message
+    let $modifications = $event_template_html.find('.if_modification');
+    if (isACounter && (array_response['new_description'] || array_response['new_location'] || array_response['new_date'])) {
+        $modifications.html(rcmail.gettext('if_modification','roundcube_caldav'));
+        $modifications.show();
+    }else if (isACounter){
+        $modifications.html(rcmail.gettext('if_no_modification','roundcube_caldav'));
+        $modifications.show();
     }
 
     // On regarde si le serveur est en avance uniquement si l'utilisateur n'est pas l'organisateur
@@ -168,7 +193,7 @@ function undirect_rendering(response) {
             $event_template_html.find('.found_advance').hide();
         } else {
             if (!array_response['is_sequences_equal']) {
-                $event_template_html.find('.found_advance').html(rcmail.gettext('modified_event', 'roundcube_caldav') + array_response['found_on_calendar']);
+                $event_template_html.find('.found_advance').html(rcmail.gettext('modified_event', 'roundcube_caldav') + array_response['found_on_calendar']['display_name']);
             }
             change_status(array_response['found_advance'][1].status, $event_template_html);
         }
@@ -188,7 +213,7 @@ function undirect_rendering(response) {
         }
     } else {
         $event_template_html.find('.same_date').hide();
-        let $dif_date_start = $event_template_html.find('.different_dat,.start');
+        let $dif_date_start = $event_template_html.find('.different_date.start');
         $dif_date_start.children('.d').html(array_response['date_day_start']);
         $dif_date_start.children('.m').html(array_response['date_month_start']);
         if (!isStringEquals(array_response['date_hours_start'], '0:00')) {
@@ -198,25 +223,27 @@ function undirect_rendering(response) {
         }
 
 
-        let $dif_date_end = $event_template_html.find('.different_date,.end');
+        let $dif_date_end = $event_template_html.find('.different_date.end');
         $dif_date_end.children('.d').html(array_response['date_day_end']);
         $dif_date_end.children('.m').html(array_response['date_month_end']);
         if (!isStringEquals(array_response['date_hours_end'], '0:00')) {
-            $dif_date_start.children('.h').html(array_response['date_hours_end']);
+            $dif_date_end.children('.h').html(array_response['date_hours_end']);
         } else {
-            $dif_date_start.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
+            $dif_date_end.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
         }
 
     }
-    if (isMailACounter){
-        if(array_response['new_date']){
+    // Si le mail est une proposition de modifications et possède des champs date modifiés
+    if (isACounter) {
+        if (array_response['new_date']) {
             // On affiche la nouvelle  date
-            $event_template_html.find('.arrow-right.new').show()
             let $new_date = $event_template_html.find('.new_date_event');
             $new_date.show();
             if (array_response['new_date']['same_date']) {
+                $event_template_html.find('.arrow-right.new').show();
                 $new_date.children('.different_date').hide();
                 let $same_date = $new_date.children('.same_date');
+                $same_date.show()
                 $same_date.children('.d').html(array_response['new_date']['date_day_start']);
                 $same_date.children('.m').html(array_response['new_date']['date_month_start']);
                 if (!isStringEquals(array_response['new_date']['date_hours_start'], '0:00') || !isStringEquals(array_response['new_date']['date_hours_end'], '0:00')) {
@@ -225,8 +252,13 @@ function undirect_rendering(response) {
                     $same_date.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
                 }
             } else {
+                $event_template_html.find('.date_container').css("flex-direction", "column")
+                $event_template_html.find('.arrow-down.new').show();
+                $new_date.css("display", "flex");
+                $new_date.css("flex-direction", "raw");
                 $new_date.children('.same_date').hide();
-                let $dif_date_start = $new_date.children('.different_dat,.start');
+                let $dif_date_start = $new_date.children('.different_date.start');
+                $dif_date_start.show();
                 $dif_date_start.children('.d').html(array_response['new_date']['date_day_start']);
                 $dif_date_start.children('.m').html(array_response['new_date']['date_month_start']);
                 if (!isStringEquals(array_response['new_date']['date_hours_start'], '0:00')) {
@@ -236,19 +268,21 @@ function undirect_rendering(response) {
                 }
 
 
-                let $dif_date_end = $new_date.children('.different_date,.end');
+                $new_date.children('.different_date.arrow-right').show();
+                let $dif_date_end = $new_date.children('.different_date.end');
+                $dif_date_end.show();
                 $dif_date_end.children('.d').html(array_response['new_date']['date_day_end']);
                 $dif_date_end.children('.m').html(array_response['new_date']['date_month_end']);
+
                 if (!isStringEquals(array_response['new_date']['date_hours_end'], '0:00')) {
-                    $dif_date_start.children('.h').html(array_response['new_date']['date_hours_end']);
+                    $dif_date_end.children('.h').html(array_response['new_date']['date_hours_end']);
                 } else {
-                    $dif_date_start.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
+                    $dif_date_end.children('.h').html(rcmail.gettext('all_day', 'roundcube_caldav'));
                 }
 
             }
         }
     }
-
 
 
     // On affiche la description et le lieu de l'evt
@@ -266,7 +300,7 @@ function undirect_rendering(response) {
         $location.append(array_response['location']);
     }
 
-    if(isMailACounter){
+    if (isACounter) {
         let $new_location = $event_template_html.find('.if_new_location');
         let $new_description = $event_template_html.find('.if_new_description');
         if (array_response['new_location']) {
@@ -280,7 +314,6 @@ function undirect_rendering(response) {
             $new_description.append(array_response['new_description'])
         }
     }
-
 
 
     // On regarde s'il s'agit d'un evt reccurent
@@ -379,10 +412,10 @@ function undirect_rendering(response) {
     // On récupère la valeur du champs select ou l'on selectionne les calendriers
     let $calendar_choice = $event_template_html.find('.calendar_choice');
     let select = $event_template_html.find('.choose_calendar_to_add_event');
-    if (!isOrganizer || (isMailACounter && !array_response['found_advance'])) {
+    if (!isOrganizer || (isACounter && !array_response['found_advance'])) {
         if (!isOrganizer) {
             $calendar_choice.prepend(rcmail.gettext('choose_calendar_to_add', 'roundcube_caldav'));
-        } else if (isMailACounter && !array_response['found_advance']) {
+        } else if (isACounter && !array_response['found_advance']) {
             $calendar_choice.prepend(rcmail.gettext('event_not_found_which_calendar_to_add', 'roundcube_caldav'));
         }
         for (let [calendar_id, calendar_name] of Object.entries(array_response['used_calendar'])) {
@@ -456,7 +489,6 @@ function undirect_rendering(response) {
             $event_template_html.find(".msg_location").remove();
             $div_to_add.append('<p class="msg_location">' + rcmail.gettext('location', 'roundcube_caldav') + $location_input.val() + '</p>');
         }
-        console.log(areFieldsFilled)
         // Si au moins un des deux est rempli
         if (areFieldsFilled) {
             $div_to_add.show();
@@ -474,8 +506,8 @@ function undirect_rendering(response) {
             rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
                 _mail_uid: rcmail.env.uid,
                 _mbox: rcmail.env.mailbox,
-                _calendar: select.val(),
-                _status: 'TENTATIVE',
+                _calendar: isOrganizer ? array_response['found_on_calendar']['calendar_id'] : select.val(),
+                _status: isOrganizer ? 'CONFIRMED' : 'TENTATIVE',
                 _role: array_response['identity']['role'],
                 _event_uid: used_event['uid'],
                 _chosenDateStart: chosenDateStart,
@@ -532,6 +564,7 @@ function undirect_rendering(response) {
     let decline = $event_template_html.find('.decline_button');
     let confirm_organizer = $event_template_html.find('.confirm_button_organizer');
     let decline_organizer = $event_template_html.find('.decline_button_organizer');
+
     if (!isOrganizer) {
         // On cache les boutons destinés à l'organisateur
         confirm_organizer.hide();
@@ -597,7 +630,7 @@ function undirect_rendering(response) {
             });
         }
 
-    } else if (isMailACounter) {
+    } else if (isACounter) {
         // On cache les boutons destinés aux participants normaux
         confirm.hide();
         tentative.hide();
@@ -611,15 +644,15 @@ function undirect_rendering(response) {
                 rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
                     _mail_uid: rcmail.env.uid,
                     _mbox: rcmail.env.mailbox,
-                    _calendar: array_response['found_advance'] ? array_response['found_advance'][2] : select.val(),
+                    _calendar: array_response['found_on_calendar']['calendar_id'],
                     _event_uid: used_event['uid'],
                     _status: 'CONFIRMED',
                     _role: array_response['identity']['role'],
                 });
                 confirm_organizer.attr('disabled', 'true');
-                confirm_organizer.html(rcmail.gettext('confirmed', 'roundcube_caldav'));
+                confirm_organizer.html(rcmail.gettext('confirmed_organizer', 'roundcube_caldav'));
                 decline_organizer.removeAttr('disabled');
-                decline_organizer.html(rcmail.gettext('decline', 'roundcube_caldav'));
+                decline_organizer.html(rcmail.gettext('decline_modification', 'roundcube_caldav'));
             });
         }
         if (decline_organizer) {
@@ -630,12 +663,12 @@ function undirect_rendering(response) {
                     _event_uid: used_event['uid'],
                 });
                 decline_organizer.attr('disabled', 'true');
-                decline_organizer.html(rcmail.gettext('declined', 'roundcube_caldav'));
+                decline_organizer.html(rcmail.gettext('declined_organizer', 'roundcube_caldav'));
                 confirm_organizer.removeAttr('disabled');
-                confirm_organizer.html(rcmail.gettext('confirm', 'roundcube_caldav'));
+                confirm_organizer.html(rcmail.gettext('confirm_modification', 'roundcube_caldav'));
             });
         }
-    } else if (isMailAReply) {
+    } else if (isAReply || isARequest || isADeclineCounter) {
         confirm.hide();
         tentative.hide();
         decline.hide();

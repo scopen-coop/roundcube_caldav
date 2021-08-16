@@ -194,6 +194,30 @@ function change_sequence_ics($ics)
 
 }
 
+/**
+ * Parse une durée au format ics en seconde
+ * @param $duration
+ * @return false|float|int*
+ */
+function calculate_duration($duration){
+    $ladder = ['S'=> 1 , 'M'=> 60, 'H'=>3600,'D'=>86400,'W'=>604800];
+    $match_array=[];
+    $res = preg_match('/P([0-9]*W)?([0-9]*D)?T?([0-9]*H)?([0-9]*M)?([0-9]*S)?/',$duration,$match_array);
+    if($res){
+        array_shift($match_array);
+        $duration_in_second = 0;
+        foreach($match_array as $match){
+            $scale = [];
+            preg_match('/([0-9]*)([A-Z])/',$match,$scale);
+            $duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
+        }
+        return $duration_in_second;
+    }else{
+        return false;
+    }
+
+}
+
 
 function change_method_ics($ics, $method)
 {
@@ -203,7 +227,13 @@ function change_method_ics($ics, $method)
         $ics = preg_replace('/BEGIN:VCALENDAR/', "BEGIN:VCALENDAR\nMETHOD:" . $method, $ics);
     }
     return $ics;
+}
 
+function del_method_field_ics($ics){
+    if (preg_match('/^METHOD:.*[\r|\n]*/m', $ics) == 1) {
+        $ics = preg_replace('/^METHOD:.*/m', '', $ics);
+    }
+    return $ics;
 }
 
 function str_start_with($string, $startstring)
