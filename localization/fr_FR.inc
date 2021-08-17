@@ -71,6 +71,8 @@ $labels['something_happened_while_getting_events'] = "La récupération des év�
 $labels['invitation_modification'] = "Vous avez reçu un proposition de modification pour cet événement";
 $labels['confirm_modification'] = "Confirmer les modifications";
 $labels['decline_modification'] = "Decliner les modifications";
+$labels['update_event'] = "Mettre à jour l'événement sur le serveur";
+$labels['updated_event'] = "L'évènement à été mis à jour";
 $labels['invitation_accepted'] = " a accepté votre invitation à: ";
 $labels['invitation_declined'] = " a décliné votre invitation à: ";
 $labels['unknown_reply'] = " à répondu à votre invitation mais ne fait pas partie des participants";
@@ -82,4 +84,6 @@ $labels['if_no_modification'] = "Les modifications ont déjà été prises en co
 $labels['invitation_send'] = "Vous avez envoyé une invitation pour l'événement: ";
 $labels['invitation_decline_modifications1'] = "Vous avez refusé les propositions de changements de ";
 $labels['invitation_decline_modifications2'] = " ";
+$labels['present_but_older'] = 'Vous possédez déjà cet événement sur votre serveur mais sous une version plus ancienne';
+
 ?>

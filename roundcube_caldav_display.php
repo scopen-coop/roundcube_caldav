@@ -1,7 +1,9 @@
+<p id='loading'> <?php echo $this->gettext("loading") ?></p>
 <template id="display" style="display: none">
     <div class="content_invitation">
         <div class="invitation">
-
+        </div>
+        <div class="is_on_server">
         </div>
         <div class="content_event">
             <div class="date_container">
@@ -120,7 +122,7 @@
             <button class="action_buttons confirm_button btn btn-secondary"><?php echo $this->gettext('confirm') ?></button>
             <button class="action_buttons tentative_button btn btn-secondary"><?php echo $this->gettext('tentative') ?></button>
             <button class="action_buttons decline_button btn btn-secondary"><?php echo $this->gettext('decline') ?></button>
-
+            <button class="action_buttons update_button btn btn-secondary"><?php echo $this->gettext('update_event') ?></button>
             <button class="action_buttons confirm_button_organizer btn btn-secondary"><?php echo $this->gettext('confirm_modification') ?></button>
             <button class="action_buttons decline_button_organizer btn btn-secondary"><?php echo $this->gettext('decline_modification') ?></button>
         </div>

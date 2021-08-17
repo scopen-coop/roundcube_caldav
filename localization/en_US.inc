@@ -71,6 +71,8 @@ $labels['something_happened_while_getting_events'] = "Something happened while g
 $labels['invitation_modification'] = "You just receive a modification for your invitation";
 $labels['confirm_modification'] = "Confirm modifications";
 $labels['decline_modification'] = "Decline modifications";
+$labels['update_event'] = "Update Event on server";
+$labels['updated_event'] = "Event has been Updated ";
 $labels['invitation_accepted'] = " accepted your invitation for the event:  ";
 $labels['invitation_declined'] = "  declined your invitation for the event:";
 $labels['unknown_reply'] = " reply to your invitation without being in the attendee list";
@@ -81,4 +83,5 @@ $labels['if_no_modification'] = "Changes have already been taken into account";
 $labels['invitation_send'] = "You have sent an invitation for: ";
 $labels['invitation_decline_modifications1'] = "You have refused ";
 $labels['invitation_decline_modifications2'] = "'s proposed changes";
+$labels['present_but_older'] = 'You already have this event on your server but under an older version ';
 ?>

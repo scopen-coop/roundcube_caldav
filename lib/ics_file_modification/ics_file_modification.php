@@ -134,6 +134,10 @@ function change_status_ics($status, $ics, $email)
 
     $sections = preg_split('@(\n(?! ))@m', $ics);
 
+    if (strcmp($status,'CANCELLED')==0){
+        $status = 'DECLINED';
+    }
+
     foreach ($sections as &$section) {
 
         if (preg_match('@ATTENDEE@', $section) == 1) {
