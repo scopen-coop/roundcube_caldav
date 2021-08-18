@@ -251,9 +251,9 @@ class roundcube_caldav extends rcube_plugin
                 if ($new_ics) {
                     // On change la date de dernière modif
                     $new_ics = change_last_modified_ics($new_ics);
-                    $status = 'DECLINECOUNTER';
-                    $new_ics = change_method_ics($new_ics, $status);
-                    $this->reply(delete_status_section_for_sending($new_ics), $message, $status, 'ORGANIZER');
+                    $method = 'DECLINECOUNTER';
+                    $new_ics = change_method_ics($new_ics, $method);
+                    $this->reply(delete_status_section_for_sending($new_ics), $message, $method, 'ORGANIZER');
                 }
 
             }
@@ -277,6 +277,7 @@ class roundcube_caldav extends rcube_plugin
         $mbox = rcube_utils::get_input_value('_mbox', rcube_utils::INPUT_POST);
         $status = rcube_utils::get_input_value('_status', rcube_utils::INPUT_POST);
         $role = rcube_utils::get_input_value('_role', rcube_utils::INPUT_POST);
+        $method = rcube_utils::get_input_value('_method', rcube_utils::INPUT_POST);
         $chosen_calendar = rcube_utils::get_input_value('_calendar', rcube_utils::INPUT_POST);
         $chosen_date_start = rcube_utils::get_input_value('_chosenDateStart', rcube_utils::INPUT_POST);
         $chosen_date_end = rcube_utils::get_input_value('_chosenDateEnd', rcube_utils::INPUT_POST);
@@ -291,7 +292,8 @@ class roundcube_caldav extends rcube_plugin
         $this->connection_to_calDAV_server(); // ~2s
         $this->get_all_events();
 
-//        var_dump( $this->arrayOfCalendars[$chosen_calendar]);exit;
+
+
         // Formatage de l'url du calendrier
         $calendar_id = explode('/', $this->arrayOfCalendars[$chosen_calendar]->getUrl());
         array_pop($calendar_id);
@@ -319,7 +321,8 @@ class roundcube_caldav extends rcube_plugin
 
 
                 $is_organizer = strcmp($role, 'ORGANIZER') == 0;
-                $just_update_event = strcmp($status, 'UPDATED') == 0;
+                $just_update_event = strcmp($method, 'UPDATED') == 0;
+                $just_cancel_event = strcmp($method, 'EVENT_CANCELLED') == 0;
                 $has_participants = strcmp($role, 'NO_PARTICIPANTS') != 0;
 
                 //
@@ -373,28 +376,17 @@ class roundcube_caldav extends rcube_plugin
                         $chosen_time_start, $chosen_time_end, $chosen_location, $array_event, $event, $ics_to_send);
 
 
-                    if (!$just_update_event) {
-                        if ($is_organizer) {
-                            $ics_to_send = change_method_ics($ics_to_send, 'REQUEST');
-                            $status = 'REQUEST';
-                            $ics_to_save = $ics_to_send;
-                        } else {
-                            if ($has_modif) {
-                                $ics_to_send = change_method_ics($ics_to_send, 'COUNTER');
-                            } else {
-                                $ics_to_send = change_method_ics($ics_to_send, 'REPLY');
-                            }
-                        }
+                    if ($is_organizer) {
+                        $ics_to_save = $ics_to_send;
                     }
+
+                    $ics_to_send = change_method_ics($ics_to_send, $method);
 
 
                     // On cherche si le serveur possède déjà un événement avec cet uid
                     $found_event_with_good_uid = $this->find_event_with_matching_uid($event, $chosen_calendar);
-                    if ($just_update_event && $found_event_with_good_uid) {
-                        $status = $found_event_with_good_uid->status;
-                    }
 
-
+//                    var_dump(delete_status_section_for_sending($ics_to_send));exit;
                     // On ajoute le fichier au serveur calDAV
                     if (!$found_event_with_good_uid) {
                         $res = $this->add_ics_event_to_caldav_server($ics_to_save, $calendar_id, $event_uid); // 0.6
@@ -407,8 +399,9 @@ class roundcube_caldav extends rcube_plugin
                     if (empty($res)) {
                         $this->rcmail->output->command('display_message', $this->gettext('successfully_saved'), 'confirmation');
                         // On envoie une réponse uniquement si il y a des participants à qui répondre
-                        if ($has_participants && !$just_update_event) {
-                            $this->reply(delete_status_section_for_sending($ics_to_send), $message, $status, $role, $has_modif);
+                        if ($has_participants && !$just_update_event && !$just_cancel_event) {
+                            $method = $is_organizer ? $method : $status;
+                            $this->reply(delete_status_section_for_sending($ics_to_send), $message, $method, $role, $has_modif);
                         }
                     } else {
                         $this->rcmail->output->command('display_message', $this->gettext('something_happened') . $res, 'error');
@@ -439,9 +432,15 @@ class roundcube_caldav extends rcube_plugin
         } elseif ($_connexion) {
             try {
                 $success = $this->try_connection($_login, $_password, $_url_base); //0.86
+                $avalaible_calendars = $this->client->findCalendars(); //1.53
 
-                $this->arrayOfCalendars = $this->client->findCalendars(); //1.53
-
+                foreach ($server['_used_calendars'] as $used_calendar) {
+                    foreach ($avalaible_calendars as $avalaible_calendar){
+                        if($used_calendar == $avalaible_calendar->getCalendarID()){
+                            $this->arrayOfCalendars[$avalaible_calendar->getCalendarID()] =  $avalaible_calendar;
+                        }
+                    }
+                }
                 $this->connected = true;
                 return $success;
             } catch (Exception $e) {
@@ -589,6 +588,9 @@ class roundcube_caldav extends rcube_plugin
         $this->connection_to_calDAV_server();
         $this->get_all_events();
 
+
+
+
         $ics = $message->get_part_body($attachments->mime_id);
         $ical = new \ICal\ICal($ics);
 
@@ -669,6 +671,7 @@ class roundcube_caldav extends rcube_plugin
 
 
             $found_advance = $this->is_server_in_advance($event);
+
             if ($found_advance) {
                 $response['found_advance'] = $found_advance;
                 $response['found_on_calendar']['display_name'] = $found_advance[1];
@@ -683,7 +686,7 @@ class roundcube_caldav extends rcube_plugin
 
             foreach ($this->arrayOfCalendars as $calendar) {
                 // On trouve les événements qui matchent dans chacun des calendriers
-                $event_found_on_server = $this->find_event_with_matching_uid($event, $calendar->getCalendarID()); // 0.5 *2 = 1s
+                $event_found_on_server = $this->find_event_with_matching_uid($event, $calendar->getCalendarID());
                 if ($event_found_on_server) {
                     $response['found_older_event_on_calendar'] = $calendar->getCalendarID();
                     break;
@@ -1230,9 +1233,9 @@ class roundcube_caldav extends rcube_plugin
      * @param $ics_to_send
      * @param $message
      * @param $has_modif
-     * @param $status
+     * @param $method
      */
-    public function reply($ics_to_send, $message, $status, $role, $has_modif = false)
+    public function reply($ics_to_send, $message, $method, $role, $has_modif = false)
     {
         // On parse l'ics reçu
         $ical = new ICal\ICal($ics_to_send);
@@ -1264,10 +1267,12 @@ class roundcube_caldav extends rcube_plugin
                     }
                 }
             }
-        } elseif (strcmp($status, 'REQUEST') == 0 && $my_identity) {
+        } elseif ((strcmp($method, 'REQUEST') == 0 || strcmp($method, 'CANCEL')==0) && $my_identity) {
             $array_attendee = [];
             $this->get_attendee_adresses_and_fill_array($event, $array_attendee);
+
             foreach ($array_attendee['attendees'] as $attendee) {
+
                 if (!empty($attendee['RSVP'])) {
                     if (strcmp($attendee['RSVP'], 'TRUE') == 0) {
                         $reply_to .= $attendee['email'] . ';';
@@ -1283,19 +1288,19 @@ class roundcube_caldav extends rcube_plugin
 
         // A CHANGER
         if (strpos($orig_subject, $this->gettext('MODIFIED')) >= 0 || strpos($orig_subject, $this->gettext('CONFIRMED')) >= 0
-            || strpos($orig_subject, $this->gettext('TENTATIVE')) >= 0 || strpos($orig_subject, $this->gettext('CANCELLED')) >= 0) {
+            || strpos($orig_subject, $this->gettext('TENTATIVE')) >= 0 || strpos($orig_subject, $this->gettext('CANCELLED')) >= 0
+            || strpos($orig_subject, $this->gettext('CANCEL')) >= 0 || strpos($orig_subject, $this->gettext('DECLINECOUNTER')) >= 0) {
             $orig_subject = preg_replace('@\[.*?:@', '', $orig_subject);
         }
+
 
         if (!empty($reply_to)) {
 
             // On modifie l'objet du mail
-            if ($has_modif || strcmp($status, 'REQUEST') == 0) {
+            if ($has_modif || strcmp($method, 'REQUEST') == 0) {
                 $prefix = $this->gettext('MODIFIED');
-            } elseif (strcmp($status, 'DECLINECOUNTER') == 0) {
-                $prefix = $this->gettext('DECLINECOUNTER');
             } else {
-                $prefix = $this->gettext($status);
+                $prefix = $this->gettext($method);
             }
             $header = [
                 'date' => $this->rcmail->user_date(),

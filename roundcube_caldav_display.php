@@ -125,6 +125,7 @@
             <button class="action_buttons update_button btn btn-secondary"><?php echo $this->gettext('update_event') ?></button>
             <button class="action_buttons confirm_button_organizer btn btn-secondary"><?php echo $this->gettext('confirm_modification') ?></button>
             <button class="action_buttons decline_button_organizer btn btn-secondary"><?php echo $this->gettext('decline_modification') ?></button>
+            <button class="action_buttons cancel_button btn btn-secondary"><?php echo $this->gettext('cancel_event') ?></button>
         </div>
     </div>
 </template>
