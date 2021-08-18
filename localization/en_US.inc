@@ -69,6 +69,7 @@ $labels['all_day'] = 'All Day';
 $labels['loading'] = 'Loading...';
 $labels['something_happened_while_getting_events'] = "Something happened while getting events on calDAV server";
 $labels['invitation_modification'] = "You just receive a modification for your invitation";
+$labels['invitation_modification_already_studied'] = "The proposed modifications for this event have already been studied";
 $labels['confirm_modification'] = "Confirm modifications";
 $labels['decline_modification'] = "Decline modifications";
 $labels['update_event'] = "Update Event on server";

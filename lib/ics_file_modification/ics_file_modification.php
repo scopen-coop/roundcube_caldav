@@ -119,7 +119,7 @@ function change_location_ics($location, $ics)
  * @param $ics
  * @return string le fichier ics mis a jour
  */
-function change_status_ics($status, $ics, $email)
+function change_status_ics($status, $ics)
 {
     $pos_status = strpos($ics, 'STATUS:');
     if ($pos_status > 0) {
@@ -127,36 +127,52 @@ function change_status_ics($status, $ics, $email)
     } else {
         $ics = preg_replace('@(END:VEVENT)@', 'STATUS:' . $status . "\nEND:VEVENT", $ics);
     }
-    if (strcmp("CONFIRMED", $status) == 0) {
-        $status = 'ACCEPTED';
-    }
+   return $ics;
+}
 
+
+function change_partstat_ics($ics,$status,$email){
 
     $sections = preg_split('@(\n(?! ))@m', $ics);
 
-    if (strcmp($status,'CANCELLED')==0){
+    if (strcmp($status, 'CANCELLED') == 0) {
         $status = 'DECLINED';
+    } elseif (strcmp("CONFIRMED", $status) == 0) {
+        $status = 'ACCEPTED';
     }
-
     foreach ($sections as &$section) {
 
         if (preg_match('@ATTENDEE@', $section) == 1) {
             if (preg_match('/' . $email . '/', $section) == 1) {
                 $section = implode('', explode("\r\n ", $section));
-                $attributes = explode(';', $section);
-                foreach ($attributes as &$attribute) {
+                $attributes = preg_split('/([;|:])/', $section,-1,PREG_SPLIT_DELIM_CAPTURE);
 
+                $is_rsvp_field_present = false;
+                foreach ($attributes as &$attribute) {
+                    if($attribute == ';' || $attributes == ':'){
+                        continue;
+                    }
                     $parts = explode('=', $attribute);
                     $command = $parts[0];
                     if (strcmp($command, 'PARTSTAT') == 0) {
                         $parts[1] = $status;
                         $attribute = implode('=', $parts);
                     }
+                    if (strcmp($status, 'DECLINED') == 0 && strcmp($command, 'RSVP') == 0) {
+                        $is_rsvp_field_present = true;
+                        $parts[1] = 'FALSE';
+                        $attribute = implode('=', $parts);
+                    }
                 }
-                $section = implode("", str_split(implode(';', $attributes), 75));
+                if(!$is_rsvp_field_present && $status == 'DECLINED'){
+                    $attributes[] = ';RSVP=FALSE';
+                }
+
+                $section = implode("", str_split(implode('', $attributes), 75));
 
             }
         }
+
     }
     return implode("\n", $sections);
 }
@@ -203,20 +219,21 @@ function change_sequence_ics($ics)
  * @param $duration
  * @return false|float|int*
  */
-function calculate_duration($duration){
-    $ladder = ['S'=> 1 , 'M'=> 60, 'H'=>3600,'D'=>86400,'W'=>604800];
-    $match_array=[];
-    $res = preg_match('/P([0-9]*W)?([0-9]*D)?T?([0-9]*H)?([0-9]*M)?([0-9]*S)?/',$duration,$match_array);
-    if($res){
+function calculate_duration($duration)
+{
+    $ladder = ['S' => 1, 'M' => 60, 'H' => 3600, 'D' => 86400, 'W' => 604800];
+    $match_array = [];
+    $res = preg_match('/P([0-9]*W)?([0-9]*D)?T?([0-9]*H)?([0-9]*M)?([0-9]*S)?/', $duration, $match_array);
+    if ($res) {
         array_shift($match_array);
         $duration_in_second = 0;
-        foreach($match_array as $match){
+        foreach ($match_array as $match) {
             $scale = [];
-            preg_match('/([0-9]*)([A-Z])/',$match,$scale);
+            preg_match('/([0-9]*)([A-Z])/', $match, $scale);
             $duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
         }
         return $duration_in_second;
-    }else{
+    } else {
         return false;
     }
 
@@ -233,7 +250,8 @@ function change_method_ics($ics, $method)
     return $ics;
 }
 
-function del_method_field_ics($ics){
+function del_method_field_ics($ics)
+{
     if (preg_match('/^METHOD:.*[\r|\n]*/m', $ics) == 1) {
         $ics = preg_replace('/^METHOD:.*/m', '', $ics);
     }

@@ -69,6 +69,7 @@ $labels['all_day'] = 'Journée';
 $labels['loading'] = 'Chargement...';
 $labels['something_happened_while_getting_events'] = "La récupération des événements sur le serveur caldav a rencontrée une erreur";
 $labels['invitation_modification'] = "Vous avez reçu un proposition de modification pour cet événement";
+$labels['invitation_modification_already_studied'] = "La proposition de modification pour cet événement a déjà été étudiée";
 $labels['confirm_modification'] = "Confirmer les modifications";
 $labels['decline_modification'] = "Decliner les modifications";
 $labels['update_event'] = "Mettre à jour l'événement sur le serveur";

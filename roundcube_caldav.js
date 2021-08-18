@@ -125,6 +125,7 @@ function display_title($event_template_html, array_response, used_event) {
     // On récupère le role du participant et la methode du fichier reçu
     let {isOrganizer, isACounter, isAReply, isARequest, isADeclineCounter} = init_method_and_status(array_response);
 
+    let modif = array_response['new_description'] || array_response['new_location'] || array_response['new_date'];
     let $invitation = $event_template_html.find('.invitation')
     let sender_name = '';
     if (sender) {
@@ -138,7 +139,11 @@ function display_title($event_template_html, array_response, used_event) {
 
     // On affiche des titres différents selon le role ou la methode
     if (isOrganizer && isACounter) {
-        $invitation.append('<h3>' + rcmail.gettext('invitation_modification', 'roundcube_caldav') + '</h3>')
+        if(modif){
+            $invitation.append('<h3>' + rcmail.gettext('invitation_modification', 'roundcube_caldav') + '</h3>')
+        }else{
+            $invitation.append('<h3>' + rcmail.gettext('invitation_modification_already_studied', 'roundcube_caldav') + '</h3>')
+        }
     } else if (isOrganizer && isAReply) {
         if (sender) {
             if (isStringEquals(sender['partstat'], 'ACCEPTED')) {
@@ -164,7 +169,7 @@ function display_title($event_template_html, array_response, used_event) {
 function display_modification_message($event_template_html, array_response) {
     let isACounter = isStringEquals(array_response['METHOD'], 'COUNTER');
     let $modifications = $event_template_html.find('.if_modification');
-    if (isACounter && (array_response['new_description'] || array_response['new_location'] || array_response['new_date'])) {
+    if (isACounter && array_response['found_on_calendar']  && (array_response['new_description'] || array_response['new_location'] || array_response['new_date'] )) {
         $modifications.html(rcmail.gettext('if_modification', 'roundcube_caldav'));
         $modifications.show();
     } // Si la methode est un counter mais que l'on a deja effectué les changements,
@@ -477,7 +482,7 @@ function init_method_and_status(array_response) {
     return {isOrganizer, isACounter, isAReply, isARequest, isADeclineCounter};
 }
 
-function post_import_event_server(calendar, array_response, used_event,status) {
+function post_import_event_server(calendar, array_response, used_event, status) {
     rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
         _mail_uid: rcmail.env.uid,
         _mbox: rcmail.env.mailbox,
@@ -488,15 +493,17 @@ function post_import_event_server(calendar, array_response, used_event,status) {
     });
 }
 
-function send_request_on_clic( select, used_event, array_response,$event_template_html) {
+function send_request_on_clic(select, used_event, array_response, $event_template_html) {
     // On récupère le role du participant et la methode du fichier reçu
     let {isOrganizer, isACounter, isAReply, isARequest, isADeclineCounter} = init_method_and_status(array_response);
     let confirm_button = $event_template_html.find('.confirm_button');
     let tentative_button = $event_template_html.find('.tentative_button');
     let decline_button = $event_template_html.find('.decline_button');
-    let update_button =  $event_template_html.find('.update_button');
+    let update_button = $event_template_html.find('.update_button');
     let confirm_organizer_button = $event_template_html.find('.confirm_button_organizer');
     let decline_organizer_button = $event_template_html.find('.decline_button_organizer');
+    let modif = array_response['new_description'] || array_response['new_location'] || array_response['new_date'];
+
 
     if (!isOrganizer) {
         // On cache les boutons destinés à l'organisateur
@@ -508,7 +515,7 @@ function send_request_on_clic( select, used_event, array_response,$event_templat
             // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
             // Et on modifie le texte dans les boutons
             confirm_button.bind('click', function evt() {
-                post_import_event_server(select.val(), array_response, used_event,'CONFIRMED');
+                post_import_event_server(select.val(), array_response, used_event, 'CONFIRMED');
                 confirm_button.attr('disabled', 'true');
                 confirm_button.html(rcmail.gettext('confirmed', 'roundcube_caldav'));
                 tentative_button.removeAttr('disabled');
@@ -519,7 +526,7 @@ function send_request_on_clic( select, used_event, array_response,$event_templat
         }
         if (tentative_button) {
             tentative_button.bind('click', function evt() {
-                post_import_event_server(select.val(), array_response, used_event,'TENTATIVE');
+                post_import_event_server(select.val(), array_response, used_event, 'TENTATIVE');
                 tentative_button.attr('disabled', 'true');
                 tentative_button.html(rcmail.gettext('tentatived', 'roundcube_caldav'));
                 confirm_button.removeAttr('disabled');
@@ -530,7 +537,7 @@ function send_request_on_clic( select, used_event, array_response,$event_templat
         }
         if (decline_button) {
             decline_button.bind('click', function evt() {
-                post_import_event_server(select.val(), array_response, used_event,'CANCELLED');
+                post_import_event_server(select.val(), array_response, used_event, 'CANCELLED');
                 decline_button.attr('disabled', 'true');
                 decline_button.html(rcmail.gettext('declined', 'roundcube_caldav'));
                 confirm_button.removeAttr('disabled');
@@ -546,13 +553,21 @@ function send_request_on_clic( select, used_event, array_response,$event_templat
         tentative_button.hide();
         decline_button.hide();
         update_button.hide();
-        // On récupère les boutons
+
+        if(!modif){
+            confirm_organizer_button.hide();
+            decline_organizer_button.hide();
+        }
 
         if (confirm_organizer_button) {
             // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
             // Et on modifie le texte dans les boutons
             confirm_organizer_button.bind('click', function evt() {
-                post_import_event_server(array_response['found_on_calendar']['calendar_id'], array_response, used_event,'CONFIRMED');
+                let cal = array_response['found_on_calendar'] ? array_response['found_on_calendar']['calendar_id'] : null;
+                if (!cal && select.val()) {
+                    cal = select.val()
+                }
+                post_import_event_server(cal, array_response, used_event, 'CONFIRMED');
                 confirm_organizer_button.attr('disabled', 'true');
                 confirm_organizer_button.html(rcmail.gettext('confirmed_organizer', 'roundcube_caldav'));
                 decline_organizer_button.removeAttr('disabled');
@@ -573,13 +588,13 @@ function send_request_on_clic( select, used_event, array_response,$event_templat
             });
         }
     } else if (isAReply || isARequest || isADeclineCounter) {
-        if(isAReply){
-            if(update_button){
+        if (isAReply) {
+            if (update_button) {
                 // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
                 // Et on modifie le texte dans les boutons
                 update_button.bind('click', function evt() {
 
-                    post_import_event_server(array_response['found_older_event_on_calendar'], array_response, used_event,'UPDATED');
+                    post_import_event_server(array_response['found_older_event_on_calendar'], array_response, used_event, 'UPDATED');
                     update_button.attr('disabled', 'true');
                     update_button.html(rcmail.gettext('updated_event', 'roundcube_caldav'));
                 });
@@ -660,6 +675,7 @@ function undirect_rendering(response) {
         $time_start = $event_template_html.find('.time_start'),
         $date_end = $event_template_html.find('.date_end'),
         $time_end = $event_template_html.find('.time_end');
+
     /**
      * Lorsque l'utilisateur décide de reprogrammer l'évenement,
      * on verifie que les date sont valide et toutes remplies et on affiche un balise html pour indiquer à l'utilisateur
@@ -742,9 +758,10 @@ function undirect_rendering(response) {
         }
 
     }
+
     let dialog = display_rescheduled_popup($event_template_html, changeDateAndLocation);
 
-    send_request_on_clic( select, used_event, array_response,$event_template_html);
+    send_request_on_clic(select, used_event, array_response, $event_template_html);
 
     $("#message-objects").append($event_template_html);
 }
