@@ -86,7 +86,7 @@
             </div>
         </div>
         <div class="if_rescheduled new" style="display:none">
-            <p><b><?php echo $this->gettext("if_rescheduled_msg") ?></b></p>
+
         </div>
         <div class="if_modification new" style="display: none"></div>
         <div class="action_button">

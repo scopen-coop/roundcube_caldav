@@ -557,7 +557,7 @@ function send_request_on_clic(select, used_event, array_response, $event_templat
 
         } else {
             update_button.hide();
-
+            $event_template_html.find(".open_dialog").html(rcmail.gettext('ask_for_reschedule', 'roundcube_caldav'));
             // On récupère les boutons
             if (confirm_button) {
                 // Lors d'un clic sur le bouton 'confirm' on envoie au serveur les informations nécessaires pour l'ajout au calendrier
@@ -765,6 +765,12 @@ function undirect_rendering(response) {
         let tentative = $event_template_html.find('.tentative_button');
         let decline = $event_template_html.find('.decline_button');
         // Si tous les champs dates sont remplis
+        if (isOrganizer){
+            $div_to_add.append('<p><b>' +rcmail.gettext("if_rescheduled_msg", 'roundcube_caldav')+ '</b></p>');
+        }else {
+            $div_to_add.append('<p><b>' +rcmail.gettext("ask_rescheduled_msg", 'roundcube_caldav')+ '</b></p>');
+        }
+
         if ($date_start.val() && $date_end.val() && $time_start.val() && $time_end.val()) {
 
             var chosenDateStart = $date_start.val();
