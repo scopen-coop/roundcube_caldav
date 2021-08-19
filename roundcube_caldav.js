@@ -112,7 +112,9 @@ function change_status(status, $event) {
     }
 }
 
-
+/**
+ * affichage du titre de l'événement et de l'entête de l'invitation
+ */
 function display_title($event_template_html, array_response, used_event) {
     // On récupère les participants qui sont respectivement l'expediteur et le destinataire de l'email
     let sender;
@@ -177,6 +179,9 @@ function display_title($event_template_html, array_response, used_event) {
     $invitation.append('<h4>' + used_event['summary'] + '</h4>');
 }
 
+/**
+ * Affichage d'un message pour avertir l'utilisateur des modifications
+ */
 function display_modification_message($event_template_html, array_response) {
     let isACounter = isStringEquals(array_response['METHOD'], 'COUNTER');
     let $modifications = $event_template_html.find('.if_modification');
@@ -190,6 +195,9 @@ function display_modification_message($event_template_html, array_response) {
     }
 }
 
+/**
+ * Affichage indiquant à l'utilisateur si l'événement qu'il regarde est celui qu'il a reçu ou un plus récent
+ */
 function display_message_if_event_is_already_on_server($event_template_html, array_response) {
     let $event_found_on_server = $event_template_html.find('.is_on_server');
 
@@ -205,6 +213,9 @@ function display_message_if_event_is_already_on_server($event_template_html, arr
     }
 }
 
+/**
+ * Affichage de la date
+ */
 function display_date(array_response, $event_template_html) {
     if (array_response['same_date']) {
         $event_template_html.find('.different_date').hide();
@@ -240,6 +251,9 @@ function display_date(array_response, $event_template_html) {
     }
 }
 
+/**
+ * Affichage de la date modifiée
+ */
 function display_modified_date(array_response, $event_template_html) {
     if (array_response['new_date']) {
         // On affiche la nouvelle  date
@@ -289,6 +303,9 @@ function display_modified_date(array_response, $event_template_html) {
     }
 }
 
+/**
+ * Affichage de la description e t de l'emplacement du rdv
+ */
 function display_location_and_description($event_template_html, array_response) {
     let $location = $event_template_html.find('.location');
     let $description = $event_template_html.find('.description');
@@ -305,6 +322,10 @@ function display_location_and_description($event_template_html, array_response) 
     }
 }
 
+
+/**
+ * Affichage de la description et de l'emplacement si modifiés
+ */
 function display_modified_location_and_description($event_template_html, array_response) {
     let $div_location_description = $event_template_html.find('.location_description');
     let $new_location = $event_template_html.find('.if_new_location');
@@ -321,6 +342,9 @@ function display_modified_location_and_description($event_template_html, array_r
     }
 }
 
+/**
+ * Affichage des occurrences en cas d'événements réccurents
+ */
 function display_reccurent_events(array_response, used_event, $event_template_html) {
     let recurrent_event = array_response['recurrent_events'][used_event['uid']];
     if (recurrent_event.length > 1) {
@@ -341,6 +365,9 @@ function display_reccurent_events(array_response, used_event, $event_template_ht
     }
 }
 
+/**
+ * Affichage des lien pour répondre aux participants
+ */
 function display_attendee(array_response, $event_template_html) {
     if (array_response['attendees'] !== undefined) {
         for (let attendee of array_response['attendees']) {
@@ -359,6 +386,9 @@ function display_attendee(array_response, $event_template_html) {
     }
 }
 
+/**
+ * Affichage des événements proche (avant, pendant, après)
+ */
 function display_close_events(array_response, $event_template_html) {
     let prev = array_response['display_caldav_info']['close_meeting']['previous'];
     let next = array_response['display_caldav_info']['close_meeting']['next'];
@@ -415,6 +445,9 @@ function display_close_events(array_response, $event_template_html) {
     }
 }
 
+/**
+ * Affichage du champs pour selectionner l'agenda auxquel on veut ajouter l'événement
+ */
 function display_select_calendars($event_template_html, array_response) {
     let {isOrganizer, isACounter, isAReply, isARequest, isADeclineCounter} = init_method_and_status(array_response);
     let $calendar_choice = $event_template_html.find('.calendar_choice');
@@ -440,6 +473,9 @@ function display_select_calendars($event_template_html, array_response) {
     return select;
 }
 
+/**
+ * Affichage de la popup pour reprogrammer l'événement en cas de clic sur le bouton "reprogrammer"
+ */
 function display_rescheduled_popup($event_template_html, changeDateAndLocation) {
     // Spécification des propriétés de la popup de dialogue
     let dialog = $event_template_html.find(".dialog-form").dialog({
@@ -480,6 +516,9 @@ function display_rescheduled_popup($event_template_html, changeDateAndLocation) 
     return dialog;
 }
 
+/**
+ * Initialisation des constantes indiquants les méthodes et les status
+ */
 function init_method_and_status(array_response) {
     let isOrganizer = false;
     if (array_response['identity']) {
@@ -493,6 +532,9 @@ function init_method_and_status(array_response) {
     return {isOrganizer, isACounter, isAReply, isARequest, isADeclineCounter, isACancel};
 }
 
+/**
+ * Envoi de la requete post au serveur pour qu'il effectue l'action "import_event_on_server"
+ */
 function post_import_event_server(calendar, array_response, used_event, status, method) {
 
     rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
@@ -506,6 +548,9 @@ function post_import_event_server(calendar, array_response, used_event, status, 
     });
 }
 
+/**
+ * Affichage des différents boutons et programmation des différents comportement en cas de clic sur un bouton
+ */
 function send_request_on_clic(select, used_event, array_response, $event_template_html) {
     // On récupère le role du participant et la methode du fichier reçu
     let {
