@@ -94,4 +94,7 @@ $labels['invitation_decline_modifications2'] = "'s proposed changes";
 $labels['invitation_declined_by_organizer'] = "Your change proposal has not been accepted by the organizer";
 $labels['invitation_cancel'] = "This event was deleted by its organizer";
 $labels['present_but_older'] = 'You already have this event on your server but under an older version ';
+$labels['send_comment_with_invitation'] = "Send a comment with your reply by email";
+$labels['comment_to_send'] = "Comment to send";
+$labels['send_without_comment'] = "Send without comment";
 ?>

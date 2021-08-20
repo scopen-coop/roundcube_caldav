@@ -95,19 +95,22 @@ function change_date_ics($new_date_start, $new_date_end, $ics, $time_zone_offset
  */
 function change_location_ics($location, $ics)
 {
-    $splited_location = str_split($location, 66);
+    $deb_location = substr($location, 0, 75 - strlen('LOCATION:'));
+    $location = substr($location, 75 - strlen('LOCATION:'));
+    $splited_location = $deb_location . "\n " . implode("\n ", str_split($location, 75));
+
     $sections = preg_split('@(\n(?! ))@m', $ics);
     $is_location_present = false;
     foreach ($sections as &$section) {
         if (preg_match('@^LOCATION:@m', $section) > 0) {
-            $section = substr($section, 0, 9) . implode($splited_location);
+            $section = substr($section, 0, strlen('LOCATION:')) . $splited_location;
             $is_location_present = true;
         }
     }
     $ics = implode("\n", $sections);
 
     if (!$is_location_present) {
-        $ics = preg_replace("@END:VEVENT@", "LOCATION:" . implode($splited_location) . "\nEND:VEVENT", $ics);
+        $ics = preg_replace("@END:VEVENT@", "LOCATION:" . $splited_location . "\nEND:VEVENT", $ics);
     }
     return $ics;
 
@@ -127,11 +130,12 @@ function change_status_ics($status, $ics)
     } else {
         $ics = preg_replace('@(END:VEVENT)@', 'STATUS:' . $status . "\nEND:VEVENT", $ics);
     }
-   return $ics;
+    return $ics;
 }
 
 
-function change_partstat_ics($ics,$status,$email){
+function change_partstat_ics($ics, $status, $email)
+{
 
     $sections = preg_split('@(\n(?! ))@m', $ics);
 
@@ -145,11 +149,11 @@ function change_partstat_ics($ics,$status,$email){
         if (preg_match('@ATTENDEE@', $section) == 1) {
             if (preg_match('/' . $email . '/', $section) == 1) {
                 $section = implode('', explode("\r\n ", $section));
-                $attributes = preg_split('/([;|:])/', $section,-1,PREG_SPLIT_DELIM_CAPTURE);
+                $attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
 
                 $is_rsvp_field_present = false;
                 foreach ($attributes as &$attribute) {
-                    if($attribute == ';' || $attributes == ':'){
+                    if ($attribute == ';' || $attributes == ':') {
                         continue;
                     }
                     $parts = explode('=', $attribute);
@@ -164,7 +168,7 @@ function change_partstat_ics($ics,$status,$email){
                         $attribute = implode('=', $parts);
                     }
                 }
-                if(!$is_rsvp_field_present && $status == 'DECLINED'){
+                if (!$is_rsvp_field_present && $status == 'DECLINED') {
                     $attributes[] = ';RSVP=FALSE';
                 }
 
@@ -186,6 +190,32 @@ function delete_status_section_for_sending($ics)
 {
     return preg_replace('/STATUS:.*[\r\n]+/', '', $ics);
 }
+
+
+function update_comment_section_ics($ics, $comment)
+{
+
+    $deb_comment = substr($comment, 0, 75 - strlen('LOCATION:'));
+    $comment = substr($comment, 75 - strlen('LOCATION:'));
+    $splited_comment = $deb_comment . "\n " . implode("\n ", str_split($comment, 75));
+
+
+    $sections = preg_split('@(\n(?! ))@m', $ics);
+    $has_comment_section = false;
+    foreach ($sections as &$section) {
+        if (preg_match('@^COMMENT:@m', $section) > 0) {
+            $section = substr($section, 0, strlen('COMMENT:')) . $splited_comment;
+            $has_comment_section = true;
+        }
+    }
+    $ics = implode("\n", $sections);
+
+    if (!$has_comment_section) {
+        $ics = preg_replace("@END:VEVENT@", "LOCATION:" . $splited_comment . "\nEND:VEVENT", $ics);
+    }
+    return $ics;
+}
+
 
 /**
  * Modifie la dtae de dernière modification

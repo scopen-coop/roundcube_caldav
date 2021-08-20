@@ -37,6 +37,7 @@ $labels['tentative'] = 'Confirmer Provisoirement';
 $labels['decline'] = "Décliner l'invitation";
 $labels['confirmed'] = 'Confirmé';
 $labels['tentatived'] = 'Confirmé Provisoirement';
+$labels['declined'] = "Invitation déclinée";
 $labels['confirmed_organizer'] = 'Proposition validée';
 $labels['declined_organizer'] = "Proposition refusée";
 $labels['location'] = "Lieu: ";
@@ -95,5 +96,8 @@ $labels['invitation_decline_modifications2'] = " ";
 $labels['invitation_declined_by_organizer'] = " Votre proposition de modification n'a pas été acceptée par l'organisateur ";
 $labels['invitation_cancel'] = "Cet événement a été supprimé par son organisateur";
 $labels['present_but_older'] = 'Vous possédez déjà cet événement sur votre serveur mais sous une version plus ancienne';
+$labels['send_comment_with_invitation'] = "Envoyez un commentaire avec votre réponse par mail";
+$labels['comment_to_send'] = "Commentaire à envoyer";
+$labels['send_without_comment'] = "Envoyer sans commentaire";
 
 ?>

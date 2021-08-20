@@ -97,7 +97,7 @@
                 </label>
 
             </form>
-            <div class="dialog-form" title="<?php echo $this->gettext('reschedule_meeting') ?>">
+            <div class="dialog-form" style="display: none" title="<?php echo $this->gettext('reschedule_meeting') ?>">
                 <form>
                     <fieldset>
                         <label for="location_input"><?php echo $this->gettext("new_location") ?></label>
@@ -114,18 +114,78 @@
                         <label class="label_popup"
                                for="time_end"><?php echo $this->gettext("new_time_end") ?></label>
                         <input class="time_end" type="time">
+                        <label for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
+                        <textarea name="message" class="message_input"></textarea>
+
                     </fieldset>
                 </form>
             </div>
 
-            <button class="action_buttons open_dialog btn btn-secondary"><?php echo $this->gettext('reschedule_meeting') ?></button>
-            <button class="action_buttons confirm_button btn btn-secondary"><?php echo $this->gettext('confirm') ?></button>
-            <button class="action_buttons tentative_button btn btn-secondary"><?php echo $this->gettext('tentative') ?></button>
-            <button class="action_buttons decline_button btn btn-secondary"><?php echo $this->gettext('decline') ?></button>
-            <button class="action_buttons update_button btn btn-secondary"><?php echo $this->gettext('update_event') ?></button>
-            <button class="action_buttons confirm_button_organizer btn btn-secondary"><?php echo $this->gettext('confirm_modification') ?></button>
-            <button class="action_buttons decline_button_organizer btn btn-secondary"><?php echo $this->gettext('decline_modification') ?></button>
-            <button class="action_buttons cancel_button btn btn-secondary"><?php echo $this->gettext('cancel_event') ?></button>
+            <button class="action_buttons open_dialog btn btn-secondary" data-needs-popin style="display: none"
+                    status="TENTATIVE"
+                    method="COUNTER">
+                <?php echo $this->gettext('reschedule_meeting') ?></button>
+
+            <button class="action_buttons confirm_button btn btn-secondary" data-needs-popin style="display: none"
+                    status="CONFIRMED"
+                    method="REPLY" data-label-disabled="<?php echo $this->gettext('confirmed') ?>"
+
+                    data-label-enabled=" <?php echo $this->gettext('confirm') ?>">
+            </button>
+
+            <button class="action_buttons tentative_button btn btn-secondary" data-needs-popin style="display: none"
+                    status="TENTATIVE"
+                    method="REPLY" data-label-disabled="<?php echo $this->gettext('tentatived') ?>"
+                    data-label-enabled="<?php echo $this->gettext('tentative') ?>">
+            </button>
+
+            <button class="action_buttons decline_button btn btn-secondary" data-needs-popin style="display: none"
+                    status="CANCELLED"
+                    method="REPLY" data-label-disabled="<?php echo $this->gettext('declined') ?>"
+                    data-label-enabled="<?php echo $this->gettext('decline') ?>">
+            </button>
+
+            <button class="action_buttons update_button btn btn-secondary" style="display: none" status="CANCELLED"
+                    method="EVENT_CANCELLED" data-label-disabled="<?php echo $this->gettext('updated_event') ?>"
+                    data-label-enabled="<?php echo $this->gettext('update_event') ?>">
+            </button>
+
+            <button class="action_buttons update_button_organizer btn btn-secondary" style="display: none" status=""
+                    method="UPDATED" data-label-disabled="<?php echo $this->gettext('updated_event') ?>"
+                    data-label-enabled="<?php echo $this->gettext('update_event') ?>">
+            </button>
+
+            <button class="action_buttons confirm_button_organizer btn btn-secondary" data-needs-popin
+                    style="display: none" status="CONFIRMED"
+                    method="REQUEST" data-label-disabled="<?php echo $this->gettext('confirmed_organizer') ?>"
+                    data-label-enabled="<?php echo $this->gettext('confirm_modification') ?>">
+            </button>
+
+            <button class="action_buttons decline_button_organizer btn btn-secondary" data-needs-popin
+                    style="display: none" status="DECLINED"
+                    method="DECLINECOUNTER" data-label-disabled="<?php echo $this->gettext('declined_organizer') ?>"
+                    data-label-enabled="<?php echo $this->gettext('decline_modification') ?>">
+            </button>
+
+            <button class="action_buttons cancel_button_organizer btn btn-secondary" data-needs-popin
+                    style="display: none" status="CANCELLED"
+                    method="CANCEL" data-label-disabled="<?php echo $this->gettext('cancelled_event') ?>"
+                    data-label-enabled="<?php echo $this->gettext('cancel_event') ?>">
+            </button>
+
+            <button class="action_buttons cancel_button btn btn-secondary" data-needs-popin style="display: none"
+                    status="CANCELLED"
+                    method="CANCEL" data-label-disabled="<?php echo $this->gettext('cancelled_event_on_server') ?>"
+                    data-label-enabled=" <?php echo $this->gettext('cancel_event_on_server') ?>">
+            </button>
+
+
+            <div class="message-dialog" title="<?php echo $this->gettext('send_comment_with_invitation') ?>" style="display: none">
+                <label for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
+                <textarea name="message" class="message_input"></textarea>
+            </div>
+
+
         </div>
     </div>
 </template>
