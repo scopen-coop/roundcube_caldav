@@ -127,6 +127,11 @@
 
 }
 
+.comment {
+    padding: 0 4em 0 4em;
+    text-justify: inter-word;
+    text-align: center;
+}
 
 .titre_current {
     font-size: xx-large;
@@ -218,7 +223,6 @@
 fieldset {
     padding: 0;
     border: 0;
-    margin-top: 2.5em;
 }
 
 .ui-dialog .ui-state-error {

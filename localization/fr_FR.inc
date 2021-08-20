@@ -31,7 +31,10 @@ $labels['previous_meeting'] = ' Rendez vous précédent: ';
 $labels['next_meeting'] = 'Rendez vous suivant: ';
 $labels['all_day'] = 'Toute la journée';
 $labels['successfully_saved'] = 'Cet événement à été ajouté à votre agenda';
+$labels['successfully_sent'] = "Le mail contenant vos modifications a bien été envoyé";
+$labels['no_participant_to_answer'] = "Aucun mail n'a été envoyé car les participants ne souhaitent pas recevoir de réponse";
 $labels['something_happened'] = "L'enregistrement de cet événement ne s'est pas passé comme prévu";
+$labels['something_happened_when_sending'] = "L'envoi d'un mail de modifications a échoué";
 $labels['confirm'] = 'Confirmer';
 $labels['tentative'] = 'Confirmer Provisoirement';
 $labels['decline'] = "Décliner l'invitation";
@@ -99,5 +102,6 @@ $labels['present_but_older'] = 'Vous possédez déjà cet événement sur votre 
 $labels['send_comment_with_invitation'] = "Envoyez un commentaire avec votre réponse par mail";
 $labels['comment_to_send'] = "Commentaire à envoyer";
 $labels['send_without_comment'] = "Envoyer sans commentaire";
+$labels['comment'] = "Commentaire de l'expéditeur: ";
 
 ?>

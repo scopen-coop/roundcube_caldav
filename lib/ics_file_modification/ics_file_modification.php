@@ -95,22 +95,21 @@ function change_date_ics($new_date_start, $new_date_end, $ics, $time_zone_offset
  */
 function change_location_ics($location, $ics)
 {
-    $deb_location = substr($location, 0, 75 - strlen('LOCATION:'));
-    $location = substr($location, 75 - strlen('LOCATION:'));
-    $splited_location = $deb_location . "\n " . implode("\n ", str_split($location, 75));
+    $location = wordwrap($location, 75, "\n", true);
+
 
     $sections = preg_split('@(\n(?! ))@m', $ics);
-    $is_location_present = false;
+    $has_location_field = false;
     foreach ($sections as &$section) {
         if (preg_match('@^LOCATION:@m', $section) > 0) {
-            $section = substr($section, 0, strlen('LOCATION:')) . $splited_location;
-            $is_location_present = true;
+            $section = substr($section, 0, strlen('LOCATION:')) . $location;
+            $has_location_field = true;
         }
     }
     $ics = implode("\n", $sections);
 
-    if (!$is_location_present) {
-        $ics = preg_replace("@END:VEVENT@", "LOCATION:" . $splited_location . "\nEND:VEVENT", $ics);
+    if (!$has_location_field) {
+        $ics = preg_replace("@END:VEVENT@", "LOCATION:" . $location . "\nEND:VEVENT", $ics);
     }
     return $ics;
 
@@ -194,26 +193,32 @@ function delete_status_section_for_sending($ics)
 
 function update_comment_section_ics($ics, $comment)
 {
-
-    $deb_comment = substr($comment, 0, 75 - strlen('LOCATION:'));
-    $comment = substr($comment, 75 - strlen('LOCATION:'));
-    $splited_comment = $deb_comment . "\n " . implode("\n ", str_split($comment, 75));
-
-
+    $comment = wordwrap($comment, 75, "\n ", true);
     $sections = preg_split('@(\n(?! ))@m', $ics);
     $has_comment_section = false;
     foreach ($sections as &$section) {
         if (preg_match('@^COMMENT:@m', $section) > 0) {
-            $section = substr($section, 0, strlen('COMMENT:')) . $splited_comment;
+            $section = substr($section, 0, strlen('COMMENT:')) . $comment;
             $has_comment_section = true;
         }
     }
     $ics = implode("\n", $sections);
 
     if (!$has_comment_section) {
-        $ics = preg_replace("@END:VEVENT@", "LOCATION:" . $splited_comment . "\nEND:VEVENT", $ics);
+        $ics = preg_replace("@END:VEVENT@", "COMMENT:" . $comment . "\nEND:VEVENT", $ics);
     }
     return $ics;
+}
+
+function delete_comment_section($ics)
+{
+    $sections = preg_split('@(\n(?! ))@m', $ics);
+    foreach ($sections as $key => &$section) {
+        if (preg_match('@^COMMENT:@m', $section) > 0) {
+            unset($sections[$key]);
+        }
+    }
+    return implode("\n", $sections);
 }
 
 

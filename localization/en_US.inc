@@ -20,7 +20,7 @@ $labels['password'] = 'Specify your password';
 $labels['save_error_msg'] = 'Your information are incorrect or incomplete';
 $labels['main_calendar'] = 'Specify your default calendar';
 $labels['calendar_choice'] = 'Warning : If you change url / login / password your preferences will be forgotten.\n
-Choose your default calendar (the left radio button) and the other calendar you may use (the right checkboxes).';
+Choose your default calendar (radio button) and others calendars you may use (checkboxes).';
 $labels['same_hour_meeting'] = 'You already have one or several meeting during this period: ';
 $labels['connect_error_msg'] = 'Connection with CalDAV server failed';
 $labels['attendee'] = 'Attendees: ';
@@ -30,7 +30,10 @@ $labels['next_meeting'] = 'Next meeting: ';
 $labels['invitation'] = 'You just received an invitation';
 $labels['all_day'] = 'All day';
 $labels['successfully_saved'] = 'This event have been saved in your agenda';
+$labels['successfully_sent'] = "The email containing your changes has been sent";
 $labels['something_happened'] = "Something happened badly, nothing have been added to your agenda";
+$labels['something_happened_when_sending'] = "Something happened badly, email has not been sent";
+$labels['no_participant_to_answer'] = "No mail has been sent as participants do not want to receive a reply";
 $labels['confirm'] = 'Confirm';
 $labels['tentative'] = 'Tentative';
 $labels['decline'] = "Decline";
@@ -97,4 +100,5 @@ $labels['present_but_older'] = 'You already have this event on your server but u
 $labels['send_comment_with_invitation'] = "Send a comment with your reply by email";
 $labels['comment_to_send'] = "Comment to send";
 $labels['send_without_comment'] = "Send without comment";
+$labels['comment'] = "Sender's comment: ";
 ?>

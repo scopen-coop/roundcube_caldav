@@ -85,10 +85,10 @@
 
             </div>
         </div>
-        <div class="if_rescheduled new" style="display:none">
-
-        </div>
+        <div class="comment" style="display: none"></div>
+        <div class="if_rescheduled new" style="display:none"></div>
         <div class="if_modification new" style="display: none"></div>
+
         <div class="action_button">
             <form method="post" name="chosen_cal">
                 <label class="calendar_choice">
@@ -102,20 +102,21 @@
                     <fieldset>
                         <label for="location_input"><?php echo $this->gettext("new_location") ?></label>
                         <input type="text" name="location" class="location_input">
-                        <label class="label_popup"
-                               for="date_start"><?php echo $this->gettext("new_date_start") ?></label>
+
+                        <label class="label_popup" for="date_start"><?php echo $this->gettext("new_date_start") ?></label>
                         <input class="date_start" type="date">
-                        <label class="label_popup"
-                               for="time_start"><?php echo $this->gettext("new_time_start") ?></label>
+
+                        <label class="label_popup" for="time_start"><?php echo $this->gettext("new_time_start") ?></label>
                         <input class="time_start" type="time">
-                        <label class="label_popup"
-                               for="date_end"><?php echo $this->gettext("new_date_end") ?></label>
+
+                        <label class="label_popup" for="date_end"><?php echo $this->gettext("new_date_end") ?></label>
                         <input class="date_end" type="date">
-                        <label class="label_popup"
-                               for="time_end"><?php echo $this->gettext("new_time_end") ?></label>
+
+                        <label class="label_popup" for="time_end"><?php echo $this->gettext("new_time_end") ?></label>
                         <input class="time_end" type="time">
-                        <label for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
-                        <textarea name="message" class="message_input"></textarea>
+
+                        <label class="label_popup" for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
+                        <textarea name="message" class="message_input" ></textarea>
 
                     </fieldset>
                 </form>
@@ -150,7 +151,7 @@
                     data-label-enabled="<?php echo $this->gettext('update_event') ?>">
             </button>
 
-            <button class="action_buttons update_button_organizer btn btn-secondary" style="display: none" status=""
+            <button class="action_buttons update_button_organizer btn btn-secondary" style="display: none" status="CONFIRMED"
                     method="UPDATED" data-label-disabled="<?php echo $this->gettext('updated_event') ?>"
                     data-label-enabled="<?php echo $this->gettext('update_event') ?>">
             </button>
@@ -182,7 +183,7 @@
 
             <div class="message-dialog" title="<?php echo $this->gettext('send_comment_with_invitation') ?>" style="display: none">
                 <label for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
-                <textarea name="message" class="message_input"></textarea>
+                <textarea name="message" class="message_input" rows="12"></textarea>
             </div>
 
 
