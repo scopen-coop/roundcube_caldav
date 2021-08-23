@@ -210,7 +210,8 @@ function update_comment_section_ics($ics, $comment)
     return $ics;
 }
 
-function delete_comment_section($ics)
+
+function delete_comment_section_ics($ics)
 {
     $sections = preg_split('@(\n(?! ))@m', $ics);
     foreach ($sections as $key => &$section) {

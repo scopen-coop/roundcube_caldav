@@ -103,5 +103,6 @@ $labels['send_comment_with_invitation'] = "Envoyez un commentaire avec votre ré
 $labels['comment_to_send'] = "Commentaire à envoyer";
 $labels['send_without_comment'] = "Envoyer sans commentaire";
 $labels['comment'] = "Commentaire de l'expéditeur: ";
+$labels['saving_and_sending'] = "Enregistrement de vos modifications et envoi des mails";
 
 ?>

@@ -1,7 +1,18 @@
 #loading {
     text-align: center;
+    margin :auto;
     font-size: 1.5em;
+    display: block;
 }
+
+#saving_and_sending {
+
+    text-align: center;
+    margin :auto;
+    font-size: 1.5em;
+    display: block;
+}
+
 
 .content_invitation {
     background-color: #EAF8FEFF;

@@ -611,6 +611,7 @@ function change_date_location_out(dialog, $event_template_html, isOrganizer, $di
         }
 
         post_import_event_server(
+            $event_template_html,
             calendar,
             array_response,
             used_event,
@@ -641,14 +642,14 @@ function display_message_popup($event_template_html, calendar, array_response, u
             {
                 text: rcmail.gettext('confirm', 'roundcube_caldav'),
                 click: function () {
-                    post_import_event_server(calendar, array_response, used_event, current_button.attr("status"), current_button.attr("method"), $comment.val());
+                    post_import_event_server($event_template_html, calendar, array_response, used_event, current_button.attr("status"), current_button.attr("method"), $comment.val());
                     $(this).dialog("destroy");
                 }
             },
             {
                 text: rcmail.gettext('send_without_comment', 'roundcube_caldav'),
                 click: function () {
-                    post_import_event_server(calendar, array_response, used_event, current_button.attr("status"), current_button.attr("method"), '');
+                    post_import_event_server($event_template_html, calendar, array_response, used_event, current_button.attr("status"), current_button.attr("method"), '');
                     $(this).dialog("destroy");
                 }
             }
@@ -684,7 +685,7 @@ function init_method_and_status(array_response) {
 /**
  * Envoi de la requete post au serveur pour qu'il effectue l'action "import_event_on_server"
  */
-function post_import_event_server(calendar, array_response, used_event, status, method, comment, modification = null) {
+function post_import_event_server($event_template_html, calendar, array_response, used_event, status, method, comment, modification = null) {
 
     rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
         _mail_uid: rcmail.env.uid,
@@ -697,6 +698,9 @@ function post_import_event_server(calendar, array_response, used_event, status, 
         _event_uid: used_event['uid'],
         _modification: modification,
     });
+    $event_template_html.hide();
+    $('#saving_and_sending').show();
+
 }
 
 /**
@@ -735,6 +739,7 @@ function send_request_on_clic(select, used_event, array_response, $event_templat
                 if (isOrganizer) {
                     reschedule_dialog.attr('method', 'REQUEST');
                     reschedule_dialog.attr('status', 'CONFIRMED');
+                    reschedule_dialog.html(reschedule_dialog.attr("data-label-organizer"));
                 }
                 reschedule_dialog.show();
             } else {
@@ -745,7 +750,7 @@ function send_request_on_clic(select, used_event, array_response, $event_templat
                     if (!isStringEquals(button, 'update_button') && !isStringEquals(button, 'update_button_organizer')) {
                         display_message_popup($event_template_html, calendar, array_response, used_event, buttons_array[button]);
                     } else {
-                        post_import_event_server(calendar, array_response, used_event, buttons_array[button].attr("status"), buttons_array[button].attr("method"), '');
+                        post_import_event_server($event_template_html, calendar, array_response, used_event, buttons_array[button].attr("status"), buttons_array[button].attr("method"), '');
                     }
 
                     buttons_array[button].attr('disabled', 'true');
@@ -756,6 +761,8 @@ function send_request_on_clic(select, used_event, array_response, $event_templat
                             buttons_array[other_button].html(buttons_array[other_button].attr("data-label-enabled"));
                         }
                     }
+
+
                 })
             }
         }
@@ -776,6 +783,8 @@ function undirect_rendering(response) {
 
     // On recupère la réponse du serveur
     let array_response = response.request;
+
+    $event_template_html.attr("id", array_response['uid']);
 
     // On récupère le role du participant et la methode du fichier reçu
     let {isOrganizer, isACounter} = init_method_and_status(array_response);
@@ -852,6 +861,11 @@ function undirect_rendering(response) {
 }
 
 
+function display_after_response(response) {
+    $('#' + response.uid).show();
+    $('#saving_and_sending').hide()
+}
+
 rcmail.addEventListener('init', function (evt) {
 
 
@@ -864,6 +878,9 @@ rcmail.addEventListener('init', function (evt) {
     }
     // On récupère toutes ces information et on affiche la bannière
     rcmail.addEventListener('plugin.undirect_rendering_js', undirect_rendering);
+
+    // On récupère toutes ces information et on affiche la bannière
+    rcmail.addEventListener('plugin.display_after_response', display_after_response);
 
 
     // Fonction de debug A SUPPRIMER

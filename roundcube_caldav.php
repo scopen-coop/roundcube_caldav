@@ -282,6 +282,8 @@ class roundcube_caldav extends rcube_plugin
                 $same_uid = $event->uid;
             }
 
+            $response['uid'] = $event->uid;
+
 
             if ($event->duration) {
                 $offset = calculate_duration($event->duration);
@@ -556,6 +558,7 @@ class roundcube_caldav extends rcube_plugin
                     $this->send_mail($is_organizer, $method, $status, $new_ics, $message, $identity, $comment, (bool)$modification);
                 }
 
+               $this->rcmail->output->command('plugin.display_after_response', array('uid' => $event_uid));
             }
         }
     }
@@ -1444,6 +1447,8 @@ class roundcube_caldav extends rcube_plugin
     {
         if (strcmp($comment, '') != 0) {
             $ics_to_send = update_comment_section_ics($ics_to_send, $comment);
+        }else{
+            $ics_to_send = delete_comment_section_ics($ics_to_send);
         }
         $ics_to_send = change_method_ics($ics_to_send, $method);
 
@@ -1452,7 +1457,7 @@ class roundcube_caldav extends rcube_plugin
         if ($send_succes[0]) {
             $this->rcmail->output->command('display_message', $this->gettext('successfully_sent'), 'confirmation');
         } elseif (!$send_succes[1]) {
-            $this->rcmail->output->command('display_message', $this->gettext('no_participant_to_answer'), 'confirmation');
+            $this->rcmail->output->command('display_message', $this->gettext('no_participant_to_answer'), 'notice');
         } else {
             $this->rcmail->output->command('display_message', $this->gettext('something_happened_when_sending'), 'error');
 
@@ -1544,7 +1549,7 @@ class roundcube_caldav extends rcube_plugin
     {
 
         // On supprime le champ commentaire pour ajouter au serveur
-        $ics = delete_comment_section($ics);
+        $ics = delete_comment_section_ics($ics);
         // On change le status pour la sauvegarde
         $ics = change_status_ics($status, $ics);
 

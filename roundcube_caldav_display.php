@@ -1,6 +1,7 @@
-<p id='loading'> <?php echo $this->gettext("loading") ?></p>
+<p id='loading' > <?php echo $this->gettext("loading") ?></p>
+<p id='saving_and_sending' style="display: none"> <?php echo $this->gettext("saving_and_sending") ?></p>
 <template id="display" style="display: none">
-    <div class="content_invitation">
+    <div class="content_invitation" >
         <div class="invitation">
         </div>
         <div class="is_on_server">
@@ -8,7 +9,7 @@
         <div class="content_event">
             <div class="date_container">
                 <div class="date_event">
-                    <div class="icon_date same_date" class="alone">
+                    <div class="icon_date same_date alone" >
                         <div class="d"></div>
                         <div class="m"></div>
                         <div class="h"></div>
@@ -29,7 +30,7 @@
                 <div class="arrow-down new " style="display: none"></div>
                 <div class="new_date_event new" style="display: none">
 
-                    <div class="icon_date same_date" class="alone">
+                    <div class="icon_date same_date alone">
                         <div class="d"></div>
                         <div class="m"></div>
                         <div class="h"></div>
@@ -124,13 +125,14 @@
 
             <button class="action_buttons open_dialog btn btn-secondary" data-needs-popin style="display: none"
                     status="TENTATIVE"
-                    method="COUNTER">
-                <?php echo $this->gettext('reschedule_meeting') ?></button>
+                    method="COUNTER"
+                    data-label-organizer=" <?php echo $this->gettext('reschedule_meeting') ?>">
+                <?php echo $this->gettext('ask_for_reschedule') ?>
+                </button>
 
             <button class="action_buttons confirm_button btn btn-secondary" data-needs-popin style="display: none"
                     status="CONFIRMED"
                     method="REPLY" data-label-disabled="<?php echo $this->gettext('confirmed') ?>"
-
                     data-label-enabled=" <?php echo $this->gettext('confirm') ?>">
             </button>
 
