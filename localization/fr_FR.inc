@@ -80,6 +80,9 @@ $labels['invitation_modification_already_studied'] = "La proposition de modifica
 $labels['confirm_modification'] = "Confirmer les modifications";
 $labels['decline_modification'] = "Decliner les modifications";
 $labels['cancel_event'] = "Annuler l'événement";
+$labels['cancel_instance'] = "Annuler cette instance uniquement";
+$labels['cancelled_instance'] = "Instance Annulée";
+
 $labels['update_event'] = "Mettre à jour l'événement sur votre serveur";
 $labels['updated_event'] = "L'événement à été mis à jour";
 $labels['cancel_event_on_server'] = "Annuler l'événement sur votre serveur";

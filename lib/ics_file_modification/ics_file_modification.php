@@ -13,10 +13,10 @@ function extract_event_ics($ics, $uid)
     $foot_match = array();
     $array_event = array();
 
-    preg_match("@(.*?)(?=BEGIN:VEVENT)@s", $ics, $head_match);
+    preg_match("@(.*?)(?=\nBEGIN:VEVENT)@s", $ics, $head_match);
     preg_match("@(?!.*\nEND:VEVENT)END:VEVENT(.*)@s", $ics, $foot_match);
     $header = $head_match[1];
-    $footer = $foot_match[1];
+    $footer =$foot_match[1];
 
     preg_match_all("@(?<=BEGIN:VEVENT)(.*?)(?:END:VEVENT)@s", $ics, $array_event);
 
@@ -25,14 +25,42 @@ function extract_event_ics($ics, $uid)
         $uid_match = array();
         preg_match("@^UID:(.*?)[\r|\n]+@m", $event, $uid_match);
         if (strcmp($uid, $uid_match[1]) == 0) {
-            $specific_event .= 'BEGIN:VEVENT' . $event . "END:VEVENT";
+            $specific_event .= "\nBEGIN:VEVENT" . $event . "END:VEVENT";
         }
     }
 
     if (strlen($specific_event) > 0) {
         return $header . $specific_event . $footer;
     }
+
     return null;
+}
+
+function cancel_one_instance($ics, $date_start)
+{
+    $head_match = array();
+    $foot_match = array();
+    $array_event = array();
+
+    preg_match("@(.*?)(?=\nBEGIN:VEVENT)@s", $ics, $head_match);
+    preg_match("@(?!.*\nEND:VEVENT)END:VEVENT(.*)@s", $ics, $foot_match);
+    $header = $head_match[1];
+    $footer = $foot_match[1];
+    preg_match_all("@(?<=BEGIN:VEVENT)(.*?)(?:END:VEVENT)@s", $ics, $array_event);
+
+    $specific_event = '';
+    foreach ($array_event[1] as $event) {
+//        if (preg_match('/RRULE(.*)/', $event) == 1) {
+            $recurrence_id = "EXDATE:" . $date_start."\n";
+//        $event = preg_replace('/(RRULE.*)/', $recurrence_id, $event);
+
+        $event = preg_replace('/(UID.*)/', $recurrence_id."$1", $event);
+            $specific_event .= "\nBEGIN:VEVENT" . $event . "END:VEVENT";
+
+//        }
+    }
+
+    return $header . $specific_event .  $footer;
 }
 
 
@@ -48,43 +76,51 @@ function extract_event_ics($ics, $uid)
 function change_date_ics($new_date_start, $new_date_end, $ics, $time_zone_offset, $offset_start = null, $offset_end = null)
 {
     $head_match = array();
-    preg_match("@(.*?)(?=BEGIN:VEVENT)(.*)@s", $ics, $head_match);
+    $foot_match = array();
+    $array_event = array();
+
+    preg_match("@(.*?)(?=BEGIN:VEVENT)@s", $ics, $head_match);
+    preg_match("@(?!.*\nEND:VEVENT)END:VEVENT\n(.*)@s", $ics, $foot_match);
     $header = $head_match[1];
-    $body = $head_match[2];
+    $footer = $foot_match[1];
+
+    preg_match_all("@(?<=BEGIN:VEVENT)(.*?)(?:END:VEVENT)@s", $ics, $array_event);
 
     // date start
-    if (is_null($offset_start) && is_null($offset_end)) {
-        $body = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start, $body);
-        $body = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $body);
+    $all_events = '';
+    foreach ($array_event[1] as $i => $event) {
+        if ($i == 0) {
 
-        $ics = $header . $body;
-
-    } else {
-        $foot_match = array();
-        preg_match("@(.*?)(?=END:VEVENT)(.*)@s", $body, $foot_match);
-        $begin_events = $foot_match[1];
-        $end = $foot_match[2];
-
-
-        $begin_events = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start, $begin_events);
-        $begin_events = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $begin_events);
-
-
-        $array_dtstart = array();
-        $array_dtend = array();
-        preg_match('@DTSTART.*:([0-9A-Z]+)@m', $end, $array_dtstart);
-        preg_match('@DTEND.*:([0-9A-Z]+)@m', $end, $array_dtend);
+            if (preg_match('@DTEND.*:([0-9A-Z]+)@m', $event) == 1) {
+                $event = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $event);
+            } elseif (preg_match('@DURATION:([0-9A-Z]+)@m', $event) == 1) {
+                $event = preg_replace('@DURATION:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $event);
+            } else {
+                $event = preg_replace('@(DTSTART.*:[0-9A-Z]+)@m', "$1\nDTEND:" . $new_date_end, $event);
+            }
+            $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start, $event);
+        }else{
+            $array_dtstart = array();
+            $array_dtend = array();
+            preg_match('@DTSTART.*:([0-9A-Z]+)@m', $event, $array_dtstart);
+            preg_match('@DTEND.*:([0-9A-Z]+)@m', $event, $array_dtend);
 
 
-        $new_date_start_second_event = date("Ymd\THis", strtotime($array_dtstart[1]) + $offset_start - $time_zone_offset);
-        $new_date_end_second_event = date("Ymd\THis", strtotime($array_dtend[1]) + $offset_end - $time_zone_offset);
+            $new_date_start_second_event = date("Ymd\THis", strtotime($array_dtstart[1]) + $offset_start - $time_zone_offset);
+            $new_date_end_second_event = date("Ymd\THis", strtotime($array_dtend[1]) + $offset_end - $time_zone_offset);
 
-        $end = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start_second_event, $end);
-        $end = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end_second_event, $end);
+            $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start_second_event, $event);
+            $event = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end_second_event, $event);
 
-        $ics = $header . $begin_events . $end;
+            $new_date_start = date("Ymd\THis", strtotime($array_dtstart[1]) + $offset_start - $time_zone_offset);
+            $new_date_end = date("Ymd\THis", strtotime($array_dtend[1]) + $offset_end - $time_zone_offset);
+        }
+
+        $all_events .= 'BEGIN:VEVENT' . $event . "END:VEVENT\n";
+
     }
-    return $ics;
+
+    return $header . $all_events . $footer;
 }
 
 /**
@@ -181,16 +217,11 @@ function change_partstat_ics($ics, $status, $email)
 }
 
 /**
- * Supprime le champs status du fichier ics que l'on veut envoyer aux autres participants
+ * On modifie la section commentaire si le champ a été renseigné
  * @param $ics
- * @return string|null
+ * @param $comment
+ * @return string
  */
-function delete_status_section_for_sending($ics)
-{
-    return preg_replace('/STATUS:.*[\r\n]+/', '', $ics);
-}
-
-
 function update_comment_section_ics($ics, $comment)
 {
     $comment = wordwrap($comment, 75, "\n ", true);
@@ -210,7 +241,11 @@ function update_comment_section_ics($ics, $comment)
     return $ics;
 }
 
-
+/**
+ * On supprime la section commentaire avant de sauvegarder l'événement
+ * @param $ics
+ * @return string
+ */
 function delete_comment_section_ics($ics)
 {
     $sections = preg_split('@(\n(?! ))@m', $ics);
@@ -235,6 +270,11 @@ function change_last_modified_ics($ics)
     return preg_replace("@LAST-MODIFIED:.*@", "LAST-MODIFIED:" . $new_date, $ics);
 }
 
+/**
+ * Incrémente le champs séquence
+ * @param $ics
+ * @return array|string|string[]|null
+ */
 function change_sequence_ics($ics)
 {
 

@@ -1,7 +1,13 @@
-<p id='loading' > <?php echo $this->gettext("loading") ?></p>
-<p id='saving_and_sending' style="display: none"> <?php echo $this->gettext("saving_and_sending") ?></p>
+<div id='loading'>
+    <p><?php echo $this->gettext("loading") ?></p>
+    <i class="fas fa-circle-notch fa-spin"></i>
+</div>
+<div id='saving_and_sending' style="display: none">
+    <p><?php echo $this->gettext("saving_and_sending") ?></p>
+    <i class="fas fa-circle-notch fa-spin"></i>
+</div>
 <template id="display" style="display: none">
-    <div class="content_invitation" >
+    <div class="content_invitation">
         <div class="invitation">
         </div>
         <div class="is_on_server">
@@ -9,7 +15,7 @@
         <div class="content_event">
             <div class="date_container">
                 <div class="date_event">
-                    <div class="icon_date same_date alone" >
+                    <div class="icon_date same_date alone">
                         <div class="d"></div>
                         <div class="m"></div>
                         <div class="h"></div>
@@ -104,10 +110,12 @@
                         <label for="location_input"><?php echo $this->gettext("new_location") ?></label>
                         <input type="text" name="location" class="location_input">
 
-                        <label class="label_popup" for="date_start"><?php echo $this->gettext("new_date_start") ?></label>
+                        <label class="label_popup"
+                               for="date_start"><?php echo $this->gettext("new_date_start") ?></label>
                         <input class="date_start" type="date">
 
-                        <label class="label_popup" for="time_start"><?php echo $this->gettext("new_time_start") ?></label>
+                        <label class="label_popup"
+                               for="time_start"><?php echo $this->gettext("new_time_start") ?></label>
                         <input class="time_start" type="time">
 
                         <label class="label_popup" for="date_end"><?php echo $this->gettext("new_date_end") ?></label>
@@ -116,8 +124,9 @@
                         <label class="label_popup" for="time_end"><?php echo $this->gettext("new_time_end") ?></label>
                         <input class="time_end" type="time">
 
-                        <label class="label_popup" for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
-                        <textarea name="message" class="message_input" ></textarea>
+                        <label class="label_popup"
+                               for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
+                        <textarea name="message" class="message_input"></textarea>
 
                     </fieldset>
                 </form>
@@ -128,7 +137,7 @@
                     method="COUNTER"
                     data-label-organizer=" <?php echo $this->gettext('reschedule_meeting') ?>">
                 <?php echo $this->gettext('ask_for_reschedule') ?>
-                </button>
+            </button>
 
             <button class="action_buttons confirm_button btn btn-secondary" data-needs-popin style="display: none"
                     status="CONFIRMED"
@@ -153,7 +162,8 @@
                     data-label-enabled="<?php echo $this->gettext('update_event') ?>">
             </button>
 
-            <button class="action_buttons update_button_organizer btn btn-secondary" style="display: none" status="CONFIRMED"
+            <button class="action_buttons update_button_organizer btn btn-secondary" style="display: none"
+                    status="CONFIRMED"
                     method="UPDATED" data-label-disabled="<?php echo $this->gettext('updated_event') ?>"
                     data-label-enabled="<?php echo $this->gettext('update_event') ?>">
             </button>
@@ -171,9 +181,15 @@
             </button>
 
             <button class="action_buttons cancel_button_organizer btn btn-secondary" data-needs-popin
-                    style="display: none" status="CANCELLED"
-                    method="CANCEL" data-label-disabled="<?php echo $this->gettext('cancelled_event') ?>"
+                    style="display: none" status="CANCELLED" method="CANCEL"
+                    data-label-disabled="<?php echo $this->gettext('cancelled_event') ?>"
                     data-label-enabled="<?php echo $this->gettext('cancel_event') ?>">
+            </button>
+
+            <button class="action_buttons cancel_recurrent_button_organizer btn btn-secondary" data-needs-popin
+                    style="display: none" status="CANCELLED_ONE_EVENT" method="REQUEST"
+                    data-label-disabled="<?php echo $this->gettext('cancelled_instance') ?>"
+                    data-label-enabled="<?php echo $this->gettext('cancel_instance') ?>">
             </button>
 
             <button class="action_buttons cancel_button btn btn-secondary" data-needs-popin style="display: none"
@@ -183,7 +199,8 @@
             </button>
 
 
-            <div class="message-dialog" title="<?php echo $this->gettext('send_comment_with_invitation') ?>" style="display: none">
+            <div class="message-dialog" title="<?php echo $this->gettext('send_comment_with_invitation') ?>"
+                 style="display: none">
                 <label for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
                 <textarea name="message" class="message_input" rows="12"></textarea>
             </div>

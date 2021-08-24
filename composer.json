@@ -3,6 +3,7 @@
         "thecsea/simple-caldav-client": "^0.1.14",
         "ext-curl": "*",
         "johngrogg/ics-parser": "^3.0",
-        "ext-json": "*"
+        "ext-json": "*",
+        "fortawesome/font-awesome": "^5.15"
     }
 }
