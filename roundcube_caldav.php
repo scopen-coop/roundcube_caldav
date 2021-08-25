@@ -251,7 +251,6 @@ class roundcube_caldav extends rcube_plugin
         $this->connection_to_calDAV_server();
 
 
-
         $ics = $message->get_part_body($attachments->mime_id);
         $ical = new \ICal\ICal($ics);
 
@@ -460,6 +459,8 @@ class roundcube_caldav extends rcube_plugin
 
             }
 
+            $response['display_select'] = ($response['METHOD'] !== 'CANCEL') && !$response['found_older_event_on_calendar'];
+
             $response['buttons_to_display'] = $this->select_buttons_to_display($response['identity']['role'] ?: '', $response['METHOD'], $response);
 
             $response['main_calendar_name'] = $this->arrayOfCalendars[$server['_main_calendar']]->getDisplayName();
@@ -496,11 +497,8 @@ class roundcube_caldav extends rcube_plugin
         $message = new rcube_message($mail_uid, $mbox);
 
 
-
         // On se connecte au serveur et on récupèrere tous les evt pour ne plus avoir à échanger des infos avec lui
         $this->connection_to_calDAV_server();
-
-
 
 
         // Formatage de l'url du calendrier
@@ -779,6 +777,9 @@ class roundcube_caldav extends rcube_plugin
                         $buttons_to_display = ['reschedule', 'cancel_button_organizer'];
                         if ($is_recurrent) {
                             $buttons_to_display[] = 'cancel_recurrent_button_organizer';
+                        }
+                        if($array_response['display_select']){
+                            $buttons_to_display[] =  'update_button_organizer';
                         }
                         break;
                     case 'COUNTER':
