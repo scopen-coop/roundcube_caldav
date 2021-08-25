@@ -56,11 +56,11 @@
             </div>
             <div class="info_ics location_description">
                 <p class="location" style="display: none"><b><?php echo $this->gettext("location") ?></b></p>
-                <p class="if_new_location new" style="display: none">
-                    <b><?php echo $this->gettext("new_location_proposal") ?></b></p>
+                <p class="if_new_location new" style="display: none" isOrganizer="<b><?php echo $this->gettext("new_location_proposal") ?></b>">
+                    <b><?php echo $this->gettext("new_location_modification") ?></b></p>
                 <p class="description" style="display: none"><b><?php echo $this->gettext("description") ?></b></p>
-                <p class="if_new_description new" style="display: none">
-                    <b><?php echo $this->gettext("new_description_proposal") ?></b></p>
+                <p class="if_new_description new" style="display: none" isOrganizer="<b><?php echo $this->gettext("new_description_proposal") ?></b>">
+                    <b><?php echo $this->gettext("new_description_modification") ?></b></p>
             </div>
 
 
@@ -93,7 +93,10 @@
             </div>
         </div>
         <div class="comment" style="display: none"></div>
-        <div class="if_rescheduled new" style="display:none"></div>
+        <div class="if_rescheduled new" style="display:none">
+            <span class="msg_date" style="display:none"></span>
+            <span class="msg_location" style="display:none"></span>
+        </div>
         <div class="if_modification new" style="display: none"></div>
 
         <div class="action_button">
@@ -142,7 +145,7 @@
             <button class="action_buttons confirm_button btn btn-secondary" data-needs-popin style="display: none"
                     status="CONFIRMED"
                     method="REPLY" data-label-disabled="<?php echo $this->gettext('confirmed') ?>"
-                    data-label-enabled=" <?php echo $this->gettext('confirm') ?>">
+                    data-label-enabled="<?php echo $this->gettext('confirm') ?>">
             </button>
 
             <button class="action_buttons tentative_button btn btn-secondary" data-needs-popin style="display: none"

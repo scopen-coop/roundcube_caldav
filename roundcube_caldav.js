@@ -17,6 +17,21 @@ rcmail.addEventListener('init', function (evt) {
 });
 
 
+function initialized_field_for_popup($event_template_html, array_response) {
+    var $date_start = $event_template_html.find('.date_start'),
+        $date_end = $event_template_html.find('.date_end'),
+        $div_to_add = $event_template_html.find('.if_rescheduled'),
+        $location_input = $event_template_html.find('.location_input'),
+        $time_start = $event_template_html.find('.time_start'),
+        $time_end = $event_template_html.find('.time_end');
+
+    // On rajoute les dates des anciens evt comme valeur par défaut dans les inputs
+    let date = parse_date(array_response['used_event']['dtstart_array'][1], array_response['used_event']['dtend_array'][1])
+    $date_start.attr("value", date[0]['year'] + '-' + date[0]['month'] + '-' + date[0]['day']);
+    $event_template_html.find('.date_end').attr("value", date[1]['year'] + '-' + date[1]['month'] + '-' + date[1]['day']);
+    return {$date_start, $date_end, $div_to_add, $location_input, $time_start, $time_end};
+}
+
 /**
  * Affichage de la banière de l'événement
  * @param response
@@ -35,31 +50,37 @@ function undirect_rendering(response) {
     $event_template_html.attr("id", array_response['uid']);
 
 
-    const displayInfo = display_informations( $event_template_html, array_response);
+    const displayInfo = display_informations($event_template_html, array_response);
     let select = displayInfo.select;
     $event_template_html = displayInfo.$event_template_html;
     array_response = displayInfo.array_response;
 
-    // affichage de la popup de dialog en cas de clic sur le bouton reschedule
-    let rescheduledPopup = display_rescheduled_popup($event_template_html, changeDateAndLocation);
 
     /**
      * Lorsque l'utilisateur décide de reprogrammer l'évenement,
      * on verifie que les date sont valide et toutes remplies et on affiche un balise html pour indiquer à l'utilisateur
      * les informations modifiées avant l'ajout dans son calendrier, On a besoin d'initialiser les variables car la fonction
-     * ne peut pas prendre de paramètres.
+     * ne peut pas prendre de paramètres, et est appelée lors du clic sur un bouton à l'intérieur de la popup
      * @returns {number}
      */
-    var $div_to_add = $event_template_html.find('.if_rescheduled'),
-        $location_input = $event_template_html.find('.location_input'),
-        $date_start = $event_template_html.find('.date_start'),
-        $time_start = $event_template_html.find('.time_start'),
-        $date_end = $event_template_html.find('.date_end'),
-        $time_end = $event_template_html.find('.time_end');
+    var {
+        $date_start,
+        $date_end,
+        $div_to_add,
+        $location_input,
+        $time_start,
+        $time_end
+    } = initialized_field_for_popup($event_template_html, array_response);
+
     function changeDateAndLocation() {
         return change_date_location_out(rescheduledPopup, $event_template_html, $div_to_add, $date_start, $date_end, $time_start,
             $time_end, $location_input, array_response, select);
     }
+
+
+    // affichage de la popup de dialog en cas de clic sur le bouton reschedule
+    let rescheduledPopup = display_rescheduled_popup($event_template_html, changeDateAndLocation);
+
 
     // Affichage des boutons et envoi de la requete lors d'un clic
     display_button_and_send_request_on_clic(select, array_response, $event_template_html);
@@ -83,8 +104,8 @@ function display_after_response(response) {
  * @param array_response
  * @returns {{select, $event_template_html, array_response}}
  */
-function display_informations( $event_template_html, array_response) {
-    let modification = new Display($event_template_html,array_response);
+function display_informations($event_template_html, array_response) {
+    let modification = new Display($event_template_html, array_response);
 
     // On récupère le role du participant et la methode du fichier reçu
     let {isOrganizer, isACounter} = modification.init_method_and_status();
@@ -93,32 +114,29 @@ function display_informations( $event_template_html, array_response) {
     // On affiche le titre
     modification.display_title();
 
-    // Si il y a des modifications on affiche un message
-    modification.display_modification_message();
-
     // On affiche la date
     modification.display_date();
-    // Si le mail est une proposition de modifications et possède des champs date modifiés
-    if (isACounter) {
-        modification.display_modified_date();
-    }
 
     // On affiche la description et le lieu de l'evt
     modification.display_location_and_description();
-    if (isACounter) {
+
+    // On affiche les boutons de réponse aux autres participants
+    modification.display_attendee();
+
+    // Si le mail est une proposition de modifications envoyée par un participant
+    // ou une modification envoyée par l'employeur par rapport à l'événement correspondant stocké sur notre calendrier
+    if (isACounter || (!isOrganizer && array_response['found_older_event_on_calendar'])) {
+        // Si il y a des modifications on affiche un message
+        modification.display_modification_message();
+        // Puis on affiche les champs modifiés
+        modification.display_modified_date();
         modification.display_modified_location_and_description();
+        modification.display_new_attendee();
     }
 
 
     // On affiche s'il s'agit d'un evt reccurent
     modification.display_reccurent_events();
-
-    // On affiche les boutons de réponse aux autres participants
-    modification.display_attendee();
-    if (isACounter) {
-        // On affiche les boutons de réponse aux nouveaux participants si modifications
-        modification.display_new_attendee();
-    }
 
     // On affiche les evt en colision / avant / apres
     modification.display_close_events();
@@ -127,12 +145,12 @@ function display_informations( $event_template_html, array_response) {
     if (!isOrganizer) {
         modification.display_message_if_event_is_already_on_server();
     }
+
     // Affichage du commentaire de l'expediteur
     modification.display_comment();
 
     // On récupère la valeur du champs select ou l'on selectionne les calendriers
     let select = modification.display_select_calendars();
-
 
     $event_template_html = modification.get_event_template();
     array_response = modification.get_array_response();
@@ -156,15 +174,16 @@ function display_rescheduled_popup($event_template_html, changeDateAndLocation) 
 
         buttons: [
             {
-                text: rcmail.gettext('reschedule_meeting', 'roundcube_caldav'),
-                click: changeDateAndLocation
-            },
-            {
                 text: rcmail.gettext('cancel', 'roundcube_caldav'),
                 click: function () {
                     dialog.dialog("close");
                 }
+            },
+            {
+                text: rcmail.gettext('reschedule_meeting', 'roundcube_caldav'),
+                click: changeDateAndLocation
             }
+
         ],
         open: function () {
         },
@@ -191,8 +210,9 @@ function display_rescheduled_popup($event_template_html, changeDateAndLocation) 
 function change_date_location_out(rescheduledPopup, $event_template_html, $div_to_add, $date_start, $date_end,
                                   $time_start, $time_end, $location_input, array_response, select) {
 
+
     let isOrganizer = false;
-    if (this.array_response['identity']) {
+    if (array_response['identity']) {
         isOrganizer = array_response['identity']['role'] === 'ORGANIZER';
     }
 
@@ -205,20 +225,13 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
     let tentative = $event_template_html.find('.tentative_button');
     let decline = $event_template_html.find('.decline_button');
 
-    // On rajoute les dates des anciens evt comme valeur par défaut dans les inputs
-    let date = parse_date(used_event['dtstart_array'][1], used_event['dtend_array'][1])
-    $date_start.attr("value", date[0]['year'] + '-' + date[0]['month'] + '-' + date[0]['day']);
-    $date_end.attr("value", date[1]['year'] + '-' + date[1]['month'] + '-' + date[1]['day']);
-
-
-
 
     // Si tous les champs dates sont remplis
     if ($div_to_add.find(".if_rescheduled_msg").length === 0) {
         if (isOrganizer) {
-            $div_to_add.append('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("if_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
+            $div_to_add.prepend('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("if_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
         } else {
-            $div_to_add.append('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("ask_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
+            $div_to_add.prepend('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("ask_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
         }
     }
     if ($date_start.val() && $date_end.val() && $time_start.val() && $time_end.val()) {
@@ -234,19 +247,22 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
         // On vérifie que la date est valide
         if (dateend > datestr) {
             areFieldsFilled = true;
+            let $message_date = $div_to_add.find(".msg_date");
 
             if (chosenDateStart === chosenDateEnd) {
-                $event_template_html.find(".msg_date").remove();
-                $div_to_add.append('<span class="msg_date" >' + chosenDateStart + ' ' + chosenTimeStart + ' - '
-                    + chosenTimeEnd + '<br></span>');
+                $message_date.show();
+                $message_date.html(chosenDateStart + ' ' + chosenTimeStart + ' - ' + chosenTimeEnd + '    ');
             } else {
-                $event_template_html.find(".msg_date").remove();
-                $div_to_add.append('<span class="msg_date">' + chosenDateStart + ' ' + chosenTimeStart + ' / '
-                    + chosenDateEnd + ' ' + chosenTimeEnd + '<br></span>');
+                $message_date.show();
+                $message_date.html(chosenDateStart + ' ' + chosenTimeStart + ' / ' + chosenDateEnd + ' ' + chosenTimeEnd + '    ');
             }
         } else {
             window.alert(rcmail.gettext('error_date_inf', 'roundcube_caldav'));
             return 0;
+        }
+
+        if (!$location_input.val()) {
+            $div_to_add.find(".msg_location").hide();
         }
     }
 
@@ -254,9 +270,13 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
     if ($location_input.val()) {
         areFieldsFilled = true;
         var chosenLocation = $location_input.val();
-        $event_template_html.find(".msg_location").remove();
-        $div_to_add.append('<span class="msg_location">' + rcmail.gettext('location', 'roundcube_caldav')
-            + $location_input.val() + '<br></span>');
+        let $message_location = $div_to_add.find(".msg_location");
+        $message_location.show();
+        $message_location.html(rcmail.gettext('location', 'roundcube_caldav') + $location_input.val());
+
+        if (!($date_start.val() && $date_end.val() && $time_start.val() && $time_end.val())) {
+            $div_to_add.find(".msg_date").hide();
+        }
     }
 
     // Si au moins une des deux conditions est remplie
@@ -321,17 +341,18 @@ function display_message_popup($event_template_html, calendar, array_response, u
         resizable: false,
 
         buttons: [
-            {
-                text: rcmail.gettext('confirm', 'roundcube_caldav'),
-                click: function () {
-                    post_import_event_server($event_template_html, calendar, array_response, used_event, current_button.attr("status"), current_button.attr("method"), $comment.val());
-                    $(this).dialog("destroy");
-                }
-            },
+
             {
                 text: rcmail.gettext('send_without_comment', 'roundcube_caldav'),
                 click: function () {
                     post_import_event_server($event_template_html, calendar, array_response, used_event, current_button.attr("status"), current_button.attr("method"), '');
+                    $(this).dialog("destroy");
+                }
+            },
+            {
+                text: rcmail.gettext('confirm', 'roundcube_caldav'),
+                click: function () {
+                    post_import_event_server($event_template_html, calendar, array_response, used_event, current_button.attr("status"), current_button.attr("method"), $comment.val());
                     $(this).dialog("destroy");
                 }
             }
@@ -421,7 +442,9 @@ function display_button_and_send_request_on_clic(select, array_response, $event_
                 reschedule_dialog.show();
             } else {
                 buttons_array[button].show();
-                buttons_array[button].html(buttons_array[button].attr("data-label-enabled"));
+                if (!buttons_array[button].attr('disabled')) {
+                    buttons_array[button].html(buttons_array[button].attr("data-label-enabled"));
+                }
                 buttons_array[button].bind('click', function evt() {
                     // On affiche pas la popup de message si il s'agit uniquement d'importer l'événement sur notre serveur
                     if (button !== 'update_button' && button !== 'update_button_organizer') {
@@ -446,7 +469,6 @@ function display_button_and_send_request_on_clic(select, array_response, $event_
         }
     }
 }
-
 
 
 /**

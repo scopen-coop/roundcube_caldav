@@ -82,7 +82,6 @@ $labels['decline_modification'] = "Decliner les modifications";
 $labels['cancel_event'] = "Annuler l'événement";
 $labels['cancel_instance'] = "Annuler cette instance uniquement";
 $labels['cancelled_instance'] = "Instance Annulée";
-
 $labels['update_event'] = "Mettre à jour l'événement sur votre serveur";
 $labels['updated_event'] = "L'événement à été mis à jour";
 $labels['cancel_event_on_server'] = "Annuler l'événement sur votre serveur";
@@ -91,9 +90,10 @@ $labels['cancelled_event'] = "L'événement a été annulé";
 $labels['invitation_accepted'] = " a accepté votre invitation à: ";
 $labels['invitation_declined'] = " a décliné votre invitation à: ";
 $labels['unknown_reply'] = " à répondu à votre invitation mais ne fait pas partie des participants";
-$labels['new_date_proposal'] = "Proposition de nouveaux horaires: ";
 $labels['new_location_proposal'] = "Emplacement proposé: ";
 $labels['new_description_proposal'] = "Description proposée: ";
+$labels['new_location_modification'] = "Emplacement modifié: ";
+$labels['new_description_modification'] = "Description modifiée: ";
 $labels['if_modification'] = "Les modifications sont indiquée en vert";
 $labels['if_no_modification'] = "Les modifications ont déjà été prises en compte";
 $labels['invitation_send'] = "Vous avez envoyé une invitation pour l'événement: ";
@@ -107,5 +107,6 @@ $labels['comment_to_send'] = "Commentaire à envoyer";
 $labels['send_without_comment'] = "Envoyer sans commentaire";
 $labels['comment'] = "Commentaire de l'expéditeur: ";
 $labels['saving_and_sending'] = "Enregistrement de vos modifications et envoi des mails";
+
 
 ?>
