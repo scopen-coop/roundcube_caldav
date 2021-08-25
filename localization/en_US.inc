@@ -104,4 +104,5 @@ $labels['comment_to_send'] = "Comment to send";
 $labels['send_without_comment'] = "Send without comment";
 $labels['comment'] = "Sender's comment: ";
 $labels['saving_and_sending'] = "Saving your changes and sending emails";
+$labels['main_calendar_error'] = "You have to select one default calendar";
 ?>

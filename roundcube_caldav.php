@@ -68,13 +68,7 @@ class roundcube_caldav extends rcube_plugin
         $this->add_hook('preferences_save', array($this, 'preferences_save'));
 
 
-        // on affiche les informations ics uniquement si l'on a une configuration fonctionnelle qui permet de se connecter au serveur
-        $empty_calendars_selection = true;
-        if (array_key_first($server['_used_calendars']) != '' || count($server['_used_calendars']) > 1) {
-            $empty_calendars_selection = false;
-        }
-
-        if ($_connexion && ($server['_main_calendar'] != null || !$empty_calendars_selection)) {
+        if ($_connexion && $server['_main_calendar'] != null) {
             $this->add_hook('message_objects', array($this, 'message_objects'));
             $this->register_action('plugin.roundcube_caldav_get_info_server', array($this, 'get_info_server'));
             $this->register_action('plugin.roundcube_caldav_import_event_on_server', array($this, 'import_event_on_server'));
@@ -90,7 +84,6 @@ class roundcube_caldav extends rcube_plugin
      */
     function modify_section($param_list)
     {
-
         $param_list['list']['server_caldav'] = array(
             'id' => 'server_caldav', 'section' => $this->gettext('server_caldav'),
         );
@@ -166,6 +159,8 @@ class roundcube_caldav extends rcube_plugin
                     if ($main_calendar) {
                         $save_params['prefs']['server_caldav']['_main_calendar'] = $main_calendar;
                         $save_params['prefs']['server_caldav']['_used_calendars'][$main_calendar] = $main_calendar;
+                    }else{
+                        $this->rcmail->output->command('display_message', $this->gettext('main_calendar_error'), 'error');
                     }
                     $chosen_calendars = array(rcube_utils::get_input_value('_define_used_calendars', rcube_utils::INPUT_POST));
                     foreach ($chosen_calendars[0] as $cal) {
