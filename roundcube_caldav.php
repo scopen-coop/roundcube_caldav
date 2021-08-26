@@ -564,6 +564,8 @@ class roundcube_caldav extends rcube_plugin
                 $ics = $message->get_part_body($attachment->mime_id);
                 // On regarde uniquement l'évenement qui nous interesse parmis les différents présent dans le fichier
                 $ical = new ICal($ics);
+
+
                 $array_event = $ical->events();
                 foreach ($array_event as $e) {
                     if ($e->uid == $event_uid) {
@@ -574,8 +576,8 @@ class roundcube_caldav extends rcube_plugin
                 if (!$event) {
                     continue;
                 }
+                $this->time_zone_offset = $ical->iCalDateToDateTime($event->dtstart_array[1])->getOffset();
 
-                $has_participants = true;
                 $is_organizer = false;
                 if ($has_participants = $identity !== 'NO_PARTICIPANTS') {
                     $is_organizer = strcmp($identity['role'], 'ORGANIZER') == 0;
@@ -1189,7 +1191,7 @@ class roundcube_caldav extends rcube_plugin
             }
         } elseif ((strcmp($method, 'REQUEST') == 0 || strcmp($method, 'CANCEL') == 0) && $my_identity) {
             $array_attendee = [];
-            $this->set_participants_characteristics_and_set_buttons_properties($event, $array_attendee);
+            set_participants_characteristics_and_set_buttons_properties($event, $array_attendee,$this->gettext('reply_all'));
             foreach ($array_attendee['attendees'] as $attendee) {
                 if (!empty($attendee['RSVP'])) {
                     if (strcmp($attendee['RSVP'], 'TRUE') == 0) {
