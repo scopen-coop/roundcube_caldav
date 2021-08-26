@@ -17,23 +17,9 @@ rcmail.addEventListener('init', function (evt) {
 });
 
 
-function initialized_field_for_popup($event_template_html, array_response) {
-    var $date_start = $event_template_html.find('.date_start'),
-        $date_end = $event_template_html.find('.date_end'),
-        $div_to_add = $event_template_html.find('.if_rescheduled'),
-        $location_input = $event_template_html.find('.location_input'),
-        $time_start = $event_template_html.find('.time_start'),
-        $time_end = $event_template_html.find('.time_end');
-
-    // On rajoute les dates des anciens evt comme valeur par défaut dans les inputs
-    let date = parse_date(array_response['used_event']['dtstart_array'][1], array_response['used_event']['dtend_array'][1])
-    $date_start.attr("value", date[0]['year'] + '-' + date[0]['month'] + '-' + date[0]['day']);
-    $event_template_html.find('.date_end').attr("value", date[1]['year'] + '-' + date[1]['month'] + '-' + date[1]['day']);
-    return {$date_start, $date_end, $div_to_add, $location_input, $time_start, $time_end};
-}
 
 /**
- * Affichage de la banière de l'événement
+ * Display of event banner
  * @param response
  */
 function undirect_rendering(response) {
@@ -70,7 +56,7 @@ function undirect_rendering(response) {
         $location_input,
         $time_start,
         $time_end
-    } = initialized_field_for_popup($event_template_html, array_response);
+    } = initialized_var_for_reschedule_popup($event_template_html, array_response);
 
     function changeDateAndLocation() {
         return change_date_location_out(rescheduledPopup, $event_template_html, $div_to_add, $date_start, $date_end, $time_start,
@@ -90,7 +76,7 @@ function undirect_rendering(response) {
 }
 
 /**
- * On réaffiche la bannière cachée lors de l'envoi d'un message ou l'ajout sur le serveur
+ * Re-display the hidden banner (when sending a message or adding it to the server), after the sever responses
  * @param response
  */
 function display_after_response(response) {
@@ -99,7 +85,7 @@ function display_after_response(response) {
 }
 
 /**
- * Affiche les informations contenue dans array response
+ * Displays the information contained in array response
  * @param $event_template_html
  * @param array_response
  * @returns {{select, $event_template_html, array_response}}
@@ -152,13 +138,16 @@ function display_informations($event_template_html, array_response) {
     // On récupère la valeur du champs select ou l'on selectionne les calendriers
     let select = modification.display_select_calendars();
 
-    $event_template_html = modification.get_event_template();
-    array_response = modification.get_array_response();
+    $event_template_html = modification.event_template_html;
+    array_response = modification.array_response;
     return {select, $event_template_html, array_response};
 }
 
 /**
- * Affichage de la popup pour reprogrammer l'événement en cas de clic sur le bouton "reprogrammer"
+ *  Display of the popup to reschedule the event when clicking on the "reschedule" button
+ * @param $event_template_html
+ * @param changeDateAndLocation
+ * @returns {*}
  */
 function display_rescheduled_popup($event_template_html, changeDateAndLocation) {
     // Spécification des propriétés de la popup de dialogue
@@ -203,9 +192,42 @@ function display_rescheduled_popup($event_template_html, changeDateAndLocation) 
     return dialog;
 }
 
+
 /**
- * Changement de date et d'emplacement extrait de la fonction undirect_rendering (je n'ai pas réussi à la sortir
- * completement car elle est appelée par une autre fonction
+ * Initialize var for the reschedule popup
+ * @param $event_template_html
+ * @param array_response
+ * @returns {{$date_end, $location_input, $date_start, $time_start, $div_to_add, $time_end}}
+ */
+function initialized_var_for_reschedule_popup($event_template_html, array_response) {
+    var $date_start = $event_template_html.find('.date_start'),
+        $date_end = $event_template_html.find('.date_end'),
+        $div_to_add = $event_template_html.find('.if_rescheduled'),
+        $location_input = $event_template_html.find('.location_input'),
+        $time_start = $event_template_html.find('.time_start'),
+        $time_end = $event_template_html.find('.time_end');
+
+    // On rajoute les dates des anciens evt comme valeur par défaut dans les inputs
+    let date = parse_date(array_response['used_event']['dtstart_array'][1], array_response['used_event']['dtend_array'][1])
+    $date_start.attr("value", date[0]['year'] + '-' + date[0]['month'] + '-' + date[0]['day']);
+    $event_template_html.find('.date_end').attr("value", date[1]['year'] + '-' + date[1]['month'] + '-' + date[1]['day']);
+    return {$date_start, $date_end, $div_to_add, $location_input, $time_start, $time_end};
+}
+
+/**
+ * Date and location change extracted from the undirect_rendering function
+ *  (je n'ai pas réussi à la sortir completement car elle est appelée par une autre fonction)
+ * @param rescheduledPopup
+ * @param $event_template_html
+ * @param $div_to_add
+ * @param $date_start
+ * @param $date_end
+ * @param $time_start
+ * @param $time_end
+ * @param $location_input
+ * @param array_response
+ * @param select
+ * @returns {number}
  */
 function change_date_location_out(rescheduledPopup, $event_template_html, $div_to_add, $date_start, $date_end,
                                   $time_start, $time_end, $location_input, array_response, select) {
@@ -322,7 +344,7 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
 }
 
 /**
- * Affichage de la popup dialog permettant de laisser un commentaire pour le destinataire
+ * Display of the popup dialog allowing to leave a comment for the recipient
  * @param $event_template_html
  * @param calendar
  * @param array_response
@@ -370,7 +392,15 @@ function display_message_popup($event_template_html, calendar, array_response, u
 
 
 /**
- * Envoi de la requete post au serveur pour qu'il effectue l'action "import_event_on_server"
+ * Send the post request to the server to perform the "import_event_on_server" action
+ * @param $event_template_html
+ * @param calendar
+ * @param array_response
+ * @param used_event
+ * @param status
+ * @param method
+ * @param comment
+ * @param modification
  */
 function post_import_event_server($event_template_html, calendar, array_response, used_event, status, method, comment, modification = null) {
 
@@ -394,9 +424,12 @@ function post_import_event_server($event_template_html, calendar, array_response
 }
 
 /**
- * Affichage des différents boutons et programmation des différents comportement en cas de clic sur un bouton
+ * Display of the different buttons and programming of the different behaviors when a button is clicked
+ * @param select_calendars
+ * @param array_response
+ * @param $event_template_html
  */
-function display_button_and_send_request_on_clic(select, array_response, $event_template_html) {
+function display_button_and_send_request_on_clic(select_calendars, array_response, $event_template_html) {
 
     let buttons_array = {
         'reschedule': 'reschedule',
@@ -414,8 +447,8 @@ function display_button_and_send_request_on_clic(select, array_response, $event_
     // On assigne a quel calendrier ajouter l'événement en effet le choix du calendrier n'est pas tout le temps proposé
     // par exemple dans le cas ou on est l'organisateur de l'événement
     let calendar;
-    if (select.val()) {
-        calendar = select.val()
+    if (select_calendars.val()) {
+        calendar = select_calendars.val()
     } else {
         calendar = array_response['found_older_event_on_calendar'];
     }
@@ -471,8 +504,10 @@ function display_button_and_send_request_on_clic(select, array_response, $event_
 }
 
 
+
+
 /**
- * On retrouve l'utilisateur parmis la liste des participants
+ * Find the user among the attendee list
  * @param email_to_find
  * @param attendees
  * @returns {*}
@@ -486,7 +521,7 @@ function find_among_attendee(email_to_find, attendees) {
 }
 
 /**
- * Parse la date recus sous le format yyyymmdd\Thhii(Z)
+ * Parse the received date in the format yyyymmdd\Thhii(Z)
  * @param str_date_start
  * @param str_date_end
  * @returns {{month: string, year: string, day: string}[]}
@@ -519,7 +554,7 @@ function parse_date(str_date_start, str_date_end) {
 }
 
 /**
- * Retourne une chaine lisible pour la date
+ * Returns a readable string for the date
  * @param date
  * @returns {string}
  */

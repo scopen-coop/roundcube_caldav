@@ -2,12 +2,12 @@
 
 
 /**
- * Extraction de l'évenement choisi (dans le cas ou il y en a plusieurs) pour reformer un fichier ics avec lui seul a l'interieur
- * @param $ics
- * @param $uid
- * @return string|null
+ * Extraction of the chosen event (in case there are several) to reform an ics file with only it inside
+ * @param string $ics
+ * @param string $uid
+ * @return string
  */
-function extract_event_ics($ics, $uid)
+function extract_event_ics(string $ics, string $uid): string
 {
     $head_match = array();
     $foot_match = array();
@@ -16,7 +16,7 @@ function extract_event_ics($ics, $uid)
     preg_match("@(.*?)(?=\nBEGIN:VEVENT)@s", $ics, $head_match);
     preg_match("@(?!.*\nEND:VEVENT)END:VEVENT(.*)@s", $ics, $foot_match);
     $header = $head_match[1];
-    $footer =$foot_match[1];
+    $footer = $foot_match[1];
 
     preg_match_all("@(?<=BEGIN:VEVENT)(.*?)(?:END:VEVENT)@s", $ics, $array_event);
 
@@ -33,10 +33,17 @@ function extract_event_ics($ics, $uid)
         return $header . $specific_event . $footer;
     }
 
-    return null;
+    return $ics;
 }
 
-function cancel_one_instance($ics, $date_start)
+
+/**
+ * Cancel one instance of this event, adding the field EXDATE:'$date_start' to VEVENT object
+ * @param string $ics
+ * @param string $date_start
+ * @return string
+ */
+function cancel_one_instance(string $ics, string $date_start): string
 {
     $head_match = array();
     $foot_match = array();
@@ -50,30 +57,27 @@ function cancel_one_instance($ics, $date_start)
 
     $specific_event = '';
     foreach ($array_event[1] as $event) {
-//        if (preg_match('/RRULE(.*)/', $event) == 1) {
-            $recurrence_id = "EXDATE:" . $date_start."\n";
-//        $event = preg_replace('/(RRULE.*)/', $recurrence_id, $event);
-
-        $event = preg_replace('/(UID.*)/', $recurrence_id."$1", $event);
-            $specific_event .= "\nBEGIN:VEVENT" . $event . "END:VEVENT";
-
-//        }
+        $recurrence_id = "EXDATE:" . $date_start . "\n";
+        $event = preg_replace('/(UID.*)/', $recurrence_id . "$1", $event);
+        $specific_event .= "\nBEGIN:VEVENT" . $event . "END:VEVENT";
     }
 
-    return $header . $specific_event .  $footer;
+    return $header . $specific_event . $footer;
 }
 
 
 /**
- * Change la date de début et de fin d'un evenement
- * @param $new_date_start
- * @param $new_date_end
- * @param $ics
- * @param null $offset_start
- * @param null $offset_end
+ * Change the start and end date fields of a VEVENT
+ * @param string $new_date_start
+ * @param string $new_date_end
+ * @param string $ics
+ * @param string $time_zone_offset
+ * @param int|null $offset_start: In case of recurring event, this is the offset between current_date_start and new_date_start
+ *      in order to add the difference to all instance and so reschedule all instance.
+ * @param int|null $offset_end: same idea with current_dte_end and new_date_end
  * @return string
  */
-function change_date_ics($new_date_start, $new_date_end, $ics, $time_zone_offset, $offset_start = null, $offset_end = null)
+function change_date_ics(string $new_date_start,string $new_date_end,string  $ics, string  $time_zone_offset,int  $offset_start = null,int $offset_end = null): string
 {
     $head_match = array();
     $foot_match = array();
@@ -99,7 +103,7 @@ function change_date_ics($new_date_start, $new_date_end, $ics, $time_zone_offset
                 $event = preg_replace('@(DTSTART.*:[0-9A-Z]+)@m', "$1\nDTEND:" . $new_date_end, $event);
             }
             $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start, $event);
-        }else{
+        } else {
             $array_dtstart = array();
             $array_dtend = array();
             preg_match('@DTSTART.*:([0-9A-Z]+)@m', $event, $array_dtstart);
@@ -124,12 +128,12 @@ function change_date_ics($new_date_start, $new_date_end, $ics, $time_zone_offset
 }
 
 /**
- * Modifie le parametre 'LOCATION' d'un fichier ics
- * @param $location
- * @param $ics
- * @return string le fichier ics mis a jour
+ * Change the location field of a VEVENT
+ * @param string $location
+ * @param string $ics
+ * @return string
  */
-function change_location_ics($location, $ics)
+function change_location_ics(string $location,string $ics): string
 {
     $location = wordwrap($location, 75, "\n", true);
 
@@ -152,12 +156,12 @@ function change_location_ics($location, $ics)
 }
 
 /**
- * Modifie le parametre 'STATUS' d'un fichier ics ainsi que la confirmation de sa participation si elle est demandée
- * @param $status
- * @param $ics
- * @return string le fichier ics mis a jour
+ * Change the status field of a VEVENT
+ * @param string $status
+ * @param string $ics
+ * @return string
  */
-function change_status_ics($status, $ics)
+function change_status_ics(string $status,string  $ics): string
 {
     $pos_status = strpos($ics, 'STATUS:');
     if ($pos_status > 0) {
@@ -168,8 +172,14 @@ function change_status_ics($status, $ics)
     return $ics;
 }
 
-
-function change_partstat_ics($ics, $status, $email)
+/**
+ * Change the PARTSTAT (participation status) field of an attendee in a VEVENT
+ * @param string $ics
+ * @param string $status
+ * @param string $email : email of participant we want to change status
+ * @return string
+ */
+function change_partstat_ics(string $ics,string $status,string $email): string
 {
 
     $sections = preg_split('@(\n(?! ))@m', $ics);
@@ -217,12 +227,12 @@ function change_partstat_ics($ics, $status, $email)
 }
 
 /**
- * On modifie la section commentaire si le champ a été renseigné
- * @param $ics
- * @param $comment
+ * Change the COMMENT field of an icalendar string
+ * @param string $ics
+ * @param string $comment
  * @return string
  */
-function update_comment_section_ics($ics, $comment)
+function update_comment_section_ics(string $ics,string $comment): string
 {
     $comment = wordwrap($comment, 75, "\n ", true);
     $sections = preg_split('@(\n(?! ))@m', $ics);
@@ -242,11 +252,11 @@ function update_comment_section_ics($ics, $comment)
 }
 
 /**
- * On supprime la section commentaire avant de sauvegarder l'événement
- * @param $ics
+ * Delete the comment field  of an icalendar string
+ * @param string $ics
  * @return string
  */
-function delete_comment_section_ics($ics)
+function delete_comment_section_ics(string $ics): string
 {
     $sections = preg_split('@(\n(?! ))@m', $ics);
     foreach ($sections as $key => &$section) {
@@ -259,11 +269,11 @@ function delete_comment_section_ics($ics)
 
 
 /**
- * Modifie la dtae de dernière modification
- * @param $ics
- * @return mixed
+ * Change LAST_MODIFIED field  of a VEVENT
+ * @param string $ics
+ * @return string
  */
-function change_last_modified_ics($ics)
+function change_last_modified_ics(string $ics): string
 {
     $new_date = gmdate("Ymd\THis\Z");
 
@@ -271,11 +281,11 @@ function change_last_modified_ics($ics)
 }
 
 /**
- * Incrémente le champs séquence
- * @param $ics
- * @return array|string|string[]|null
+ * Increment SEQUENCE field of a VEVENT by one
+ * @param string $ics
+ * @return string
  */
-function change_sequence_ics($ics)
+function change_sequence_ics(string $ics): string
 {
 
     $num_sequence = array();
@@ -290,33 +300,14 @@ function change_sequence_ics($ics)
 
 }
 
+
 /**
- * Parse une durée au format ics en seconde
- * @param $duration
- * @return false|float|int*
+ * Change the METHOD field of a VCALENDAR
+ * @param string $ics
+ * @param string $method
+ * @return string
  */
-function calculate_duration($duration)
-{
-    $ladder = ['S' => 1, 'M' => 60, 'H' => 3600, 'D' => 86400, 'W' => 604800];
-    $match_array = [];
-    $res = preg_match('/P([0-9]*W)?([0-9]*D)?T?([0-9]*H)?([0-9]*M)?([0-9]*S)?/', $duration, $match_array);
-    if ($res) {
-        array_shift($match_array);
-        $duration_in_second = 0;
-        foreach ($match_array as $match) {
-            $scale = [];
-            preg_match('/([0-9]*)([A-Z])/', $match, $scale);
-            $duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
-        }
-        return $duration_in_second;
-    } else {
-        return false;
-    }
-
-}
-
-
-function change_method_ics($ics, $method)
+function change_method_ics(string $ics,string $method): string
 {
     if (preg_match('/^METHOD:.*/m', $ics) == 1) {
         $ics = preg_replace('/^METHOD:.*/m', 'METHOD:' . $method, $ics);
@@ -326,6 +317,11 @@ function change_method_ics($ics, $method)
     return $ics;
 }
 
+/**
+ * Delete the METHOD field of a VCALENDAR
+ * @param $ics
+ * @return string
+ */
 function del_method_field_ics($ics)
 {
     if (preg_match('/^METHOD:.*[\r|\n]*/m', $ics) == 1) {
@@ -334,10 +330,7 @@ function del_method_field_ics($ics)
     return $ics;
 }
 
-function str_start_with($string, $startstring)
-{
-    $len = strlen($startstring);
-    return (substr($string, 0, $len) === $startstring);
-}
+
+
 
 ?>
