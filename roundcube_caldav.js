@@ -17,12 +17,12 @@ rcmail.addEventListener('init', function (evt) {
 });
 
 
-
 /**
  * Display of event banner
  * @param response
  */
 function undirect_rendering(response) {
+
 
     // On copie le template html et l'on cache la partie chargement...
     let $event_template_html;
@@ -208,9 +208,12 @@ function initialized_var_for_reschedule_popup($event_template_html, array_respon
         $time_end = $event_template_html.find('.time_end');
 
     // On rajoute les dates des anciens evt comme valeur par défaut dans les inputs
-    let date = parse_date(array_response['used_event']['dtstart_array'][1], array_response['used_event']['dtend_array'][1])
-    $date_start.attr("value", date[0]['year'] + '-' + date[0]['month'] + '-' + date[0]['day']);
-    $event_template_html.find('.date_end').attr("value", date[1]['year'] + '-' + date[1]['month'] + '-' + date[1]['day']);
+
+    $date_start.val(array_response['date_start']);
+    $date_end.val( array_response['date_end']);
+    $time_start.val( array_response['date_hours_start']);
+
+    $time_end.val( array_response['date_hours_end']);
     return {$date_start, $date_end, $div_to_add, $location_input, $time_start, $time_end};
 }
 
@@ -256,7 +259,10 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
             $div_to_add.prepend('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("ask_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
         }
     }
-    if ($date_start.val() && $date_end.val() && $time_start.val() && $time_end.val()) {
+
+
+    if ($date_start.val() !== array_response['date_start'] || $date_end.val() !== array_response['date_end']
+        || $time_start.val() !== array_response['date_hours_start'] || $time_end.val() !== array_response['date_hours_end']) {
 
         var chosenDateStart = $date_start.val();
         var chosenDateEnd = $date_end.val();
@@ -502,8 +508,6 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
         }
     }
 }
-
-
 
 
 /**

@@ -17,10 +17,11 @@ use ICal\ICal;
  * $response['attr_reply_all'] = [onclick]
  * @param Event $event
  * @param array $response
- * @param string $reply_all_message : Must be past as an argument because we don't have an access to $this->gettext in this scope
  */
-function set_participants_characteristics_and_set_buttons_properties(Event $event, array &$response, string $reply_all_message)
+function set_participants_characteristics_and_set_buttons_properties(Event $event, array &$response)
 {
+    $my_email = $response['identity']['email'];
+
     $id = 0;
     $all_adresses = '';
     if (!empty($event->attendee_array)) {
@@ -33,8 +34,11 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
 
             } elseif (str_start_with($attendee, 'mailto:')) {
                 $response['attendees'][$id]['email'] = substr($attendee, strlen('mailto:'));
-                $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendees'][$id]['email'] . "',this)";
-                $all_adresses .= $response['attendees'][$id]['email'] . ';';
+                $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('reply-all','" . $response['attendees'][$id]['email'] . "',this)";
+                if($my_email!==$response['attendees'][$id]['email']){
+                    $all_adresses .= $response['attendees'][$id]['email'] . ';';
+                }
+
                 $id++;
             }
         }
@@ -46,8 +50,12 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
             if (is_string($organizer) && str_start_with($organizer, 'mailto:')) {
                 $organizer_email = substr($organizer, strlen('mailto:'));
                 $organizer_array['email'] = $organizer_email;
-                $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $organizer_email . "',this)";
-                $all_adresses .= $organizer_email . ';';
+                $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('reply-all','" . $organizer_email . "',this)";
+                if($my_email!==$organizer_email){
+                    $all_adresses .= $organizer_email . ';';
+                }
+
+
             } else {
                 $organizer_array['name'] = $organizer['CN'];
             }
@@ -58,7 +66,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
     // On definit les caractérisques du bouton pour répondre à tous
     $all_adresses = substr($all_adresses, 0, -1);
     $response['attr_reply_all'] = [
-        'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $all_adresses . "','" . $reply_all_message . "',this)"
+        'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('reply-all','" . $all_adresses . "',this)"
     ];
 }
 
@@ -201,10 +209,12 @@ function set_if_modification_date_location_description_attendees(array &$respons
  */
 function set_formated_date_time(Event $event, array &$response): void
 {
+    $response['date_start'] = date("Y-m-d", $event->dtstart_array[2]);
     $response['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
     $response['date_day_start'] = date("d", $event->dtstart_array[2]);
     $response['date_hours_start'] = date("G:i", $event->dtstart_array[2]);
 
+    $response['date_end'] = date("Y-m-d", $event->dtend_array[2]);
     $response['date_month_end'] = date("M/Y", $event->dtend_array[2]);
     $response['date_day_end'] = date("d", $event->dtend_array[2]);
     $response['date_hours_end'] = date("G:i", $event->dtend_array[2]);

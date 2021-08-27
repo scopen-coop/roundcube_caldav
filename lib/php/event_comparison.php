@@ -90,6 +90,7 @@ function choose_the_closest_meeting(array $array_date,string  $date_start_or_end
 {
     $first = array_key_first($array_date);
     $uid = $array_date[$first]['uid'];
+
     if (strcmp($opt, 'previous') == 0) {
         foreach ($array_date as $date) {
             if (strtotime($array_date[$uid]['date_start']) <= strtotime($date['date_start'])
