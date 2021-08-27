@@ -34,7 +34,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
 
             } elseif (str_start_with($attendee, 'mailto:')) {
                 $response['attendees'][$id]['email'] = substr($attendee, strlen('mailto:'));
-                $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('reply-all','" . $response['attendees'][$id]['email'] . "',this)";
+                $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendees'][$id]['email'] . "',this)";
                 if($my_email!==$response['attendees'][$id]['email']){
                     $all_adresses .= $response['attendees'][$id]['email'] . ';';
                 }
@@ -50,7 +50,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
             if (is_string($organizer) && str_start_with($organizer, 'mailto:')) {
                 $organizer_email = substr($organizer, strlen('mailto:'));
                 $organizer_array['email'] = $organizer_email;
-                $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('reply-all','" . $organizer_email . "',this)";
+                $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $organizer_email . "',this)";
                 if($my_email!==$organizer_email){
                     $all_adresses .= $organizer_email . ';';
                 }
@@ -66,7 +66,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
     // On definit les caractérisques du bouton pour répondre à tous
     $all_adresses = substr($all_adresses, 0, -1);
     $response['attr_reply_all'] = [
-        'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('reply-all','" . $all_adresses . "',this)"
+        'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $all_adresses . "',this)"
     ];
 }
 

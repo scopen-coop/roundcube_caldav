@@ -149,7 +149,7 @@ function change_location_ics(string $location, string $ics): string
     $ics = implode("\n", $sections);
 
     if (!$has_location_field) {
-        $ics = preg_replace("@END:VEVENT@", "LOCATION:" . $location . "\nEND:VEVENT", $ics);
+        $ics = preg_replace("@END:VEVENT@", "LOCATION:" . $location . "\r\nEND:VEVENT", $ics);
     }
     return $ics;
 
@@ -271,7 +271,7 @@ function delete_comment_section_ics(string $ics): string
             unset($sections[$key]);
         }
     }
-    return implode("\r\n", $sections);
+    return implode("\n", $sections);
 }
 
 
@@ -337,7 +337,11 @@ function del_method_field_ics($ics): string
     return $ics;
 }
 
-
+/**
+ * Find the time zone of the ICalendar file if it exist, else get server time zone
+ * @param $ics
+ * @return false|int
+ */
 function find_time_zone($ics)
 {
     $vtimezone = [];
@@ -363,7 +367,12 @@ function find_time_zone($ics)
     return $timezone->getOffset(new DateTime());
 }
 
-function change_partstat_of_all_attendees_to_need_action($ics)
+/**
+ * Change the participation status to NEED_ACTIONS for all attendees
+ * @param $ics
+ * @return string
+ */
+function change_partstat_of_all_attendees_to_need_action($ics): string
 {
 
     $sections = preg_split('@(\n(?! ))@m', $ics);
@@ -388,7 +397,7 @@ function change_partstat_of_all_attendees_to_need_action($ics)
                 }
             }
 
-            $section = implode("\n ", str_split(implode('', $attributes), 74));
+            $section = implode("\r\n ", str_split(implode('', $attributes), 74));
 
         }
     }
