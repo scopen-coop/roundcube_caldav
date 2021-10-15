@@ -208,11 +208,16 @@ function change_partstat_ics(string $ics, string $status, string $email): string
                         $parts[1] = $status;
                         $attribute = implode('=', $parts);
                     }
-                    if (strcmp($status, 'DECLINED') == 0 && strcmp($command, 'RSVP') == 0) {
+                    if ($command === 'RSVP') {
+                        if ($status === 'DECLINED') {
+                            $parts[1] = 'FALSE';
+                        } else {
+                            $parts[1] = 'TRUE';
+                        }
                         $is_rsvp_field_present = true;
-                        $parts[1] = 'FALSE';
                         $attribute = implode('=', $parts);
                     }
+
                 }
                 if (!$is_rsvp_field_present && $status == 'DECLINED') {
                     $attributes[] = ';RSVP=FALSE';
@@ -393,7 +398,11 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
                 if (strcmp($command, 'PARTSTAT') == 0) {
                     $parts[1] = 'NEEDS_ACTION';
                     $attribute = implode('=', $parts);
+                } elseif (strcmp($command, 'RSVP') == 0) {
+                    $parts[1] = 'TRUE';
+                    $attribute = implode('=', $parts);
                 }
+
             }
 
             $section = implode("\r\n ", str_split(implode('', $attributes), 74));
@@ -414,27 +423,28 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
 function keep_partstat_of_other_participants_ics($ics, $new_ics): string
 {
     $sections_old_ics = preg_split('@(\n(?! ))@m', $ics);
-    $section_to_keep =[];
+    $section_to_keep = [];
     foreach ($sections_old_ics as &$section) {
         if (preg_match('@ATTENDEE@', $section) == 1) {
-            $section_to_keep[]= $section;
+            $section_to_keep[] = $section;
         }
     }
-    $section_to_keep = implode("\r\n",$section_to_keep);
+    $section_to_keep = implode("\r\n", $section_to_keep);
 
     $sections_new_ics = preg_split('@(\n(?! ))@m', $new_ics);
-    $section_to_change =[];
+    $section_to_change = [];
     foreach ($sections_new_ics as &$section) {
         if (preg_match('@ATTENDEE@', $section) == 1) {
-            $section_to_change[]=$section ;
+            $section_to_change[] = $section;
         }
     }
-    $section_to_change = implode("\n",$section_to_change);
+    $section_to_change = implode("\n", $section_to_change);
 
     $new_ics = implode("\n", $sections_new_ics);
-    var_dump($new_ics);exit;
+    var_dump($new_ics);
+    exit;
 //    return $section_to_keep. "\n\n". $section_to_change;
-    return  preg_replace($section_to_change,$section_to_keep,$new_ics);
+    return preg_replace($section_to_change, $section_to_keep, $new_ics);
 }
 
 ?>

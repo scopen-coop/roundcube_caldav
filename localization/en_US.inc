@@ -79,6 +79,7 @@ $labels['invitation_modification_already_studied'] = "The proposed modifications
 $labels['confirm_modification'] = "Confirm modifications";
 $labels['decline_modification'] = "Decline modifications";
 $labels['cancel_event'] = "Cancel Event";
+$labels['cancel_instance'] = "Cancel this instance";
 $labels['update_event'] = "Update Event on server";
 $labels['updated_event'] = "Event has been Updated ";
 $labels['cancel_event_on_server'] = "Cancel Event on server";

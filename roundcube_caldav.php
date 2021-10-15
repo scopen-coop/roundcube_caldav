@@ -590,7 +590,6 @@ class roundcube_caldav extends rcube_plugin
                 }
 
                 $update_event_on_server_only = strcmp($method, 'UPDATED') == 0;
-
                 $decline_counter = strcmp($method, 'DECLINECOUNTER') == 0;
                 $cancel_recurrent = strcmp($status, 'CANCELLED_ONE_EVENT') == 0;
 
@@ -607,7 +606,6 @@ class roundcube_caldav extends rcube_plugin
                     }
                 }
                 if ($update_event_on_server_only) {
-//                    var_dump( $ics, $message->sender['mailto']);exit;
                     $new_ics = change_partstat_ics($ics, $status, $message->sender['mailto']);
                 }else{
                     // On reforme un fichier ics avec uniquement l'événement qui nous interesse
@@ -625,10 +623,10 @@ class roundcube_caldav extends rcube_plugin
                     $new_ics = change_partstat_ics($new_ics, $status, $identity['email']);
                 }
 
-
                 if ($is_organizer && $method == 'REQUEST' && $status = 'CONFIRMED') {
                     $new_ics = change_partstat_of_all_attendees_to_need_action($new_ics);
                 }
+
 
                 if ($cancel_recurrent) {
                     $status = 'CONFIRMED';
