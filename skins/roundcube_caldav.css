@@ -49,6 +49,7 @@
     padding: 1.5em;
     text-align: justify;
     text-justify: inter-word;
+    max-width: 40%;
 
 }
 

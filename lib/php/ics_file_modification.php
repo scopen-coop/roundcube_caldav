@@ -84,9 +84,10 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
     $array_event = array();
 
     preg_match("@(.*?)(?=BEGIN:VEVENT)@s", $ics, $head_match);
-    preg_match("@(?!.*\nEND:VEVENT)END:VEVENT\n(.*)@s", $ics, $foot_match);
+    preg_match("@(?!.*\nEND:VEVENT)END:VEVENT(.*)@s", $ics, $foot_match);
     $header = $head_match[1];
     $footer = $foot_match[1];
+
 
     preg_match_all("@(?<=BEGIN:VEVENT)(.*?)(?:END:VEVENT)@s", $ics, $array_event);
 
@@ -123,7 +124,6 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
         $all_events .= 'BEGIN:VEVENT' . $event . "END:VEVENT\r\n";
 
     }
-
     return $header . $all_events . $footer;
 }
 
@@ -238,8 +238,8 @@ function update_comment_section_ics(string $ics, string $comment): string
     $comment = preg_replace("/\n/", '\n', $comment);
     $comment_start = substr($comment, 0, 73 - strlen('COMMENT:'));
     $comment = substr($comment, 73 - strlen('COMMENT:'));
-    $comment = wordwrap($comment, 73, "\r\n ", true);
-    $comment = $comment_start . "\r\n " . $comment . "\r";
+    $comment = wordwrap($comment, 73, " \r\n ", true);
+    $comment = $comment_start . " \r\n " . $comment . "\r";
 
     $sections = preg_split('@(\n(?! ))@m', $ics);
     $has_comment_section = false;
@@ -384,7 +384,6 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
             $section = preg_replace("/[\r|\n]+ /", '', $section);
             $attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-            $is_rsvp_field_present = false;
             foreach ($attributes as &$attribute) {
                 if ($attribute == ';' || $attributes == ':') {
                     continue;
@@ -404,6 +403,38 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
 
 
     return implode("\n", $sections);
+}
+
+/**
+ * Keep the participation status of all participant in case of update
+ * @param $ics
+ * @param $new_ics
+ * @return string
+ */
+function keep_partstat_of_other_participants_ics($ics, $new_ics): string
+{
+    $sections_old_ics = preg_split('@(\n(?! ))@m', $ics);
+    $section_to_keep =[];
+    foreach ($sections_old_ics as &$section) {
+        if (preg_match('@ATTENDEE@', $section) == 1) {
+            $section_to_keep[]= $section;
+        }
+    }
+    $section_to_keep = implode("\r\n",$section_to_keep);
+
+    $sections_new_ics = preg_split('@(\n(?! ))@m', $new_ics);
+    $section_to_change =[];
+    foreach ($sections_new_ics as &$section) {
+        if (preg_match('@ATTENDEE@', $section) == 1) {
+            $section_to_change[]=$section ;
+        }
+    }
+    $section_to_change = implode("\n",$section_to_change);
+
+    $new_ics = implode("\n", $sections_new_ics);
+    var_dump($new_ics);exit;
+//    return $section_to_keep. "\n\n". $section_to_change;
+    return  preg_replace($section_to_change,$section_to_keep,$new_ics);
 }
 
 ?>

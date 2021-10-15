@@ -211,9 +211,10 @@ function initialized_var_for_reschedule_popup($event_template_html, array_respon
 
     $date_start.val(array_response['date_start']);
     $date_end.val( array_response['date_end']);
-    $time_start.val( array_response['date_hours_start']);
-
+    $time_start.val(array_response['date_hours_start']);
     $time_end.val( array_response['date_hours_end']);
+
+
     return {$date_start, $date_end, $div_to_add, $location_input, $time_start, $time_end};
 }
 
@@ -262,7 +263,7 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
 
 
     if ($date_start.val() !== array_response['date_start'] || $date_end.val() !== array_response['date_end']
-        || $time_start.val() !== array_response['date_hours_start'] || $time_end.val() !== array_response['date_hours_end']) {
+        || $time_start.value !== array_response['date_hours_start'] || $time_end.value !== array_response['date_hours_end']) {
 
         var chosenDateStart = $date_start.val();
         var chosenDateEnd = $date_end.val();
@@ -273,7 +274,7 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
         let dateend = new Date(chosenDateEnd + ' ' + chosenTimeEnd).getTime();
 
         // On vérifie que la date est valide
-        if (dateend > datestr) {
+        if (dateend >= datestr) {
             areFieldsFilled = true;
             let $message_date = $div_to_add.find(".msg_date");
 
@@ -489,7 +490,7 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
                     if (button !== 'update_button' && button !== 'update_button_organizer') {
                         display_message_popup($event_template_html, calendar, array_response, used_event, buttons_array[button]);
                     } else {
-                        post_import_event_server($event_template_html, calendar, array_response, used_event, buttons_array[button].attr("status"), buttons_array[button].attr("method"), '');
+                        post_import_event_server($event_template_html, calendar, array_response, used_event, array_response['sender_partstat'], buttons_array[button].attr("method"), '');
                     }
 
                     buttons_array[button].attr('disabled', 'true');

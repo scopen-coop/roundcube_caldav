@@ -88,6 +88,7 @@ $labels['cancel_event_on_server'] = "Annuler l'événement sur votre serveur";
 $labels['cancelled_event_on_server'] = "L'événement à été annulé sur votre serveur";
 $labels['cancelled_event'] = "L'événement a été annulé";
 $labels['invitation_accepted'] = " a accepté votre invitation à: ";
+$labels['invitation_tentative'] = " est intéressé par votre invitation à: ";
 $labels['invitation_declined'] = " a décliné votre invitation à: ";
 $labels['unknown_reply'] = " à répondu à votre invitation mais ne fait pas partie des participants";
 $labels['new_location_proposal'] = "Emplacement proposé: ";
@@ -107,7 +108,8 @@ $labels['comment_to_send'] = "Commentaire à envoyer";
 $labels['send_without_comment'] = "Envoyer sans commentaire";
 $labels['comment'] = "Commentaire de l'expéditeur: ";
 $labels['saving_and_sending'] = "Enregistrement de vos modifications et envoi des mails";
-$labels['main_calendar_error'] = "Vous devez selectionner un calendrier par défault"
+$labels['main_calendar_error'] = "Vous devez selectionner un calendrier par défault";
+
 
 
 ?>

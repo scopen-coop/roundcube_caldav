@@ -35,13 +35,14 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
             } elseif (str_start_with($attendee, 'mailto:')) {
                 $response['attendees'][$id]['email'] = substr($attendee, strlen('mailto:'));
                 $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendees'][$id]['email'] . "',this)";
-                if($my_email!==$response['attendees'][$id]['email']){
+                if ($my_email !== $response['attendees'][$id]['email']) {
                     $all_adresses .= $response['attendees'][$id]['email'] . ';';
                 }
 
                 $id++;
             }
         }
+
     }
     // On cherche les informations concernant l'organisateur
     if (!empty($event->organizer_array)) {
@@ -51,7 +52,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
                 $organizer_email = substr($organizer, strlen('mailto:'));
                 $organizer_array['email'] = $organizer_email;
                 $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $organizer_email . "',this)";
-                if($my_email!==$organizer_email){
+                if ($my_email !== $organizer_email) {
                     $all_adresses .= $organizer_email . ';';
                 }
 
@@ -68,6 +69,38 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
     $response['attr_reply_all'] = [
         'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $all_adresses . "',this)"
     ];
+}
+
+
+/**
+ * Get the  email sender's participation status before changing for a newer event in server in order to display the good
+ * title
+ * @param Event $event
+ * @param array $response
+ */
+function get_sender_s_partstat(Event $event, array &$response)
+{
+    $sender_email = $response['sender_email'];
+    $array_attendees = [];
+    $id = 0;
+    $res = -1;
+    if (!empty($event->attendee_array)) {
+        foreach ($event->attendee_array as $attendee) {
+            if (!is_string($attendee) && array_key_exists('CN', $attendee)) {
+                $array_attendees[$id]['partstat'] = $attendee['PARTSTAT'];
+            } elseif (str_start_with($attendee, 'mailto:')) {
+                $array_attendees[$id]['email'] = substr($attendee, strlen('mailto:'));
+                if ($sender_email === $array_attendees[$id]['email']) {
+                    $res = $id;
+                }
+                $id++;
+            }
+        }
+    }
+
+    if ($res >= 0) {
+        $response['sender_partstat'] = $array_attendees[$res]['partstat'];
+    }
 }
 
 
@@ -109,6 +142,7 @@ function set_method_field(ICal $ical, &$response, bool $is_Organizer)
         $response['METHOD'] = 'REQUEST';
     }
 }
+
 
 /**
  * Check if this event already exist on server in an older version, and if it is the case, set the response array.
@@ -212,12 +246,12 @@ function set_formated_date_time(Event $event, array &$response): void
     $response['date_start'] = date("Y-m-d", $event->dtstart_array[2]);
     $response['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
     $response['date_day_start'] = date("d", $event->dtstart_array[2]);
-    $response['date_hours_start'] = date("G:i", $event->dtstart_array[2]);
+    $response['date_hours_start'] = date("H:i", $event->dtstart_array[2]);
 
     $response['date_end'] = date("Y-m-d", $event->dtend_array[2]);
     $response['date_month_end'] = date("M/Y", $event->dtend_array[2]);
     $response['date_day_end'] = date("d", $event->dtend_array[2]);
-    $response['date_hours_end'] = date("G:i", $event->dtend_array[2]);
+    $response['date_hours_end'] = date("H:i", $event->dtend_array[2]);
 
 
     $response['same_date'] = $response['date_month_start'] === $response['date_month_end'];
@@ -270,7 +304,7 @@ function set_sender_and_receiver_email($message, array &$response): void
  * @param array $array_attendee_old
  * @return array : array with new attendees
  */
-function find_difference_attendee(array $array_attendee_new,array $array_attendee_old): array
+function find_difference_attendee(array $array_attendee_new, array $array_attendee_old): array
 {
     $new_attendees = [];
     foreach ($array_attendee_new as $new_attendee) {

@@ -85,6 +85,7 @@ $labels['cancel_event_on_server'] = "Cancel Event on server";
 $labels['cancelled_event_on_server'] = "Event has been cancelled on your server";
 $labels['cancelled_event'] = "Event has been cancelled";
 $labels['invitation_accepted'] = " accepted your invitation for the event:  ";
+$labels['invitation_tentative'] = " is interested in your invitation for the event: ";
 $labels['invitation_declined'] = "  declined your invitation for the event:";
 $labels['unknown_reply'] = " reply to your invitation without being in the attendee list";
 $labels['new_location_proposal'] = "New location proposal: ";
