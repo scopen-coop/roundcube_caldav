@@ -154,7 +154,12 @@ class roundcube_caldav extends rcube_plugin
 
                 $save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $save_params['prefs']['server_caldav']['_password'], $urlbase);
 
-                if( $save_params['prefs']['server_caldav']['_connexion_status'] && $new_password ){
+                if ($save_params['prefs']['server_caldav']['_connexion_status'] && $new_password) {
+                    return $save_params;
+                } elseif (!$save_params['prefs']['server_caldav']['_connexion_status']) {
+                    $this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
+                    $save_params['abort'] = true;
+                    $save_params['result'] = false;
                     return $save_params;
                 }
 
@@ -486,23 +491,30 @@ class roundcube_caldav extends rcube_plugin
 
             $response['comment'] = nl2br($event->comment);
 
+            set_if_an_older_event_was_found_on_server($event, $response, $this->arrayOfCalendars, $this->all_events);
 
             $found_advance = $this->is_server_in_advance($event);
 
             if ($found_advance) {
-                $response['used_event'] = $found_advance[0]['event'];
+
                 $response['found_advance'] = $found_advance;
                 $response['found_on_calendar']['display_name'] = $found_advance[1];
                 $response['found_on_calendar']['calendar_id'] = $found_advance[0]['calendar_id'];
                 $response['is_sequences_equal'] = $found_advance[2];
 
+                if ($is_Organizer && $response['is_sequences_equal'] && $response['METHOD'] != 'COUNTER') {
+                    $response['used_event'] = $event;
+                } else {
+                    $response['used_event'] = $found_advance[0]['event'];
+                }
             } else {
                 $response['used_event'] = $event;
             }
 
-            set_if_an_older_event_was_found_on_server($event, $response, $this->arrayOfCalendars, $this->all_events);
 
             set_participants_characteristics_and_set_buttons_properties($response['used_event'], $response);
+
+//            var_dump($response['attendees']);exit;
             $new_attendees_array = [];
             set_participants_characteristics_and_set_buttons_properties($event, $new_attendees_array);
 
@@ -511,14 +523,27 @@ class roundcube_caldav extends rcube_plugin
                 $response['display_modification_made_by_organizer'] = true;
             }
 
-            if (($found_advance && strcmp($response['METHOD'], 'COUNTER') == 0) || $response['display_modification_made_by_organizer']) {
+
+            $date_time_already_set = false;
+
+            if (($found_advance && $response['METHOD'] == 'COUNTER')) {
+
                 set_if_modification_date_location_description_attendees($response, $is_Organizer, $event, $new_attendees_array['attendees']);
+                set_formated_date_time($response['used_event'], $response);
+                $date_time_already_set = true;
+            } elseif ($response['display_modification_made_by_organizer']) {
+                set_if_modification_date_location_description_attendees($response, $is_Organizer, $event, $new_attendees_array['attendees']);
+                set_formated_date_time($response['older_event'], $response);
+                $date_time_already_set = true;
             }
+
 
             $event = $response['used_event'];
 
+            if (!$date_time_already_set) {
+                set_formated_date_time($event, $response);
+            }
 
-            set_formated_date_time($event, $response);
 
             $response['description'] = $event->description;
             $response['location'] = $event->location;
@@ -531,7 +556,9 @@ class roundcube_caldav extends rcube_plugin
             // On affiche les autres informations concernant notre server caldav
             $this->set_caldav_server_related_information($event, $ical, $response);
 
-            get_sender_s_partstat($event, $response, true);
+            get_sender_s_partstat($found_advance[0]['event'], $response, true);
+
+
             $this->select_buttons_to_display($response['identity']['role'] ?: '', $response['METHOD'], $response);
 
             $this->rcmail->output->command('plugin.undirect_rendering_js', array('request' => $response));
@@ -664,8 +691,6 @@ class roundcube_caldav extends rcube_plugin
                 // On envoie une réponse uniquement si il y a des participants à qui répondre,
                 // et si ce n'est pas une simple mise a jour de l'événement sur le serveur de l'utilisateur
                 if ($send_event && $has_participants && !$update_event_on_server_only && !$cancel_event_on_server_only) {
-
-
                     $this->send_mail_and_display_message($is_organizer, $method, $status, $new_ics, $message, $identity, $comment, (bool)$modification);
                 }
 
@@ -695,7 +720,7 @@ class roundcube_caldav extends rcube_plugin
                         if ($is_recurrent) {
                             $buttons_to_display[] = 'cancel_recurrent_button_organizer';
                         }
-                        if ($response['sender_partstat_on_server'] == 'NEEDS-ACTION') {
+                        if ($response['sender_partstat_on_server'] == 'NEEDS-ACTION' || $response['sender_partstat_on_server'] == 'NEEDS_ACTION') {
                             $buttons_to_display[] = 'update_button_organizer';
                         }
                         break;
@@ -1131,11 +1156,14 @@ class roundcube_caldav extends rcube_plugin
      */
     public function send_mail_and_display_message(bool $is_organizer, string $method, string $status, string $ics_to_send, rcube_message $message, array $identity, string $comment, bool $has_modif)
     {
-
         if (strcmp($comment, '') != 0) {
             $ics_to_send = update_comment_section_ics($ics_to_send, $comment);
         } else {
             $ics_to_send = delete_comment_section_ics($ics_to_send);
+        }
+
+        if ($method !== 'CANCEL') {
+            $ics_to_send = delete_status_section_ics($ics_to_send);
         }
 
 
@@ -1172,7 +1200,6 @@ class roundcube_caldav extends rcube_plugin
 
         $subject = $this->change_mail_subject($message, $has_modif, $method);
         list($mailto, $RSVP) = $this->find_to_whom_should_we_answer($my_identity, $event, $method, $message);
-
 
         if (!empty($mailto)) {
             $header = [
@@ -1236,13 +1263,13 @@ class roundcube_caldav extends rcube_plugin
             $array_attendee = [];
             set_participants_characteristics_and_set_buttons_properties($event, $array_attendee, $this->gettext('reply_all'));
             foreach ($array_attendee['attendees'] as $attendee) {
-
-                if (!empty($attendee['RSVP'])) {
+                if ($attendee['email']) {
                     if (strcmp($attendee['RSVP'], 'TRUE') == 0) {
                         $mailto .= $attendee['email'] . ', ';
+                    } elseif (!empty($attendee['ROLE']) && strcmp($attendee['ROLE'], 'NON-PARTICIPANT') != 0) {
+                        $mailto .= $attendee['email'] . ', ';
                     }
-                } elseif (!empty($attendee['ROLE']) && strcmp($attendee['ROLE'], 'NON-PARTICIPANT') != 0) {
-                    $mailto .= $attendee['email'] . ', ';
+
                 }
             }
 

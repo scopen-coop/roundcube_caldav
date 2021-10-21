@@ -26,6 +26,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
     $all_adresses = '';
     if (!empty($event->attendee_array)) {
         foreach ($event->attendee_array as $attendee) {
+//            var_dump($attendee);
             if (!is_string($attendee) && array_key_exists('CN', $attendee)) {
                 $response['attendees'][$id]['name'] = $attendee['CN'];
                 $response['attendees'][$id]['RSVP'] = $attendee['RSVP'];
@@ -80,7 +81,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
  * @param Event $event
  * @param array $response
  */
-function get_sender_s_partstat(Event $event, array &$response, bool $event_on_server = false )
+function get_sender_s_partstat(Event $event, array &$response, bool $event_on_server = false)
 {
     $sender_email = $response['sender_email'];
     $array_attendees = [];
@@ -101,10 +102,9 @@ function get_sender_s_partstat(Event $event, array &$response, bool $event_on_se
     }
 
     if ($res >= 0) {
-        if($event_on_server){
+        if ($event_on_server) {
             $response['sender_partstat_on_server'] = $array_attendees[$res]['partstat'];
-        }
-        else{
+        } else {
             $response['sender_partstat'] = $array_attendees[$res]['partstat'];
         }
     }
@@ -196,12 +196,10 @@ function set_if_modification_date_location_description_attendees(array &$respons
 {
 
     $event_to_compare_with = $is_Organizer ? $response['used_event'] : $response['older_event'];
-
     if (strcmp($event_to_compare_with->location, $event->location) != 0) {
         $response['new_location'] = $event->location;
     }
-    if (strcmp($event_to_compare_with->dtstart_array[1], $event->dtstart_array[1]) != 0
-        || strcmp($event_to_compare_with->dtend_array[1], $event->dtend_array[1]) != 0) {
+    if ($event_to_compare_with->dtstart_array[2] != $event->dtstart_array[2] || $event_to_compare_with->dtend_array[2] != $event->dtend_array[2]) {
 
         $response['new_date']['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
         $response['new_date']['date_day_start'] = date("d", $event->dtstart_array[2]);
@@ -220,7 +218,6 @@ function set_if_modification_date_location_description_attendees(array &$respons
     if (strcmp($event_to_compare_with->description, $event->description) != 0) {
         $response['new_description'] = $event->description;
     }
-//    var_dump($event_to_compare_with->attendee_array , $event->attendee_array);exit;
     if (($event_to_compare_with->attendee_array || $event->attendee_array)) {
 
         $response['new_attendees'] = find_difference_attendee($attendees, $response['attendees']);
@@ -262,8 +259,9 @@ function set_formated_date_time(Event $event, array &$response): void
     $response['date_day_end'] = date("d", $event->dtend_array[2]);
     $response['date_hours_end'] = date("H:i", $event->dtend_array[2]);
 
+    $response['same_date'] = $response['date_start'] === $response['date_end'];
 
-    $response['same_date'] = $response['date_month_start'] === $response['date_month_end'];
+
 }
 
 /**

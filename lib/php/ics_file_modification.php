@@ -279,6 +279,23 @@ function delete_comment_section_ics(string $ics): string
 
 
 /**
+ * Delete the status field  of an icalendar string for sending purpose
+ * @param string $ics
+ * @return string
+ */
+function delete_status_section_ics(string $ics): string
+{
+    $sections = preg_split('@(\n(?! ))@m', $ics);
+    foreach ($sections as $key => &$section) {
+        if (preg_match('@^STATUS:@m', $section) > 0) {
+            unset($sections[$key]);
+        }
+    }
+    return implode("\n", $sections);
+}
+
+
+/**
  * Change LAST_MODIFIED field  of a VEVENT
  * @param string $ics
  * @return string

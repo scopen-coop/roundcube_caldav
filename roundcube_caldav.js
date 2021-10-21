@@ -177,11 +177,6 @@ function display_rescheduled_popup($event_template_html, changeDateAndLocation) 
             }
 
         ],
-        open: function () {
-        },
-        close: function () {
-            form[0].reset();
-        }
     });
     form.on("submit", function (event) {
         event.preventDefault();
@@ -507,8 +502,6 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
                             buttons_array[other_button].html(buttons_array[other_button].attr("data-label-enabled"));
                         }
                     }
-
-
                 })
             }
         }
@@ -524,7 +517,6 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
  */
 function find_among_attendee(email_to_find, attendees) {
     for (let attendee of attendees) {
-        console.log(attendee['email']);
         if (attendee['email'] === email_to_find) {
             return attendee;
         }

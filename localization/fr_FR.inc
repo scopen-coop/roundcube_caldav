@@ -109,6 +109,7 @@ $labels['send_without_comment'] = "Envoyer sans commentaire";
 $labels['comment'] = "Commentaire de l'expéditeur: ";
 $labels['saving_and_sending'] = "Enregistrement de vos modifications et envoi des mails";
 $labels['main_calendar_error'] = "Vous devez selectionner un calendrier par défault";
+$labels['no_title'] = "Un événement sans titre";
 
 
 
