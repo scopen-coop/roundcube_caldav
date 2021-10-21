@@ -41,6 +41,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
 
                 $id++;
             }
+
         }
 
     }
@@ -51,6 +52,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
             if (is_string($organizer) && str_start_with($organizer, 'mailto:')) {
                 $organizer_email = substr($organizer, strlen('mailto:'));
                 $organizer_array['email'] = $organizer_email;
+                $organizer_array['partstat'] = 'ORGANIZER';
                 $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $organizer_email . "',this)";
                 if ($my_email !== $organizer_email) {
                     $all_adresses .= $organizer_email . ';';
@@ -78,7 +80,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
  * @param Event $event
  * @param array $response
  */
-function get_sender_s_partstat(Event $event, array &$response)
+function get_sender_s_partstat(Event $event, array &$response, bool $event_on_server = false )
 {
     $sender_email = $response['sender_email'];
     $array_attendees = [];
@@ -99,7 +101,12 @@ function get_sender_s_partstat(Event $event, array &$response)
     }
 
     if ($res >= 0) {
-        $response['sender_partstat'] = $array_attendees[$res]['partstat'];
+        if($event_on_server){
+            $response['sender_partstat_on_server'] = $array_attendees[$res]['partstat'];
+        }
+        else{
+            $response['sender_partstat'] = $array_attendees[$res]['partstat'];
+        }
     }
 }
 

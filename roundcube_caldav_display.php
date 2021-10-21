@@ -72,7 +72,6 @@
             <div class="info_ics attendee">
                 <b><?php echo $this->gettext("attendee"); ?></b><br><br>
                 <div class='attendee_link'>
-
                 </div>
                 <div class="reply_all"></div>
             </div>

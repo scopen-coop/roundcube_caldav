@@ -219,12 +219,10 @@ function change_partstat_ics(string $ics, string $status, string $email): string
                     }
 
                 }
-                if (!$is_rsvp_field_present && $status == 'DECLINED') {
-                    $attributes[] = ';RSVP=FALSE';
-                }
-
                 $section = implode("\r\n ", str_split(implode('', $attributes), 74));
-
+                if (!$is_rsvp_field_present && $status == 'DECLINED') {
+                    $section = preg_replace('@mailto:@', 'RSVP=FALSE;mailto:', $section);
+                }
             }
         }
 
@@ -441,9 +439,8 @@ function keep_partstat_of_other_participants_ics($ics, $new_ics): string
     $section_to_change = implode("\n", $section_to_change);
 
     $new_ics = implode("\n", $sections_new_ics);
-    var_dump($new_ics);
-    exit;
-//    return $section_to_keep. "\n\n". $section_to_change;
+
+
     return preg_replace($section_to_change, $section_to_keep, $new_ics);
 }
 

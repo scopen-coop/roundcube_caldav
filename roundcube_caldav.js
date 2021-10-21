@@ -140,6 +140,9 @@ function display_informations($event_template_html, array_response) {
 
     $event_template_html = modification.event_template_html;
     array_response = modification.array_response;
+
+
+
     return {select, $event_template_html, array_response};
 }
 
@@ -521,6 +524,7 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
  */
 function find_among_attendee(email_to_find, attendees) {
     for (let attendee of attendees) {
+        console.log(attendee['email']);
         if (attendee['email'] === email_to_find) {
             return attendee;
         }
