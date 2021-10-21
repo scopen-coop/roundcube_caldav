@@ -117,7 +117,7 @@ function display_informations($event_template_html, array_response) {
         // Puis on affiche les champs modifiés
         modification.display_modified_date();
         modification.display_modified_location_and_description();
-        modification.display_new_attendee();
+
     }
 
 
@@ -210,9 +210,9 @@ function initialized_var_for_reschedule_popup($event_template_html, array_respon
     // On rajoute les dates des anciens evt comme valeur par défaut dans les inputs
 
     $date_start.val(array_response['date_start']);
-    $date_end.val( array_response['date_end']);
+    $date_end.val(array_response['date_end']);
     $time_start.val(array_response['date_hours_start']);
-    $time_end.val( array_response['date_hours_end']);
+    $time_end.val(array_response['date_hours_end']);
 
 
     return {$date_start, $date_end, $div_to_add, $location_input, $time_start, $time_end};
@@ -252,7 +252,7 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
     let decline = $event_template_html.find('.decline_button');
 
 
-    // Si tous les champs dates sont remplis
+
     if ($div_to_add.find(".if_rescheduled_msg").length === 0) {
         if (isOrganizer) {
             $div_to_add.prepend('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("if_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
@@ -260,10 +260,12 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
             $div_to_add.prepend('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("ask_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
         }
     }
+    console.log($date_start.val(), array_response['date_start'], $date_end.val(), array_response['date_end'], $time_start.value, array_response['date_hours_start'], $time_end.value, array_response['date_hours_end'])
 
 
     if ($date_start.val() !== array_response['date_start'] || $date_end.val() !== array_response['date_end']
-        || $time_start.value !== array_response['date_hours_start'] || $time_end.value !== array_response['date_hours_end']) {
+        || $time_start.val() !== array_response['date_hours_start'] || $time_end.val() !== array_response['date_hours_end']) {
+
 
         var chosenDateStart = $date_start.val();
         var chosenDateEnd = $date_end.val();

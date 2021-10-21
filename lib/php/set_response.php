@@ -213,7 +213,9 @@ function set_if_modification_date_location_description_attendees(array &$respons
     if (strcmp($event_to_compare_with->description, $event->description) != 0) {
         $response['new_description'] = $event->description;
     }
+//    var_dump($event_to_compare_with->attendee_array , $event->attendee_array);exit;
     if (($event_to_compare_with->attendee_array || $event->attendee_array)) {
+
         $response['new_attendees'] = find_difference_attendee($attendees, $response['attendees']);
     }
 
@@ -310,12 +312,11 @@ function find_difference_attendee(array $array_attendee_new, array $array_attend
     foreach ($array_attendee_new as $new_attendee) {
         $is_different = true;
         foreach ($array_attendee_old as $old_attendee) {
-            if (strcmp($new_attendee['email'], $old_attendee['email']) == 0) {
+            if ($new_attendee['email'] === $old_attendee['email']) {
                 $is_different = false;
             }
         }
         if ($is_different) {
-
             $new_attendees[] = $new_attendee;
         }
     }
