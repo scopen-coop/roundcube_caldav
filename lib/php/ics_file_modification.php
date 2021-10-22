@@ -221,7 +221,7 @@ function change_partstat_ics(string $ics, string $status, string $email): string
                 }
                 $section = implode("\r\n ", str_split(implode('', $attributes), 74));
                 if (!$is_rsvp_field_present && $status == 'DECLINED') {
-                    $section = preg_replace('@mailto:@', 'RSVP=FALSE;mailto:', $section);
+                    $section = preg_replace('@:mailto:@', ';RSVP=FALSE:mailto:', $section);
                 }
             }
         }

@@ -556,8 +556,9 @@ class roundcube_caldav extends rcube_plugin
             // On affiche les autres informations concernant notre server caldav
             $this->set_caldav_server_related_information($event, $ical, $response);
 
-            get_sender_s_partstat($found_advance[0]['event'], $response, true);
-
+            if($found_advance){
+                get_sender_s_partstat($found_advance[0]['event'], $response, true);
+            }
 
             $this->select_buttons_to_display($response['identity']['role'] ?: '', $response['METHOD'], $response);
 
@@ -720,7 +721,8 @@ class roundcube_caldav extends rcube_plugin
                         if ($is_recurrent) {
                             $buttons_to_display[] = 'cancel_recurrent_button_organizer';
                         }
-                        if ($response['sender_partstat_on_server'] == 'NEEDS-ACTION' || $response['sender_partstat_on_server'] == 'NEEDS_ACTION') {
+                        if (isset($response['sender_partstat_on_server']) &&
+                            ($response['sender_partstat_on_server'] == 'NEEDS-ACTION' || $response['sender_partstat_on_server'] == 'NEEDS_ACTION')) {
                             $buttons_to_display[] = 'update_button_organizer';
                         }
                         break;
