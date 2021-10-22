@@ -65,7 +65,6 @@ class roundcube_caldav extends rcube_plugin
         $this->include_script('vendor/fortawesome/font-awesome/js/all.js');
         $this->include_stylesheet('vendor/fortawesome/font-awesome/css/all.css');
 
-
         $server = $this->rcube->config->get('server_caldav');
         $_connexion = $server['_connexion_status'];
 
@@ -81,6 +80,7 @@ class roundcube_caldav extends rcube_plugin
             $this->register_action('plugin.roundcube_caldav_import_event_on_server', array($this, 'import_event_on_server'));
             $this->register_action('plugin.roundcube_caldav_decline_counter', array($this, 'decline_counter'));
         }
+
     }
 
 
@@ -118,7 +118,6 @@ class roundcube_caldav extends rcube_plugin
             $param_list = $this->calendar_selection_form($param_list);
 
         }
-
         return $param_list;
     }
 
@@ -340,8 +339,8 @@ class roundcube_caldav extends rcube_plugin
         } elseif ($_connexion) {
             try {
 
-                $success = $this->try_connection($_login, $_password, $_url_base); //0.86
-                $available_calendars = $this->client->findCalendars(); //1.53
+                $success = $this->try_connection($_login, $_password, $_url_base);
+                $available_calendars = $this->client->findCalendars();
 
                 foreach ($server['_used_calendars'] as $used_calendar) {
                     foreach ($available_calendars as $available_calendar) {
@@ -411,6 +410,7 @@ class roundcube_caldav extends rcube_plugin
                 $this->client->setCalendar($this->arrayOfCalendars[$calendar->getCalendarID()]);
                 $this->all_events[$calendar->getCalendarID()] = $this->client->getEvents($begin_of_unix_timestamp, $end_of_unix_timestamp);
 
+
             }
         } catch (Exception $e) {
             $this->rcmail->output->command('display_message', $this->gettext('something_happened_while_getting_events'), 'error');
@@ -432,7 +432,7 @@ class roundcube_caldav extends rcube_plugin
         try {
             foreach ($message->attachments as &$attachment) {
                 if ($attachment->mimetype == 'text/calendar') {
-                    $this->send_info_for_display_to_client($message, $attachment);
+                    $this->send_info_to_be_displayed_to_client($message, $attachment);
                 }
             }
         } catch (Exception $e) {
@@ -445,7 +445,7 @@ class roundcube_caldav extends rcube_plugin
      * @param $attachment
      * @throws Exception
      */
-    function send_info_for_display_to_client(rcube_message &$message, $attachment)
+    function send_info_to_be_displayed_to_client(rcube_message &$message, $attachment)
     {
         $response = array();
 
@@ -494,7 +494,6 @@ class roundcube_caldav extends rcube_plugin
             set_if_an_older_event_was_found_on_server($event, $response, $this->arrayOfCalendars, $this->all_events);
 
             $found_advance = $this->is_server_in_advance($event);
-
             if ($found_advance) {
 
                 $response['found_advance'] = $found_advance;
@@ -511,10 +510,8 @@ class roundcube_caldav extends rcube_plugin
                 $response['used_event'] = $event;
             }
 
-
             set_participants_characteristics_and_set_buttons_properties($response['used_event'], $response);
 
-//            var_dump($response['attendees']);exit;
             $new_attendees_array = [];
             set_participants_characteristics_and_set_buttons_properties($event, $new_attendees_array);
 
@@ -678,7 +675,6 @@ class roundcube_caldav extends rcube_plugin
                         $new_ics = $ics_with_modified_date_and_location;
                         // On change le numéro de sequence si l'utilisateur est l'organisateur de l'evenement ou si l'événement n'a pas de participants
                         $new_ics = change_sequence_ics($new_ics);
-//                        var_dump($new_ics);exit;
                         $send_event = $this->save_event_on_caldav_server_and_display_message($new_ics, $status, $event, $chosen_calendar, $event_uid);
                     } else {
 
@@ -711,7 +707,6 @@ class roundcube_caldav extends rcube_plugin
     {
         $has_modifications = $response['new_description'] || $response['new_location'] || $response['new_date'];
         $is_recurrent = count($response['recurrent_events'][$response['uid']]) > 1;
-
         switch ($role) {
             case 'ORGANIZER':
                 switch ($method) {
@@ -1396,6 +1391,14 @@ class roundcube_caldav extends rcube_plugin
             }
         }
         return $datestr;
+    }
+
+
+
+
+    function test(): int
+    {
+        return 1;
     }
 }
 

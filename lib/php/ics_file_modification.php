@@ -429,36 +429,6 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
     return implode("\n", $sections);
 }
 
-/**
- * Keep the participation status of all participant in case of update
- * @param $ics
- * @param $new_ics
- * @return string
- */
-function keep_partstat_of_other_participants_ics($ics, $new_ics): string
-{
-    $sections_old_ics = preg_split('@(\n(?! ))@m', $ics);
-    $section_to_keep = [];
-    foreach ($sections_old_ics as &$section) {
-        if (preg_match('@ATTENDEE@', $section) == 1) {
-            $section_to_keep[] = $section;
-        }
-    }
-    $section_to_keep = implode("\r\n", $section_to_keep);
 
-    $sections_new_ics = preg_split('@(\n(?! ))@m', $new_ics);
-    $section_to_change = [];
-    foreach ($sections_new_ics as &$section) {
-        if (preg_match('@ATTENDEE@', $section) == 1) {
-            $section_to_change[] = $section;
-        }
-    }
-    $section_to_change = implode("\n", $section_to_change);
-
-    $new_ics = implode("\n", $sections_new_ics);
-
-
-    return preg_replace($section_to_change, $section_to_keep, $new_ics);
-}
 
 ?>

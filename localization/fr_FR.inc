@@ -102,6 +102,7 @@ $labels['invitation_decline_modifications1'] = "Vous avez refusé les propositio
 $labels['invitation_decline_modifications2'] = " ";
 $labels['invitation_declined_by_organizer'] = " Votre proposition de modification n'a pas été acceptée par l'organisateur ";
 $labels['invitation_cancel'] = "Cet événement a été supprimé par son organisateur";
+$labels['invitation_cancel_for_organizer'] = "Vous avez supprimé cet événement";
 $labels['present_but_older'] = 'Vous possédez déjà cet événement sur votre serveur mais sous une version plus ancienne';
 $labels['send_comment_with_invitation'] = "Envoyez un commentaire avec votre réponse par mail";
 $labels['comment_to_send'] = "Commentaire à envoyer";

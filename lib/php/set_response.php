@@ -26,7 +26,6 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
     $all_adresses = '';
     if (!empty($event->attendee_array)) {
         foreach ($event->attendee_array as $attendee) {
-            var_dump($attendee);
             if (!is_string($attendee) && array_key_exists('CN', $attendee)) {
                 $response['attendees'][$id]['name'] = $attendee['CN'];
                 $response['attendees'][$id]['RSVP'] = $attendee['RSVP'];
@@ -44,8 +43,6 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
             }
 
         }
-        exit;
-
     }
     // On cherche les informations concernant l'organisateur
     if (!empty($event->organizer_array)) {
