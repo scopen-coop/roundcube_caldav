@@ -18,8 +18,8 @@ final class event_comparison_test extends TestCase
 
         $this->all_event['test'][] = file_get_contents(__DIR__ . "/data/sample1_after.ics");
         $this->all_event['test'][] = file_get_contents(__DIR__ . "/data/sample1_afsample2_afterter.ics");
-        $this->all_event['test'][] = file_get_contents(__DIR__ . "/data/sample3.ics");
-        $this->all_event['test'][] = file_get_contents(__DIR__ . "/data/sample4.ics");
+        $this->all_event['test'][] = file_get_contents(__DIR__ . "/data/sample3_location.ics");
+        $this->all_event['test'][] = file_get_contents(__DIR__ . "/data/sample4_standard.ics");
 
         fclose($handler);
         fclose($handler2);

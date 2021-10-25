@@ -1343,11 +1343,11 @@ class roundcube_caldav extends rcube_plugin
                 }
             }
             if ($number_of_event_with_same_uid > 1) {
-                $offset_start = $new_date_start_int - $event->dtstart_array[2];
-                $offset_end = $new_date_end_int - $event->dtend_array[2];
-                $ics = change_date_ics($new_date_start, $new_date_end, $ics, $this->time_zone_offset, $offset_start, $offset_end);
+                $offset_start = $new_date_start_int - $event->dtstart_array[2] - $this->time_zone_offset ;
+                $offset_end = $new_date_end_int - $event->dtend_array[2] - $this->time_zone_offset;
+                $ics = change_date_ics($new_date_start, $new_date_end, $ics, $offset_start, $offset_end);
             } else {
-                $ics = change_date_ics($new_date_start, $new_date_end, $ics, $this->time_zone_offset);
+                $ics = change_date_ics($new_date_start, $new_date_end, $ics);
             }
 
         }

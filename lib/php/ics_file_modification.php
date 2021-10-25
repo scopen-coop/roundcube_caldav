@@ -77,7 +77,7 @@ function cancel_one_instance(string $ics, string $date_start): string
  * @param int|null $offset_end : same idea with current_dte_end and new_date_end
  * @return string
  */
-function change_date_ics(string $new_date_start, string $new_date_end, string $ics, string $time_zone_offset, int $offset_start = null, int $offset_end = null): string
+function change_date_ics(string $new_date_start, string $new_date_end, string $ics, int $offset_start = null, int $offset_end = null): string
 {
     $head_match = array();
     $foot_match = array();
@@ -101,24 +101,24 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
             } elseif (preg_match('@DURATION:([0-9A-Z]+)@m', $event) == 1) {
                 $event = preg_replace('@DURATION:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $event);
             } else {
-                $event = preg_replace('@(DTSTART.*:[0-9A-Z]+)@m', "$1\nDTEND:" . $new_date_end, $event);
+                $event = preg_replace('@(DTSTART.*:[0-9A-Z]+)@m', "$1\r\nDTEND:" . $new_date_end, $event);
             }
             $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start, $event);
         } else {
+
             $array_dtstart = array();
             $array_dtend = array();
             preg_match('@DTSTART.*:([0-9A-Z]+)@m', $event, $array_dtstart);
             preg_match('@DTEND.*:([0-9A-Z]+)@m', $event, $array_dtend);
 
 
-            $new_date_start_second_event = date("Ymd\THis", strtotime($array_dtstart[1]) + $offset_start - $time_zone_offset);
-            $new_date_end_second_event = date("Ymd\THis", strtotime($array_dtend[1]) + $offset_end - $time_zone_offset);
+            $new_date_start_second_event = date("Ymd\THis\Z", strtotime($array_dtstart[1]) + $offset_start );
+            $new_date_end_second_event = date("Ymd\THis\Z", strtotime($array_dtend[1]) + $offset_end );
+
 
             $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start_second_event, $event);
             $event = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end_second_event, $event);
 
-            $new_date_start = date("Ymd\THis", strtotime($array_dtstart[1]) + $offset_start - $time_zone_offset);
-            $new_date_end = date("Ymd\THis", strtotime($array_dtend[1]) + $offset_end - $time_zone_offset);
         }
 
         $all_events .= 'BEGIN:VEVENT' . $event . "END:VEVENT\r\n";
@@ -197,7 +197,7 @@ function change_partstat_ics(string $ics, string $status, string $email): string
 
                 $attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-                $is_rsvp_field_present = false;
+                $rsvp_field_is_present = false;
                 foreach ($attributes as &$attribute) {
                     if ($attribute == ';' || $attributes == ':') {
                         continue;
@@ -214,16 +214,20 @@ function change_partstat_ics(string $ics, string $status, string $email): string
                         } else {
                             $parts[1] = 'TRUE';
                         }
-                        $is_rsvp_field_present = true;
+                        $rsvp_field_is_present = true;
                         $attribute = implode('=', $parts);
                     }
 
                 }
-                $section = implode("\r\n ", str_split(implode('', $attributes), 74));
-                if (!$is_rsvp_field_present && $status == 'DECLINED') {
+                $section = implode('', $attributes);
+
+                if (!$rsvp_field_is_present && $status == 'DECLINED') {
                     $section = preg_replace('@:mailto:@', ';RSVP=FALSE:mailto:', $section);
                 }
+
+                $section = implode("\n ", str_split($section, 74));
             }
+            print_r($section,"\n\n");
         }
 
     }
@@ -419,14 +423,12 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
                 }
 
             }
-
             $section = implode("\r\n ", str_split(implode('', $attributes), 74));
 
         }
     }
 
-
-    return implode("\n", $sections);
+    return implode("\r\n", $sections);
 }
 
 
