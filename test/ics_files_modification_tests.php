@@ -39,7 +39,6 @@ final class ics_files_modification_tests extends TestCase
 
     }
 
-
     public function test_cancel_one_instance()
     {
         $ics_to_test = file_get_contents(__DIR__ . "/data/sample2_reccurent.ics");
@@ -54,7 +53,6 @@ final class ics_files_modification_tests extends TestCase
         }
 
     }
-
 
     public function test_change_date_ics()
     {
@@ -155,7 +153,6 @@ final class ics_files_modification_tests extends TestCase
         }
     }
 
-
     public function test_change_partstat_ics()
     {
         // Changement status
@@ -251,9 +248,9 @@ final class ics_files_modification_tests extends TestCase
     {
         $ics_to_test = file_get_contents(__DIR__ . "/data/sample11_time_zone.ics");
 
-        self::assertEquals(7200,find_time_zone($ics_to_test));
+        self::assertEquals(7200,find_time_zone($ics_to_test)[0]);
+        self::assertEquals('Europe/Paris',find_time_zone($ics_to_test)[1]->getName());
     }
-
 
     public function test_delete_comment_section_ics()
     {
@@ -270,9 +267,6 @@ final class ics_files_modification_tests extends TestCase
             self::assertEquals($split1[$i], $split2[$i]);
         }
     }
-
-
-
 }
 
 

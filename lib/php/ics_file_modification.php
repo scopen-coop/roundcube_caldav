@@ -79,6 +79,10 @@ function cancel_one_instance(string $ics, string $date_start): string
  */
 function change_date_ics(string $new_date_start, string $new_date_end, string $ics, int $offset_start = null, int $offset_end = null): string
 {
+    $timezone_array = find_time_zone($ics);
+
+    date_default_timezone_set($timezone_array[1]->getName());
+
     $head_match = array();
     $foot_match = array();
     $array_event = array();
@@ -88,7 +92,6 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
     $header = $head_match[1];
     $footer = $foot_match[1];
 
-
     preg_match_all("@(?<=BEGIN:VEVENT)(.*?)(?:END:VEVENT)@s", $ics, $array_event);
 
     // date start
@@ -96,14 +99,19 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
     foreach ($array_event[1] as $i => $event) {
         if ($i == 0) {
 
-            if (preg_match('@DTEND.*:([0-9A-Z]+)@m', $event) == 1) {
-                $event = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $event);
-            } elseif (preg_match('@DURATION:([0-9A-Z]+)@m', $event) == 1) {
-                $event = preg_replace('@DURATION:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end, $event);
-            } else {
-                $event = preg_replace('@(DTSTART.*:[0-9A-Z]+)@m', "$1\r\nDTEND:" . $new_date_end, $event);
+            if(date('e')!=='UTC'){
+                $new_date_start = date(";\T\Z\I\D=e:Ymd\THis", strtotime($new_date_start) );
+                $new_date_end= date(";\T\Z\I\D=e:Ymd\THis", strtotime($new_date_end));
             }
-            $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start, $event);
+
+            if (preg_match('@DTEND.*:([0-9A-Z]+)@m', $event) == 1) {
+                $event = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND' . $new_date_end, $event);
+            } elseif (preg_match('@DURATION:([0-9A-Z]+)@m', $event) == 1) {
+                $event = preg_replace('@DURATION:([0-9A-Z]+)@m', 'DTEND' . $new_date_end, $event);
+            } else {
+                $event = preg_replace('@(DTSTART.*:[0-9A-Z]+)@m', "$1\r\nDTEND" . $new_date_end, $event);
+            }
+            $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART' . $new_date_start, $event);
         } else {
 
             $array_dtstart = array();
@@ -112,12 +120,11 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
             preg_match('@DTEND.*:([0-9A-Z]+)@m', $event, $array_dtend);
 
 
-            $new_date_start_second_event = date("Ymd\THis\Z", strtotime($array_dtstart[1]) + $offset_start );
-            $new_date_end_second_event = date("Ymd\THis\Z", strtotime($array_dtend[1]) + $offset_end );
+            $new_date_start_second_event = date(";\T\Z\I\D=e:Ymd\THis", strtotime($array_dtstart[1]) + $offset_start);
+            $new_date_end_second_event = date(";\T\Z\I\D=e:Ymd\THis", strtotime($array_dtend[1]) + $offset_end);
 
-
-            $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART:' . $new_date_start_second_event, $event);
-            $event = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND:' . $new_date_end_second_event, $event);
+            $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART' . $new_date_start_second_event, $event);
+            $event = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND' . $new_date_end_second_event, $event);
 
         }
 
@@ -227,7 +234,7 @@ function change_partstat_ics(string $ics, string $status, string $email): string
 
                 $section = implode("\n ", str_split($section, 74));
             }
-            print_r($section,"\n\n");
+            print_r($section, "\n\n");
         }
 
     }
@@ -364,9 +371,9 @@ function del_method_field_ics($ics): string
 /**
  * Find the time zone of the ICalendar file if it exist, else get server time zone
  * @param $ics
- * @return false|int
+ * @return array
  */
-function find_time_zone($ics)
+function find_time_zone($ics): array
 {
     $vtimezone = [];
 
@@ -378,17 +385,14 @@ function find_time_zone($ics)
         $timezone = $tzid[1];
         $timezoneLength = strlen($timezone);
 
-        if ("\r" === $timezone[$timezoneLength - 1]) {
-            $timezone = substr($timezone, 0, $timezoneLength - 1);
-        }
-
+        $timezone = preg_replace('/[\r\n]/','',$timezone);
         $timezone = new \DateTimeZone($timezone);
     } else {
         $date = new DateTime();
         $timezone = $date->getTimezone();
     }
 
-    return $timezone->getOffset(new DateTime());
+    return [$timezone->getOffset(new DateTime()), $timezone];
 }
 
 /**
@@ -430,7 +434,6 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
 
     return implode("\r\n", $sections);
 }
-
 
 
 ?>

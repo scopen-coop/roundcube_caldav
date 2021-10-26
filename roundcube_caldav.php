@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
+
 ini_set("xdebug.var_display_max_children", '-1');
 ini_set("xdebug.var_display_max_data", '-1');
 ini_set("xdebug.var_display_max_depth", '-1');
@@ -36,6 +37,8 @@ require_once(__DIR__ . '/lib/php/set_response.php');
 
 class roundcube_caldav extends rcube_plugin
 {
+
+
     public $task = 'settings|mail';
 
     public $rcube;
@@ -424,8 +427,10 @@ class roundcube_caldav extends rcube_plugin
      */
     function get_info_server()
     {
+
         $uid = rcube_utils::get_input_value('_uid', rcube_utils::INPUT_POST);
         $mbox = rcube_utils::get_input_value('_mbox', rcube_utils::INPUT_POST);
+
 
         // Récupération du mail
         $message = new rcube_message($uid, $mbox);
@@ -459,6 +464,7 @@ class roundcube_caldav extends rcube_plugin
         $events = $ical->events();
 
         foreach ($events as $event) {
+
             if_no_dtend_add_one_to_event($event);
             $response['recurrent_events'][$event->uid][] = $this->pretty_date($event->dtstart_array[1], $event->dtend_array[1]);
         }
@@ -541,25 +547,25 @@ class roundcube_caldav extends rcube_plugin
                 set_formated_date_time($event, $response);
             }
 
-
             $response['description'] = $event->description;
             $response['location'] = $event->location;
 
             set_calendar_to_use_for_select_input($response, $this->rcube->config->get('server_caldav'), $this->arrayOfCalendars);
 
 
-            $this->time_zone_offset = find_time_zone($ics);
+            $timezone_array = find_time_zone($ics);
+            $this->time_zone_offset = $timezone_array[0];
 
             // On affiche les autres informations concernant notre server caldav
             $this->set_caldav_server_related_information($event, $ical, $response);
 
-            if($found_advance){
+            if ($found_advance) {
                 get_sender_s_partstat($found_advance[0]['event'], $response, true);
             }
-
             $this->select_buttons_to_display($response['identity']['role'] ?: '', $response['METHOD'], $response);
 
             $this->rcmail->output->command('plugin.undirect_rendering_js', array('request' => $response));
+
         }
 
     }
@@ -610,7 +616,8 @@ class roundcube_caldav extends rcube_plugin
                 if (!$event) {
                     continue;
                 }
-                $this->time_zone_offset = find_time_zone($ics);
+                $timezone_array = find_time_zone($ics);
+                $this->time_zone_offset = $timezone_array[0];
 
                 $is_organizer = false;
                 if ($has_participants = $identity !== 'NO_PARTICIPANTS') {
@@ -784,7 +791,9 @@ class roundcube_caldav extends rcube_plugin
         $_used_calendars = $server['_used_calendars'];
 
         // On récupère la time_zone qui va nous servir plus tard dans la fonction
+
         $this->time_zone_offset = $ical->iCalDateToDateTime($current_event->dtstart_array[1])->getOffset();
+        date_default_timezone_set($this->time_zone_offset);
 
 
         $meeting_collision = $this->meeting_in_collision_with_current_event_by_calendars($_main_calendar, $_used_calendars, $current_event);
@@ -870,9 +879,8 @@ class roundcube_caldav extends rcube_plugin
                     $this->client->setCalendar($this->arrayOfCalendars[$calendar->getCalendarID()]);
 
 
-                    $current_dtstart_minus_24h = date("Ymd\THis\Z", $current_event->dtstart_array[2] - $this->time_zone_offset - $this->twenty_four_hour);
-                    $current_dtend_plus_24h = date("Ymd\THis\Z", $current_event->dtend_array[2] - $this->time_zone_offset + $this->twenty_four_hour);
-
+                    $current_dtstart_minus_24h = date("\T\Z\I\D=e:Ymd\THis", $current_event->dtstart_array[2] - $this->twenty_four_hour);
+                    $current_dtend_plus_24h = date("\T\Z\I\D=e:Ymd\THis", $current_event->dtend_array[2] + $this->twenty_four_hour);
 
                     $prev_res = $this->display_closest_meeting_by_calendars($current_event, $current_dtstart_minus_24h, $calendar, 'previous');
                     $next_res = $this->display_closest_meeting_by_calendars($current_event, $current_dtend_plus_24h, $calendar);
@@ -1191,7 +1199,8 @@ class roundcube_caldav extends rcube_plugin
     public function send_mail(string $ics_to_send, rcube_message $message, string $method, array $my_identity, bool $has_modif = false): array
     {
         // On parse l'ics reçu
-        $ical = new ICal($ics_to_send);
+        $ical = new ICal($ics_to_send, array('skipRecurrence' => true));
+
         $ical_events = $ical->events();
         $event = array_shift($ical_events);
 
@@ -1332,8 +1341,14 @@ class roundcube_caldav extends rcube_plugin
             $new_date_start_int = strtotime($chosen_date_start . ' ' . $chosen_time_start);
             $new_date_end_int = strtotime($chosen_date_end . ' ' . $chosen_time_end);
 
+
+            $timezone_array = find_time_zone($ics);
+            date_default_timezone_set($timezone_array[1]->getName());
+
+
             $new_date_start = date("Ymd\THis\Z", $new_date_start_int - $this->time_zone_offset);
             $new_date_end = date("Ymd\THis\Z", $new_date_end_int - $this->time_zone_offset);
+
 
             // pour la modification des événements récurrents
             $number_of_event_with_same_uid = 0;
@@ -1343,7 +1358,7 @@ class roundcube_caldav extends rcube_plugin
                 }
             }
             if ($number_of_event_with_same_uid > 1) {
-                $offset_start = $new_date_start_int - $event->dtstart_array[2] - $this->time_zone_offset ;
+                $offset_start = $new_date_start_int - $event->dtstart_array[2] - $this->time_zone_offset;
                 $offset_end = $new_date_end_int - $event->dtend_array[2] - $this->time_zone_offset;
                 $ics = change_date_ics($new_date_start, $new_date_end, $ics, $offset_start, $offset_end);
             } else {
@@ -1384,16 +1399,16 @@ class roundcube_caldav extends rcube_plugin
                 $datestr = $this->rcmail->format_date($date_start, $date_format) . ' - ' . $this->rcmail->format_date($date_end, $date_format);
             }
         } else {
-            if (strcmp(substr($date_start, 0, 8), substr($date_end, 0, 8)) == 0) {
+            if (substr($date_start, 0, 8) === substr($date_end, 0, 8)) {
                 $datestr .= $this->rcmail->format_date($date_end, $time_format);
             } else {
                 $datestr .= $this->rcmail->format_date($date_end, $combined_format);
+
             }
+
         }
         return $datestr;
     }
-
-
 
 
     function test(): int

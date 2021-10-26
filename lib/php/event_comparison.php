@@ -57,7 +57,6 @@ function is_there_an_overlap(string $current_date_start, string $current_date_en
  */
 function is_after(string $current_date_end, string $current_date_end_with_offset, string $date_start_to_compare_with, int $base_timestamp): bool
 {
-
     return strtotime($date_start_to_compare_with, $base_timestamp) >= strtotime($current_date_end, $base_timestamp)
         && (strtotime($date_start_to_compare_with, $base_timestamp) < strtotime($current_date_end_with_offset, $base_timestamp));
 }

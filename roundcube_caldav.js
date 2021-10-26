@@ -23,7 +23,6 @@ rcmail.addEventListener('init', function (evt) {
  */
 function undirect_rendering(response) {
 
-
     // On copie le template html et l'on cache la partie chargement...
     let $event_template_html;
     $event_template_html = $($('template#display').html());
@@ -258,7 +257,6 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
             $div_to_add.prepend('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("ask_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
         }
     }
-    console.log($date_start.val(), array_response['date_start'], $date_end.val(), array_response['date_end'], $time_start.value, array_response['date_hours_start'], $time_end.value, array_response['date_hours_end'])
 
 
     if ($date_start.val() !== array_response['date_start'] || $date_end.val() !== array_response['date_end']
