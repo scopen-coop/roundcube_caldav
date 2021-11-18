@@ -17,13 +17,6 @@ final class ics_files_modification_tests extends TestCase
      */
 
 
-//    protected function setUp(){
-//        $this->roundcube_caldav = new roundcube_caldav(rcube_plugin_api::get_instance());
-//    }
-//
-//    protected  function tearDown(){
-//        $this->roundcube_caldav =null;
-//    }
 
     public function test_extract_event_ics()
     {

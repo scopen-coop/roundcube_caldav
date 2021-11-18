@@ -837,8 +837,8 @@ class roundcube_caldav extends rcube_plugin
                     foreach ($event_found_ical->events() as &$event_found) {
 
                         if ($event_found->uid != $current_event->uid) {
-                            if ($event_found->status !== 'CANCELLED' && is_there_an_overlap($current_event->dtstart_array[1], $current_event->dtend_array[1],
-                                    $event_found->dtstart_array[1], $event_found->dtend_array[1], $current_event->dtstart_array[2])) {
+                            if ($event_found->status !== 'CANCELLED' && is_there_an_overlap($current_event->dtstart_array[2], $current_event->dtstart_array[1], $current_event->dtend_array[1],
+                                    $event_found->dtstart_array[1], $event_found->dtend_array[1])) {
 
                                 // Affichage de l'événement
                                 $display_meeting_collision[$calendar->getDisplayName()][] = $event_found;
