@@ -1,9 +1,7 @@
-
-
 /* Smartphones (portrait and landscape) ----------- */
 @media only screen
-and (min-device-width : 320px)
-and (max-device-width : 480px) {
+and (min-device-width: 320px)
+and (max-device-width: 480px) {
 
 
     .content_event {
@@ -14,7 +12,7 @@ and (max-device-width : 480px) {
 
 #loading {
     text-align: center;
-    margin :auto;
+    margin: auto;
     font-size: 2em;
     display: block;
 }
@@ -23,7 +21,7 @@ and (max-device-width : 480px) {
 #saving_and_sending {
 
     text-align: center;
-    margin :auto;
+    margin: auto;
     font-size: 2em;
     display: block;
 }
@@ -43,7 +41,7 @@ and (max-device-width : 480px) {
     text-align: center;
 }
 
-.new{
+.new {
     color: #04a96d;
 }
 
@@ -55,7 +53,7 @@ and (max-device-width : 480px) {
 
 }
 
-.is_on_server{
+.is_on_server {
     text-align: center;
     padding: 2em;
 }
@@ -68,7 +66,7 @@ and (max-device-width : 480px) {
 
 }
 
-.date_container{
+.date_container {
     display: flex;
     flex-direction: row;
 }
@@ -119,8 +117,6 @@ and (max-device-width : 480px) {
 }
 
 
-
-
 .icon_date .h {
     font-size: 1.1em;
     position: absolute;
@@ -142,9 +138,10 @@ and (max-device-width : 480px) {
     padding: 1.5em;
 }
 
-.new_date_event{
-    padding:1.5em;
+.new_date_event {
+    padding: 1.5em;
 }
+
 .alone {
     margin: auto;
     width: 7em
@@ -166,7 +163,7 @@ and (max-device-width : 480px) {
 }
 
 .action_button {
-    padding:0 3em 1em 3em;
+    padding: 0 3em 1em 3em;
     display: flex;
     justify-content: center;
 
@@ -185,7 +182,8 @@ and (max-device-width : 480px) {
     margin: 2.5em 1em 2em 1em;
 
 }
-.new.arrow-right  {
+
+.new.arrow-right {
     background-color: #04a96d;
     margin: 3.7em 0 0 0 !important;
 }
@@ -195,16 +193,16 @@ and (max-device-width : 480px) {
     width: 2em;
     height: 2em;
     position: relative;
-    clip-path: polygon(0 0,100% 0, 50% 100%);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
     margin-left: 9.5em;
 
 }
 
-.calendar_choice{
+.calendar_choice {
     margin: 1em;
 }
 
-.attendee {
+.attendees {
     text-align: left;
 }
 
@@ -259,10 +257,15 @@ fieldset {
 .label_popup {
     margin-top: 1.5em;
 }
-.if_rescheduled{
+
+.if_rescheduled {
     text-align: center;
 }
 
-.if_modification{
+.if_modification {
     text-align: center;
+}
+
+.attendee_link  {
+    margin-left: 0.5em;
 }

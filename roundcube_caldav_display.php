@@ -69,9 +69,9 @@
             </div>
 
 
-            <div class="info_ics attendee">
+            <div class="info_ics attendees">
                 <b><?php echo $this->gettext("attendee"); ?></b><br><br>
-                <div class='attendee_link'>
+                <div class='attendee'>
                 </div>
                 <div class="reply_all"></div>
             </div>

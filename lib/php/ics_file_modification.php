@@ -99,9 +99,9 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
     foreach ($array_event[1] as $i => $event) {
         if ($i == 0) {
 
-            if(date('e')!=='UTC'){
-                $new_date_start = date(";\T\Z\I\D=e:Ymd\THis", strtotime($new_date_start) );
-                $new_date_end= date(";\T\Z\I\D=e:Ymd\THis", strtotime($new_date_end));
+            if (date('e') !== 'UTC') {
+                $new_date_start = date(";\T\Z\I\D=e:Ymd\THis", strtotime($new_date_start));
+                $new_date_end = date(";\T\Z\I\D=e:Ymd\THis", strtotime($new_date_end));
             }
 
             if (preg_match('@DTEND.*:([0-9A-Z]+)@m', $event) == 1) {
@@ -385,7 +385,7 @@ function find_time_zone($ics): array
         $timezone = $tzid[1];
         $timezoneLength = strlen($timezone);
 
-        $timezone = preg_replace('/[\r\n]/','',$timezone);
+        $timezone = preg_replace('/[\r\n]/', '', $timezone);
         $timezone = new \DateTimeZone($timezone);
     } else {
         $date = new DateTime();
@@ -435,5 +435,10 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
     return implode("\r\n", $sections);
 }
 
+
+function clean_ics($ics): string
+{
+    return preg_replace("/\n+\n/", '\n', $ics);
+}
 
 ?>
