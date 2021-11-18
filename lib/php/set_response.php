@@ -163,7 +163,6 @@ function set_if_an_older_event_was_found_on_server(Event $event, array &$respons
     foreach ($arrayOfCalendars as $calendar) {
         // On trouve les événements qui matchent dans chacun des calendriers
         $event_found_on_server = find_event_with_matching_uid($event, $calendar->getCalendarID(), $all_events);
-
         if ($event_found_on_server) {
             $response['found_older_event_on_calendar'] = $calendar->getCalendarID();
 
@@ -213,8 +212,8 @@ function set_if_modification_date_location_description_attendees(array &$respons
         }
         $response['new_date']['same_date'] = $same_date;
     }
-    if (strcmp($event_to_compare_with->description, $event->description) != 0) {
-        $response['new_description'] = $event->description;
+    if ($event_to_compare_with->description === $event->description) {
+        $response['new_description'] = nl2br($event->description);
     }
     if (($event_to_compare_with->attendee_array || $event->attendee_array)) {
 
@@ -272,15 +271,23 @@ function set_formated_date_time(Event $event, array &$response): void
  * @param array $server_caldav_config : configuration du server caldav
  * @param array $arrayOfCalendars
  */
-function set_calendar_to_use_for_select_input(array &$response, array $server_caldav_config, array $arrayOfCalendars): void
+function set_calendar_to_use_for_select_input(array &$response, array $server_caldav_config, array $arrayOfCalendars): string
 {
+    $msg = '';
     foreach ($server_caldav_config['_used_calendars'] as $used_calendars) {
-        $response['used_calendar'][$used_calendars] = $arrayOfCalendars[$used_calendars]->getDisplayName();
+        if ($arrayOfCalendars[$used_calendars]) {
+            $response['used_calendar'][$used_calendars] = $arrayOfCalendars[$used_calendars]->getDisplayName();
+        }
     }
-    $response['main_calendar_name'] = $arrayOfCalendars[$server_caldav_config['_main_calendar']]->getDisplayName();
-    $response['main_calendar_id'] = $server_caldav_config['_main_calendar'];
+    if ($arrayOfCalendars[$server_caldav_config['_main_calendar']]) {
+        $response['main_calendar_name'] = $arrayOfCalendars[$server_caldav_config['_main_calendar']]->getDisplayName();
+        $response['main_calendar_id'] = $server_caldav_config['_main_calendar'];
+    }else {
+        $msg = "main_calendar_not_exist";
+    }
 
     $response['display_select'] = ($response['METHOD'] !== 'CANCEL') && !$response['found_older_event_on_calendar'];
+    return $msg;
 }
 
 /**

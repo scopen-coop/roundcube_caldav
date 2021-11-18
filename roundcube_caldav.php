@@ -540,18 +540,19 @@ class roundcube_caldav extends rcube_plugin
                 $date_time_already_set = true;
             }
 
-
             $event = $response['used_event'];
 
             if (!$date_time_already_set) {
                 set_formated_date_time($event, $response);
             }
 
-            $response['description'] = $event->description;
+            $response['description'] = nl2br($event->description);
             $response['location'] = $event->location;
 
-            set_calendar_to_use_for_select_input($response, $this->rcube->config->get('server_caldav'), $this->arrayOfCalendars);
-
+            $msg  = set_calendar_to_use_for_select_input($response, $this->rcube->config->get('server_caldav'), $this->arrayOfCalendars);
+            if($msg){
+                $this->rcmail->output->command('display_message', $this->gettext($msg), 'error');
+            }
 
             $timezone_array = find_time_zone($ics);
             $this->time_zone_offset = $timezone_array[0];
@@ -787,11 +788,15 @@ class roundcube_caldav extends rcube_plugin
     function set_caldav_server_related_information(Event $current_event, ICal $ical, array &$response)
     {
         $server = $this->rcube->config->get('server_caldav');
-        $_main_calendar = $server['_main_calendar'];
         $_used_calendars = $server['_used_calendars'];
 
+        if (empty($this->arrayOfCalendars[$server['_main_calendar']])) {
+            $_main_calendar = array_key_first($this->arrayOfCalendars);
+        }else {
+            $_main_calendar = $server['_main_calendar'];
+        }
+        
         // On récupère la time_zone qui va nous servir plus tard dans la fonction
-
         $this->time_zone_offset = $ical->iCalDateToDateTime($current_event->dtstart_array[1])->getOffset();
         date_default_timezone_set($this->time_zone_offset);
 

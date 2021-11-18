@@ -57,6 +57,7 @@ and (max-device-width : 480px) {
 
 .is_on_server{
     text-align: center;
+    padding: 2em;
 }
 
 .info_ics {
@@ -204,7 +205,7 @@ and (max-device-width : 480px) {
 }
 
 .attendee {
-    text-align: center;
+    text-align: left;
 }
 
 
