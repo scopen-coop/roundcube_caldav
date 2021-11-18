@@ -459,9 +459,19 @@ class roundcube_caldav extends rcube_plugin
         $ics = $message->get_part_body($attachment->mime_id);
         $ical = new ICal($ics);
 
-        set_sender_and_receiver_email($message, $response);
 
-        $events = $ical->events();
+        $array_events = $ical->cal;
+        $array_events = $array_events['VEVENT'] ?? $array_events;
+        if (count($array_events) < 10) {
+            $events = $ical->events();
+        } else {
+            $events = [];
+            for ($i = 0; $i < 10 ;$i++) {
+                $events[] = new Event(array_shift($array_events));
+            }
+        }
+
+        set_sender_and_receiver_email($message, $response);
 
         foreach ($events as $event) {
 
@@ -683,9 +693,10 @@ class roundcube_caldav extends rcube_plugin
                         $new_ics = $ics_with_modified_date_and_location;
                         // On change le numéro de sequence si l'utilisateur est l'organisateur de l'evenement ou si l'événement n'a pas de participants
                         $new_ics = change_sequence_ics($new_ics);
+                        $new_ics = clean_ics($new_ics);
                         $send_event = $this->save_event_on_caldav_server_and_display_message($new_ics, $status, $event, $chosen_calendar, $event_uid);
                     } else {
-
+                        $new_ics = clean_ics($new_ics);
                         $send_event = $this->save_event_on_caldav_server_and_display_message($new_ics, $status, $event, $chosen_calendar, $event_uid);
                         // On sauvegarde sur le serveur sans les dates et lieu modifiés
                         $new_ics = $ics_with_modified_date_and_location;
@@ -1179,6 +1190,8 @@ class roundcube_caldav extends rcube_plugin
 
         $ics_to_send = change_method_ics($ics_to_send, $method);
 
+
+        $ics_to_send = clean_ics($ics_to_send);
         $method = $is_organizer ? $method : $status;
         $send_succes = $this->send_mail($ics_to_send, $message, $method, $identity, $has_modif);
 
