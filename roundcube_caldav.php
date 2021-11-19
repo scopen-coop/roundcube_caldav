@@ -474,7 +474,6 @@ class roundcube_caldav extends rcube_plugin
         set_sender_and_receiver_email($message, $response);
 
         foreach ($events as $event) {
-
             if_no_dtend_add_one_to_event($event);
             $response['recurrent_events'][$event->uid][] = $this->pretty_date($event->dtstart_array[1], $event->dtend_array[1]);
         }
@@ -489,6 +488,21 @@ class roundcube_caldav extends rcube_plugin
                 $same_uid = $event->uid;
             }
             $response['uid'] = $event->uid;
+
+            if($event->rrule) {
+                $rrule = new Recurr\Rule($event->rrule, $event->dtstart_array[1]);
+                $langs = $this->rcmail->config->get('language');
+                $array_match = [];
+                if (preg_match('/[a-z]+/',$langs,$array_match) > 0){
+                    $langs = $array_match[0];
+                }
+                try {
+                    $transformer = new \Recurr\Transformer\TextTransformer(  new \Recurr\Transformer\Translator($langs));
+                    $response['rrule_to_text'] = $transformer->transform($rrule);
+                } catch (Exception $e) {
+                    $this->rcube::write_log('errors',$e->getMessage());
+                }
+            }
 
 
             // On récupère les informations correspondant à l'identité qui a été solicité dans le champs attendee ou organisateur
