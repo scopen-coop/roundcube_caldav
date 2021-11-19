@@ -453,6 +453,7 @@ class roundcube_caldav extends rcube_plugin
     function send_info_to_be_displayed_to_client(rcube_message &$message, $attachment)
     {
         $response = array();
+        $langs = $this->rcmail->config->get('language');
 
         $this->connection_to_calDAV_server();
 
@@ -491,13 +492,12 @@ class roundcube_caldav extends rcube_plugin
 
             if($event->rrule) {
                 $rrule = new Recurr\Rule($event->rrule, $event->dtstart_array[1]);
-                $langs = $this->rcmail->config->get('language');
                 $array_match = [];
                 if (preg_match('/[a-z]+/',$langs,$array_match) > 0){
-                    $langs = $array_match[0];
+                    $langs_short = $array_match[0];
                 }
                 try {
-                    $transformer = new \Recurr\Transformer\TextTransformer(  new \Recurr\Transformer\Translator($langs));
+                    $transformer = new \Recurr\Transformer\TextTransformer(  new \Recurr\Transformer\Translator($langs_short));
                     $response['rrule_to_text'] = $transformer->transform($rrule);
                 } catch (Exception $e) {
                     $this->rcube::write_log('errors',$e->getMessage());
@@ -555,19 +555,19 @@ class roundcube_caldav extends rcube_plugin
 
             if (($found_advance && $response['METHOD'] == 'COUNTER')) {
 
-                set_if_modification_date_location_description_attendees($response, $is_Organizer, $event, $new_attendees_array['attendees']);
-                set_formated_date_time($response['used_event'], $response);
+                set_if_modification_date_location_description_attendees($response, $is_Organizer, $event, $langs, $new_attendees_array['attendees']);
+                set_formated_date_time($response['used_event'], $response,$langs);
                 $date_time_already_set = true;
             } elseif ($response['display_modification_made_by_organizer']) {
-                set_if_modification_date_location_description_attendees($response, $is_Organizer, $event, $new_attendees_array['attendees']);
-                set_formated_date_time($response['older_event'], $response);
+                set_if_modification_date_location_description_attendees($response, $is_Organizer, $event, $langs, $new_attendees_array['attendees']);
+                set_formated_date_time($response['older_event'], $response,$langs);
                 $date_time_already_set = true;
             }
 
             $event = $response['used_event'];
 
             if (!$date_time_already_set) {
-                set_formated_date_time($event, $response);
+                set_formated_date_time($event, $response,$langs);
             }
 
             $response['description'] = nl2br($event->description);
@@ -1417,7 +1417,8 @@ class roundcube_caldav extends rcube_plugin
      */
     function pretty_date(string $date_start, string $date_end): string
     {
-        $date_format = $this->rcmail->config->get('date_format');
+        $date_format = 'd-m-Y';
+
         $time_format = $this->rcmail->config->get('time_format');
 
         $combined_format = $date_format . ' ' . $time_format;

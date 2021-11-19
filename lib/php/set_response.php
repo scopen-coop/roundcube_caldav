@@ -187,9 +187,10 @@ function set_if_an_older_event_was_found_on_server(Event $event, array &$respons
  * @param array $response
  * @param bool $is_Organizer
  * @param Event $event : current event
+ * @param string $langs
  * @param array|null $attendees : array with all the attendees of current event
  */
-function set_if_modification_date_location_description_attendees(array &$response, bool $is_Organizer, Event $event, ?array $attendees): void
+function set_if_modification_date_location_description_attendees(array &$response, bool $is_Organizer, Event $event, string $langs, ?array $attendees): void
 {
 
     $event_to_compare_with = $is_Organizer ? $response['used_event'] : $response['older_event'];
@@ -198,12 +199,18 @@ function set_if_modification_date_location_description_attendees(array &$respons
     }
     if ($event_to_compare_with->dtstart_array[2] != $event->dtstart_array[2] || $event_to_compare_with->dtend_array[2] != $event->dtend_array[2]) {
 
+        setlocale(LC_TIME, $langs);
+
+
         $response['new_date']['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
         $response['new_date']['date_day_start'] = date("d", $event->dtstart_array[2]);
+        $response['new_date']['date_weekday_start'] =  strftime("%A", $event->dtstart_array[2]);
         $response['new_date']['date_hours_start'] = date("G:i", $event->dtstart_array[2]);
+
 
         $response['new_date']['date_month_end'] = date("M/Y", $event->dtend_array[2]);
         $response['new_date']['date_day_end'] = date("d", $event->dtend_array[2]);
+        $response['new_date']['date_weekday_end'] = strftime("%A", $event->dtstart_array[2]);
         $response['new_date']['date_hours_end'] = date("G:i", $event->dtend_array[2]);
         $same_date = false;
 
@@ -216,7 +223,6 @@ function set_if_modification_date_location_description_attendees(array &$respons
         $response['new_description'] = nl2br($event->description);
     }
     if (($event_to_compare_with->attendee_array || $event->attendee_array)) {
-
         $response['new_attendees'] = find_difference_attendee($attendees, $response['attendees']);
     }
 
@@ -243,22 +249,24 @@ function set_if_modification_date_location_description_attendees(array &$respons
  * $response['same_date'] : test if date are equals
  * @param Event $event
  * @param array $response
+ * @param string $langs
  */
-function set_formated_date_time(Event $event, array &$response): void
+function set_formated_date_time(Event $event, array &$response, string $langs): void
 {
+    setlocale(LC_TIME, $langs);
     $response['date_start'] = date("Y-m-d", $event->dtstart_array[2]);
     $response['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
     $response['date_day_start'] = date("d", $event->dtstart_array[2]);
+    $response['date_weekday_start'] = strftime("%A", $event->dtstart_array[2]);
     $response['date_hours_start'] = date("H:i", $event->dtstart_array[2]);
 
     $response['date_end'] = date("Y-m-d", $event->dtend_array[2]);
     $response['date_month_end'] = date("M/Y", $event->dtend_array[2]);
     $response['date_day_end'] = date("d", $event->dtend_array[2]);
+    $response['date_weekday_end'] = strftime("%A", $event->dtstart_array[2]);
     $response['date_hours_end'] = date("H:i", $event->dtend_array[2]);
 
     $response['same_date'] = $response['date_start'] === $response['date_end'];
-
-
 }
 
 /**
@@ -282,7 +290,7 @@ function set_calendar_to_use_for_select_input(array &$response, array $server_ca
     if ($arrayOfCalendars[$server_caldav_config['_main_calendar']]) {
         $response['main_calendar_name'] = $arrayOfCalendars[$server_caldav_config['_main_calendar']]->getDisplayName();
         $response['main_calendar_id'] = $server_caldav_config['_main_calendar'];
-    }else {
+    } else {
         $msg = "main_calendar_not_exist";
     }
 

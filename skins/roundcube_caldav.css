@@ -77,7 +77,7 @@ and (max-device-width: 480px) {
     display: block;
     position: relative;
     width: 7em;
-    height: 7em;
+    height: 8em;
     background-color: #fff;
     border-radius: 0.2em;
     box-shadow: 0 1px 0 #bdbdbd, 0 0 0 1px #bdbdbd;
@@ -117,6 +117,19 @@ and (max-device-width: 480px) {
 }
 
 
+.icon_date .D {
+    font-size: 0.9em;
+    position: absolute;
+    color: black;
+    top: 2.5em;
+}
+.icon_date .d {
+    font-size: 2.4em;
+    letter-spacing: -0.05em;
+    padding: 1.3em 0 0 0 !important;
+    color: black;
+}
+
 .icon_date .h {
     font-size: 1.1em;
     position: absolute;
@@ -125,12 +138,7 @@ and (max-device-width: 480px) {
     padding: 0 !important;
 }
 
-.icon_date .d {
-    font-size: 2.4em;
-    letter-spacing: -0.05em;
-    padding: 0.9em 0 0 0 !important;
-    color: black;
-}
+
 
 .date_event {
     display: inline-flex;

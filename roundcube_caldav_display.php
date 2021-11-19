@@ -16,19 +16,22 @@
             <div class="date_container">
                 <div class="date_event">
                     <div class="icon_date same_date alone">
-                        <div class="d"></div>
                         <div class="m"></div>
+                        <div class="D"></div>
+                        <div class="d"></div>
                         <div class="h"></div>
                     </div>
                     <div class="icon_date different_date start">
-                        <div class="d"></div>
                         <div class="m"></div>
+                        <div class="D"></div>
+                        <div class="d"></div>
                         <div class="h"></div>
                     </div>
                     <div class="arrow-right different_date"></div>
                     <div class="icon_date different_date end">
-                        <div class="d"></div>
                         <div class="m"></div>
+                        <div class="D"></div>
+                        <div class="d"></div>
                         <div class="h"></div>
                     </div>
                 </div>
@@ -37,19 +40,22 @@
                 <div class="new_date_event new" style="display: none">
 
                     <div class="icon_date same_date alone">
-                        <div class="d"></div>
                         <div class="m"></div>
+                        <div class="D"></div>
+                        <div class="d"></div>
                         <div class="h"></div>
                     </div>
                     <div class="icon_date different_date start">
-                        <div class="d"></div>
                         <div class="m"></div>
+                        <div class="D"></div>
+                        <div class="d"></div>
                         <div class="h"></div>
                     </div>
                     <div class="arrow-right different_date"></div>
                     <div class="icon_date different_date end">
-                        <div class="d"></div>
                         <div class="m"></div>
+                        <div class="D"></div>
+                        <div class="d"></div>
                         <div class="h"></div>
                     </div>
                 </div>
