@@ -11,7 +11,7 @@ use it\thecsea\simple_caldav_client\CalDAVObject;
  * @param array $all_events
  * @return CalDAVObject|null
  */
-function find_event_with_matching_uid(Event $event, string $calendar,array $all_events): ?CalDAVObject
+function find_event_with_matching_uid(Event $event, string $calendar, array $all_events): ?CalDAVObject
 {
     $all_event_from_cal = (array)$all_events[$calendar];
 
@@ -38,8 +38,8 @@ function find_event_with_matching_uid(Event $event, string $calendar,array $all_
 function is_there_an_overlap(int $base_timestamp, string $current_date_start, string $current_date_end, string $date_start_to_compare_with, ?string $date_end_to_compare_with): bool
 {
     // If the event we want to compare with has no dt_end
-    if(!$date_end_to_compare_with){
-        $date_end_to_compare_with =  date("Ymd\THis\Z", strtotime($date_start_to_compare_with, $base_timestamp) + 86400);
+    if (!$date_end_to_compare_with) {
+        $date_end_to_compare_with = date("Ymd\THis\Z", strtotime($date_start_to_compare_with, $base_timestamp) + 86400);
     }
     return (((strtotime($date_start_to_compare_with, $base_timestamp) > strtotime($current_date_start, $base_timestamp))
             && (strtotime($date_start_to_compare_with, $base_timestamp) < strtotime($current_date_end, $base_timestamp))) ||
@@ -69,9 +69,9 @@ function is_after(string $current_date_end, string $current_date_end_with_offset
  * @param int $base_timestamp
  * @return bool
  */
-function is_before(string $current_date_start,string  $current_date_start_with_offset, ?string  $date_end_to_compare_with, int $base_timestamp): bool
+function is_before(string $current_date_start, string $current_date_start_with_offset, ?string $date_end_to_compare_with, int $base_timestamp): bool
 {
-    if(!$date_end_to_compare_with){
+    if (!$date_end_to_compare_with) {
         return false;
     }
     return strtotime($date_end_to_compare_with, $base_timestamp) <= strtotime($current_date_start, $base_timestamp)
@@ -82,10 +82,10 @@ function is_before(string $current_date_start,string  $current_date_start_with_o
  * Find in a date array which event is the closest of a date.
  * @param array $array_date : indexed by the uid of events.
  * @param string $date_start_or_end : if 'previous' : the dtstart of event, else the dtend.
- * @param string $opt: if 'previous' it find the closest previous event, else the closest next event.
+ * @param string $opt : if 'previous' it find the closest previous event, else the closest next event.
  * @return string|null
  */
-function choose_the_closest_meeting(array $array_date,string  $date_start_or_end,string $opt): ?string
+function choose_the_closest_meeting(array $array_date, string $date_start_or_end, string $opt): ?string
 {
     $first = array_key_first($array_date);
     $uid = $array_date[$first]['uid'];
@@ -143,7 +143,7 @@ function calculate_duration(string $duration)
  * @param string $start_string
  * @return bool
  */
-function str_start_with(string $string,string  $start_string): bool
+function str_start_with(string $string, string $start_string): bool
 {
     $len = strlen($start_string);
     return (substr($string, 0, $len) === $start_string);

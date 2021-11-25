@@ -461,6 +461,7 @@ class roundcube_caldav extends rcube_plugin
         $ical = new ICal($ics);
 
 
+
         $array_events = $ical->cal;
         $array_events = $array_events['VEVENT'] ?? $array_events;
         if (count($array_events) < 10) {
@@ -473,7 +474,6 @@ class roundcube_caldav extends rcube_plugin
         }
 
         set_sender_and_receiver_email($message, $response);
-
         foreach ($events as $event) {
             if_no_dtend_add_one_to_event($event);
             $response['recurrent_events'][$event->uid][] = $this->pretty_date($event->dtstart_array[1], $event->dtend_array[1]);
@@ -583,11 +583,11 @@ class roundcube_caldav extends rcube_plugin
 
             // On affiche les autres informations concernant notre server caldav
             $this->set_caldav_server_related_information($event, $ical, $response);
-
             if ($found_advance) {
                 get_sender_s_partstat($found_advance[0]['event'], $response, true);
             }
             $this->select_buttons_to_display($response['identity']['role'] ?: '', $response['METHOD'], $response);
+
 
             $this->rcmail->output->command('plugin.undirect_rendering_js', array('request' => $response));
 

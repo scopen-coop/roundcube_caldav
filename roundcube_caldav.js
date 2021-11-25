@@ -129,6 +129,8 @@ function display_informations($event_template_html, array_response) {
     // On regarde si le serveur est possede uniquement si l'utilisateur n'est pas l'organisateur
     if (!isOrganizer) {
         modification.display_message_if_event_is_already_on_server();
+    } else {
+        modification.hide_is_already_on_server();
     }
 
     // Affichage du commentaire de l'expediteur

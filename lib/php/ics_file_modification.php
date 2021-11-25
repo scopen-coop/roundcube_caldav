@@ -386,11 +386,21 @@ function find_time_zone($ics): array
         $timezoneLength = strlen($timezone);
 
         $timezone = preg_replace('/[\r\n]/', '', $timezone);
-        $timezone = new \DateTimeZone($timezone);
+        $timezone_identifiers = DateTimeZone::listIdentifiers();
+
+        if (in_array($timezone,$timezone_identifiers)){
+            $timezone = new \DateTimeZone($timezone);
+        }else{
+            $date = new DateTime();
+            $timezone = $date->getTimezone();
+        }
+
+
     } else {
         $date = new DateTime();
         $timezone = $date->getTimezone();
     }
+
 
     return [$timezone->getOffset(new DateTime()), $timezone];
 }

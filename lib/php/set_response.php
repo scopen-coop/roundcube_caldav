@@ -26,13 +26,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
     $all_adresses = '';
     if (!empty($event->attendee_array)) {
         foreach ($event->attendee_array as $attendee) {
-            if (!is_string($attendee) && array_key_exists('CN', $attendee)) {
-                $response['attendees'][$id]['name'] = $attendee['CN'];
-                $response['attendees'][$id]['RSVP'] = $attendee['RSVP'];
-                $response['attendees'][$id]['partstat'] = $attendee['PARTSTAT'];
-                $response['attendees'][$id]['ROLE'] = $attendee['ROLE'];
-
-            } elseif (str_start_with($attendee, 'mailto:')) {
+            if (is_string($attendee) && str_start_with($attendee, 'mailto:')) {
                 $response['attendees'][$id]['email'] = substr($attendee, strlen('mailto:'));
                 $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendees'][$id]['email'] . "',this)";
                 if ($my_email !== $response['attendees'][$id]['email']) {
@@ -40,8 +34,12 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
                 }
 
                 $id++;
+            } elseif ( array_key_exists('CN', $attendee)) {
+                $response['attendees'][$id]['name'] = $attendee['CN'];
+                $response['attendees'][$id]['RSVP'] = $attendee['RSVP'];
+                $response['attendees'][$id]['partstat'] = $attendee['PARTSTAT'];
+                $response['attendees'][$id]['ROLE'] = $attendee['ROLE'];
             }
-
         }
     }
     // On cherche les informations concernant l'organisateur
@@ -87,14 +85,14 @@ function get_sender_s_partstat(Event $event, array &$response, bool $event_on_se
     $res = -1;
     if (!empty($event->attendee_array)) {
         foreach ($event->attendee_array as $attendee) {
-            if (!is_string($attendee) && array_key_exists('CN', $attendee)) {
-                $array_attendees[$id]['partstat'] = $attendee['PARTSTAT'];
-            } elseif (str_start_with($attendee, 'mailto:')) {
+            if (is_string($attendee) && str_start_with($attendee, 'mailto:')) {
                 $array_attendees[$id]['email'] = substr($attendee, strlen('mailto:'));
                 if ($sender_email === $array_attendees[$id]['email']) {
                     $res = $id;
                 }
                 $id++;
+            }elseif ( array_key_exists('CN', $attendee)) {
+                $array_attendees[$id]['partstat'] = $attendee['PARTSTAT'];
             }
         }
     }
