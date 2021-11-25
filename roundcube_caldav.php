@@ -512,7 +512,6 @@ class roundcube_caldav extends rcube_plugin
             }else {
                 $response['identity'] = find_identity_matching_with_attendee_or_organizer($event, $this->rcmail->user->list_identities(null, true));
             }
-            var_dump($event->attendee_array);exit;
             $is_Organizer = false;
             if ($response['identity']) {
                 $is_Organizer = strcmp($response['identity']['role'], 'ORGANIZER') == 0;
