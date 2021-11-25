@@ -376,32 +376,14 @@ function del_method_field_ics($ics): string
 function find_time_zone($ics): array
 {
     $vtimezone = [];
-
+    $ical = new ICal\ICal($ics);
     if (preg_match("@(?<=BEGIN:VTIMEZONE)(.*?)(?:END:VTIMEZONE)@s", $ics, $vtimezone) == 1) {
-        $tzid = [];
-
-        preg_match('/^TZID:(.*)?$/m', $vtimezone[1], $tzid);
-
-        $timezone = $tzid[1];
-        $timezoneLength = strlen($timezone);
-
-        $timezone = preg_replace('/[\r\n]/', '', $timezone);
-        $timezone_identifiers = DateTimeZone::listIdentifiers();
-
-        if (in_array($timezone,$timezone_identifiers)){
-            $timezone = new \DateTimeZone($timezone);
-        }else{
-            $date = new DateTime();
-            $timezone = $date->getTimezone();
-        }
-
-
+        $timezone_string = $ical->calendarTimeZone();
+        $timezone = new DateTimeZone($timezone_string);
     } else {
         $date = new DateTime();
         $timezone = $date->getTimezone();
     }
-
-
     return [$timezone->getOffset(new DateTime()), $timezone];
 }
 

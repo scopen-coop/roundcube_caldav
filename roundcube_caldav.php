@@ -479,7 +479,6 @@ class roundcube_caldav extends rcube_plugin
             $response['recurrent_events'][$event->uid][] = $this->pretty_date($event->dtstart_array[1], $event->dtend_array[1]);
         }
 
-
         $same_uid = $events[0]->uid;
         foreach ($events as $i => &$event) {
             // Si l'evenement à le même uid que son prédecesseur on ne l'affiche pas
