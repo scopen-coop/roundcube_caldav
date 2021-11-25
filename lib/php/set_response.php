@@ -34,7 +34,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
                 }
 
                 $id++;
-            } elseif ( array_key_exists('CN', $attendee)) {
+            } elseif (array_key_exists('CN', $attendee)) {
                 $response['attendees'][$id]['name'] = $attendee['CN'];
                 $response['attendees'][$id]['RSVP'] = $attendee['RSVP'];
                 $response['attendees'][$id]['partstat'] = $attendee['PARTSTAT'];
@@ -91,7 +91,7 @@ function get_sender_s_partstat(Event $event, array &$response, bool $event_on_se
                     $res = $id;
                 }
                 $id++;
-            }elseif ( array_key_exists('CN', $attendee)) {
+            } elseif (array_key_exists('CN', $attendee)) {
                 $array_attendees[$id]['partstat'] = $attendee['PARTSTAT'];
             }
         }
@@ -202,7 +202,7 @@ function set_if_modification_date_location_description_attendees(array &$respons
 
         $response['new_date']['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
         $response['new_date']['date_day_start'] = date("d", $event->dtstart_array[2]);
-        $response['new_date']['date_weekday_start'] =  strftime("%A", $event->dtstart_array[2]);
+        $response['new_date']['date_weekday_start'] = strftime("%A", $event->dtstart_array[2]);
         $response['new_date']['date_hours_start'] = date("G:i", $event->dtstart_array[2]);
 
 
@@ -343,17 +343,32 @@ function find_difference_attendee(array $array_attendee_new, array $array_attend
  * Find out which identity corresponds to the one used in the event
  * @param Event $event
  * @param array $my_identities
+ * @param Event|null $event_on_server
  * @return array|null : [email, name, role]
  */
-function find_identity_matching_with_attendee_or_organizer(Event $event, array $my_identities): ?array
+function find_identity_matching_with_attendee_or_organizer(Event $event, array $my_identities, Event $event_on_server = null): ?array
 {
-    if (!empty($event->attendee_array) || !empty($event->organizer_array)) {
+    $attendee_array = [];
+    $organizer_array = [];
+
+
+    if (!empty($event->attendee_array) || !empty($event->organizer_array) || $event_on_server && (!empty($event_on_server->attendee_array) || !empty($event_on_server->organizer_array))) {
+
         // On boucle sur les attendee pour recuperer la bonne identity
-        foreach ($event->attendee_array as $attendes) {
-            if (is_string($attendes)) {
-                $attendes = preg_replace('/(mailto:)?(.+)/', '$2', $attendes);
+        foreach ($event->attendee_array as $attendee) {
+            array_push($attendee_array, $attendee);
+        }
+        if ($event_on_server) {
+            foreach ($event_on_server->attendee_array as $attendee) {
+                array_push($attendee_array, $attendee);
+            }
+        }
+
+        foreach ($attendee_array as $attendee) {
+            if (is_string($attendee)) {
+                $attendee = preg_replace('/(mailto:)?(.+)/', '$2', $attendee);
                 foreach ($my_identities as $identity) {
-                    if (strcmp($attendes, $identity['email']) == 0) {
+                    if (strcmp($attendee, $identity['email']) == 0) {
                         $my_identity['email'] = $identity['email'];
                         $my_identity['name'] = $identity['name'];
                         $my_identity['role'] = 'ATTENDEE';
@@ -363,6 +378,16 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
             }
         }
         foreach ($event->organizer_array as $organizer) {
+            array_push($organizer_array, $organizer);
+        }
+        if ($event_on_server) {
+            foreach ($event_on_server->organizer_array as $organizer) {
+                array_push($organizer_array, $organizer);
+            }
+        }
+
+
+        foreach ($organizer_array as $organizer) {
             if (is_string($organizer)) {
                 $organizer_email = preg_replace('/(mailto:)?(.+)/', '$2', $organizer);
                 foreach ($my_identities as $identity) {

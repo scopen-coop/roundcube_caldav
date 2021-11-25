@@ -504,15 +504,19 @@ class roundcube_caldav extends rcube_plugin
                 }
             }
 
+            $found_advance = $this->is_server_in_advance($event);
 
             // On récupère les informations correspondant à l'identité qui a été solicité dans le champs attendee ou organisateur
-            $response['identity'] = find_identity_matching_with_attendee_or_organizer($event, $this->rcmail->user->list_identities(null, true));
-
+            if ($found_advance){
+                $response['identity'] = find_identity_matching_with_attendee_or_organizer($event, $this->rcmail->user->list_identities(null, true), $found_advance[0]['event']);
+            }else {
+                $response['identity'] = find_identity_matching_with_attendee_or_organizer($event, $this->rcmail->user->list_identities(null, true));
+            }
+            var_dump($event->attendee_array);exit;
             $is_Organizer = false;
             if ($response['identity']) {
                 $is_Organizer = strcmp($response['identity']['role'], 'ORGANIZER') == 0;
             }
-
             if ($is_Organizer) {
                 get_sender_s_partstat($event, $response);
             }
@@ -523,7 +527,6 @@ class roundcube_caldav extends rcube_plugin
 
             set_if_an_older_event_was_found_on_server($event, $response, $this->arrayOfCalendars, $this->all_events);
 
-            $found_advance = $this->is_server_in_advance($event);
             if ($found_advance) {
 
                 $response['found_advance'] = $found_advance;
@@ -539,7 +542,6 @@ class roundcube_caldav extends rcube_plugin
             } else {
                 $response['used_event'] = $event;
             }
-
             set_participants_characteristics_and_set_buttons_properties($response['used_event'], $response);
 
             $new_attendees_array = [];
@@ -1083,7 +1085,6 @@ class roundcube_caldav extends rcube_plugin
 
             // On trouve les événements qui matchent dans chacun des calendriers
             $event_found_on_server = find_event_with_matching_uid($event, $calendar->getCalendarID(), $this->all_events); // 0.5 *2 = 1s
-
             if ($event_found_on_server) {
                 $event_ics = $event_found_on_server->getData();
                 $ical_found = new ICal($event_ics);
@@ -1108,7 +1109,6 @@ class roundcube_caldav extends rcube_plugin
             $found_on_calendar = array_key_first($is_server_in_advance);
             $event_with_higher_sequence = array_shift($is_server_in_advance);
 
-
             $is_sequences_equal = false;
             // On compare toutes les evt obtenu selon leur séquence
             foreach ($is_server_in_advance as $calendar => $event_found) {
@@ -1120,11 +1120,9 @@ class roundcube_caldav extends rcube_plugin
 
                 }
             }
-
             if ($event_with_higher_sequence['event']->sequence == $event->sequence) {
                 $is_sequences_equal = true;
             }
-
             return [
                 $event_with_higher_sequence,
                 $found_on_calendar,
