@@ -37,7 +37,7 @@ and (max-device-width: 480px) {
 }
 
 .invitation {
-    padding-top: 2em;
+    padding-top: 1.5em;
     text-align: center;
 }
 
@@ -55,11 +55,11 @@ and (max-device-width: 480px) {
 
 .is_on_server {
     text-align: center;
-    padding: 2em;
+    padding: 1.5em;
 }
 
 .info_ics {
-    padding: 1.5em;
+    padding: 0 1em 0 0;
     text-align: justify;
     text-justify: inter-word;
     max-width: 40%;
@@ -143,11 +143,11 @@ and (max-device-width: 480px) {
 .date_event {
     display: inline-flex;
     text-align: center;
-    padding: 1.5em;
+    padding: 1em;
 }
 
 .new_date_event {
-    padding: 1.5em;
+    padding: 1em;
 }
 
 .alone {
@@ -217,22 +217,18 @@ and (max-device-width: 480px) {
 
 .repeated {
     text-align: center;
-    width: 20em;
+    width: 50%;
 
 }
 
 .info_caldav_server {
-    width: auto;
-    padding: 1.5em;
+    width: 30%;
+    padding: 0.5em  1.5em 0 0.5em;
 }
 
 .info_caldav_server div {
 
     text-align: center
-}
-
-.meeting_display {
-    padding-left: 2em;
 }
 
 .meeting_collision {
