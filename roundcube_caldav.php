@@ -1247,7 +1247,7 @@ class roundcube_caldav extends rcube_plugin
                 'sendmail' => true,
                 'from' => $my_identity['email'],
                 'mailto' => $mailto,
-                'charset' => "utf8mb4"
+                'charset' => "UTF-8"
             ];
 
 
@@ -1261,7 +1261,7 @@ class roundcube_caldav extends rcube_plugin
             $rcmail_sendmail = new rcmail_sendmail('', $options);
             $message = $rcmail_sendmail->create_message($header, $body);
             $message->addAttachment($ics_to_send, 'text/calendar', $disp_name, false, 'base64',
-                'attachment', 'utf8mb4');
+                'attachment', 'UTF-8');
 
             $result = $rcmail_sendmail->deliver_message($message);
             $rcmail_sendmail->save_message($message);
