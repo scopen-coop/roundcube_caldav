@@ -136,16 +136,16 @@
         },
         {
             "name": "johngrogg/ics-parser",
-            "version": "v3.0.0",
+            "version": "v3.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/u01jmg3/ics-parser.git",
-                "reference": "c74f5881198760386f243d6b1e090e54952ac825"
+                "reference": "2893a68bf4a7f551b33945e8b1c81e9ef571dbc8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/u01jmg3/ics-parser/zipball/c74f5881198760386f243d6b1e090e54952ac825",
-                "reference": "c74f5881198760386f243d6b1e090e54952ac825",
+                "url": "https://api.github.com/repos/u01jmg3/ics-parser/zipball/2893a68bf4a7f551b33945e8b1c81e9ef571dbc8",
+                "reference": "2893a68bf4a7f551b33945e8b1c81e9ef571dbc8",
                 "shasum": ""
             },
             "require": {
@@ -193,7 +193,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2021-06-17T14:20:46+00:00"
+            "time": "2022-01-31T12:26:09+00:00"
         },
         {
             "name": "simshaun/recurr",
