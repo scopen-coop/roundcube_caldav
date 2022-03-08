@@ -263,12 +263,14 @@ class roundcube_caldav extends rcube_plugin
                     if ($server['_main_calendar'] == $available_calendar->getCalendarID()) {
                         $print = $available_calendar->getCalendarID();
                     }
-                    foreach ($server['_used_calendars'] as $used_calendar) {
-                        if ($used_calendar == $available_calendar->getCalendarID()) {
-                            $print = $available_calendar->getCalendarID();
-                            break;
-                        }
-                    }
+					if (is_array($server) && array_key_exists('_used_calendars', $server) && !empty($server['_used_calendars'])) {
+						foreach ($server['_used_calendars'] as $used_calendar) {
+							if ($used_calendar == $available_calendar->getCalendarID()) {
+								$print = $available_calendar->getCalendarID();
+								break;
+							}
+						}
+					}
 
                     $checkbox = new html_checkbox(array('name' => '_define_used_calendars[]', 'value' => $available_calendar->getCalendarID()));
                     $radiobutton = new html_radiobutton(array('name' => '_define_main_calendar', 'value' => $available_calendar->getCalendarID()));
