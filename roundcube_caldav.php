@@ -295,6 +295,7 @@ class roundcube_caldav extends rcube_plugin
 		} catch (Exception $e) {
 			$this->rcmail->output->command('display_message', $this->gettext('connect_error_msg'). "\n" .$e->getMessage(), 'error');
 		}
+
         return $param_list;
     }
 
