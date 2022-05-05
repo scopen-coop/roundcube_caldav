@@ -144,8 +144,6 @@ class roundcube_caldav extends rcube_plugin
 			return $save_params;
 		}
 
-		var_dump($this->rcube->config->get('server_caldav')['_password']);
-
 		// On récupère l'url et le login dans les champs (ils sont remplis par défault avec l'ancienne valeur)
 		$urlbase = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
 		$save_params['prefs']['server_caldav']['_url_base'] = $urlbase;
@@ -163,9 +161,6 @@ class roundcube_caldav extends rcube_plugin
 		} elseif (array_key_exists('_password', $this->rcube->config->get('server_caldav'))) {
 			$save_params['prefs']['server_caldav']['_password'] = $this->rcube->config->get('server_caldav')['_password'];
 		}
-
-		var_dump($this->rcube->config->get('des_key'),$this->rcube->config->get('server_caldav')['_password'], $save_params['prefs']['server_caldav']['_password'],$new_password);
-
 
 		$save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $save_params['prefs']['server_caldav']['_password'], $urlbase);
 
