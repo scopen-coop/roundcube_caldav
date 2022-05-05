@@ -229,11 +229,10 @@ class roundcube_caldav extends rcube_plugin
 
         // Champs pour specifier le mot de passe
         $field_id = 'define_password';
-        $password = new html_passwordfield(array('name' => '_' . $field_id, 'id' => $field_id));
+        $password = new html_passwordfield(array('name' => '_' . $field_id, 'id' => $field_id, 'autocomplete'=>"off"));
         $param_list['blocks']['main']['options']['password'] = array(
             'title' => html::label($field_id, rcube::Q($this->gettext('password'))),
             'content' => $password->show(),
-			'autocomplete' => "off"
         );
         return $param_list;
     }
