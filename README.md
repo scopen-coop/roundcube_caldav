@@ -18,6 +18,10 @@ The supported versions of roundcube and supported databases can be found in [SUP
 
 See [INSTALL.md](doc/INSTALL.md) for installation instructions.
 
+## Translation 
+
+The module is currently available in English and French.
+
 ## Documentation
 
 A (hopefully growing) documentation for various topics is found in the [doc](doc/) folder.
