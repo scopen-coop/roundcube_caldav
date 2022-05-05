@@ -1043,8 +1043,8 @@ class roundcube_caldav extends rcube_plugin
         $ics = del_method_field_ics($ics);
 
         // on formate l'url sur laquelle on veut déposer notre event
-        $url = $url_base . '/' . $calendar_id . '/' . $uid . '.ics';
-		$this->rcmail->output->command('display_message', $url, 'error');
+        $url = $url_base . $calendar_id . '/' . $uid . '.ics';
+		$this->rcmail->output->command('display_message', $url_base, $calendar_id, 'error');
 
         // Si href n'est pas nul alors on remplace l'url par href pour récupérer le bon événement
         if ($href != null) {
