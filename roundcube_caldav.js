@@ -352,7 +352,6 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
             _chosenTimeEnd: chosenTimeEnd,
             _chosenLocation: chosenLocation,
         }
-        console.log(calendar)
         post_import_event_server(
             $event_template_html,
             calendar,
@@ -429,7 +428,7 @@ function display_message_popup($event_template_html, calendar, array_response, u
  * @param modification
  */
 function post_import_event_server($event_template_html, calendar, array_response, used_event, status, method, comment, modification = null) {
-
+    console.log(calendar)
     rcmail.http_post('plugin.roundcube_caldav_import_event_on_server', {
         _mail_uid: rcmail.env.uid,
         _mbox: rcmail.env.mailbox,
