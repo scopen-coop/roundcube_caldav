@@ -470,15 +470,6 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
         'confirm_button_organizer': $event_template_html.find('.confirm_button_organizer'),
         'decline_button_organizer': $event_template_html.find('.decline_button_organizer')
     }
-    // On assigne a quel calendrier ajouter l'événement en effet le choix du calendrier n'est pas tout le temps proposé
-    // par exemple dans le cas ou on est l'organisateur de l'événement
-    let calendar;
-    if (select_calendars.val()) {
-        calendar = select_calendars.val()
-    } else {
-        calendar = array_response['found_older_event_on_calendar'];
-    }
-
 
     let isOrganizer = false;
     if (array_response['identity']) {
@@ -505,6 +496,15 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
                     buttons_array[button].html(buttons_array[button].attr("data-label-enabled"));
                 }
                 buttons_array[button].bind('click', function evt() {
+                    // On assigne a quel calendrier ajouter l'événement en effet le choix du calendrier n'est pas tout le temps proposé
+                    // par exemple dans le cas ou on est l'organisateur de l'événement
+                    let calendar;
+                    if (select_calendars.val()) {
+                        calendar = select_calendars.val()
+                    } else {
+                        calendar = array_response['found_older_event_on_calendar'];
+                    }
+
                     // On affiche pas la popup de message si il s'agit uniquement d'importer l'événement sur notre serveur
                     if (button !== 'update_button' && button !== 'update_button_organizer') {
                         display_message_popup($event_template_html, calendar, array_response, used_event, buttons_array[button]);
