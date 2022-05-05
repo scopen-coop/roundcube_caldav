@@ -163,6 +163,9 @@ class roundcube_caldav extends rcube_plugin
 			$save_params['prefs']['server_caldav']['_password'] = $this->rcube->config->get('server_caldav')['_password'];
 		}
 
+		var_dump($this->rcube->config->get('server_caldav')['_password'], $save_params['prefs']['server_caldav']['_password'],$new_password);
+
+
 		$save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $save_params['prefs']['server_caldav']['_password'], $urlbase);
 
 		if ($save_params['prefs']['server_caldav']['_connexion_status'] && $new_password) {
