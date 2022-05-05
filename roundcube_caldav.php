@@ -1044,7 +1044,7 @@ class roundcube_caldav extends rcube_plugin
 
         // on formate l'url sur laquelle on veut déposer notre event
         $url = $url_base . '/' . $calendar_id . '/' . $uid . '.ics';
-
+		var_dump($url);
         // Si href n'est pas nul alors on remplace l'url par href pour récupérer le bon événement
         if ($href != null) {
             $url = $href;
