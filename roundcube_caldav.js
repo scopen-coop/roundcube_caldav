@@ -456,7 +456,6 @@ function post_import_event_server($event_template_html, calendar, array_response
  */
 function display_button_and_send_request_on_clic(select_calendars, array_response, $event_template_html) {
 
-    console.log(select_calendars);
     let buttons_array = {
         'reschedule': 'reschedule',
         'confirm_button': $event_template_html.find('.confirm_button'),
@@ -504,6 +503,7 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
                     } else {
                         calendar = array_response['found_older_event_on_calendar'];
                     }
+                    console.log(select_calendars);
 
                     // On affiche pas la popup de message si il s'agit uniquement d'importer l'événement sur notre serveur
                     if (button !== 'update_button' && button !== 'update_button_organizer') {
