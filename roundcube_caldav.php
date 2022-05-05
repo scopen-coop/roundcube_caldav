@@ -157,14 +157,12 @@ class roundcube_caldav extends rcube_plugin
 		if (!empty($_POST['_define_password'])) {
 			$pwd = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST,true);
 			$save_params['prefs']['server_caldav']['_password'] = $cipher->encrypt($pwd, $this->rcube->config->get('des_key'), true);
-			if ($this->rcube->config->get('server_caldav')['_password'] != $save_params['prefs']['server_caldav']['_password']) {
+			if ($cipher->decrypt($save_params['prefs']['server_caldav']['_password'], $this->rcube->config->get('des_key'), true) != $pwd) {
 				$new_password = true;
 			}
 		} elseif (array_key_exists('_password', $this->rcube->config->get('server_caldav'))) {
 			$save_params['prefs']['server_caldav']['_password'] = $this->rcube->config->get('server_caldav')['_password'];
 		}
-
-
 
 		var_dump($this->rcube->config->get('des_key'),$this->rcube->config->get('server_caldav')['_password'], $save_params['prefs']['server_caldav']['_password'],$new_password);
 
