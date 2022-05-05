@@ -1,5 +1,12 @@
 # RoundCube CalDAV - CalDAV calendar for Roundcube Webmail
 
+Set a remote CalDav server and reply to your seetings invitation directly in Roundcube Mail
+
+![](doc/caldav_screen.png)
+
+![](doc/caldav_setup_screen.png)
+
+
 ## Requirements
 
 RoundCube CalDAV 1.0 requires at least PHP 7.0. Dependencies are managed by composer, if you are interested in a list, see the
@@ -13,5 +20,5 @@ See [INSTALL.md](doc/INSTALL.md) for installation instructions.
 
 ## Documentation
 
-A (hopefully growing) documentation for various topics is found in the [doc](doc/) folder. Currently the following is available:
+A (hopefully growing) documentation for various topics is found in the [doc](doc/) folder.
 

@@ -1,4 +1,24 @@
 {
+    "name": "roundcube/roundcube_caldav",
+    "type": "roundcube-plugin",
+    "description": "Set a remote CalDav server and reply to your meetings invitation directly in Roundcube Mail",
+    "keywords": ["caldav","calendar","owncloud","nextcloud","scopen"],
+    "homepage": "https://www.benjamin-schieder.de/carddav.html",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Noé COURTIER",
+            "email": "noe.coutier@scopen.fr",
+            "homepage": "https://www.scopen.fr/",
+            "role": "Developer"
+        },
+        {
+            "name": "Florian HENRY",
+            "email": "florian.henry@scopen.fr",
+            "homepage": "https://www.scopen.fr/",
+            "role": "Developer"
+        }
+    ],
     "require": {
         "thecsea/simple-caldav-client": "^0.1.14",
         "ext-curl": "*",
@@ -6,5 +26,11 @@
         "ext-json": "*",
         "fortawesome/font-awesome": "^5.15",
         "simshaun/recurr": "^5.0"
-    }
+    },
+    "extra": {
+        "roundcube": {
+            "min-version": "1.4.0"
+        }
+    },
+    "prefer-stable" : true
 }
