@@ -231,6 +231,7 @@ class roundcube_caldav extends rcube_plugin
         $param_list['blocks']['main']['options']['password'] = array(
             'title' => html::label($field_id, rcube::Q($this->gettext('password'))),
             'content' => $password->show(),
+			'autocomplete' => "off"
         );
         return $param_list;
     }
