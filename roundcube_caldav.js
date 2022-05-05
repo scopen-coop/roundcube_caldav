@@ -352,7 +352,7 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
             _chosenTimeEnd: chosenTimeEnd,
             _chosenLocation: chosenLocation,
         }
-
+        console.log(calendar)
         post_import_event_server(
             $event_template_html,
             calendar,
