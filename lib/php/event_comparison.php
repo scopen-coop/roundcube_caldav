@@ -140,18 +140,17 @@ function calculate_duration(string $duration)
     $ladder = ['S' => 1, 'M' => 60, 'H' => 3600, 'D' => 86400, 'W' => 604800];
     $match_array = [];
     $res = preg_match('/P([0-9]*W)?([0-9]*D)?T?([0-9]*H)?([0-9]*M)?([0-9]*S)?/', $duration, $match_array);
-    if ($res) {
-        array_shift($match_array);
-        $duration_in_second = 0;
-        foreach ($match_array as $match) {
-            $scale = [];
-            preg_match('/([0-9]*)([A-Z])/', $match, $scale);
-            $duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
-        }
-        return $duration_in_second;
-    } else {
-        return false;
-    }
+    if (!$res) {
+		return false;
+	}
+	array_shift($match_array);
+	$duration_in_second = 0;
+	foreach ($match_array as $match) {
+		$scale = [];
+		preg_match('/([0-9]*)([A-Z])/', $match, $scale);
+		$duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
+	}
+	return $duration_in_second;
 
 }
 

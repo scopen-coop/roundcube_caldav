@@ -131,18 +131,19 @@ function get_sender_s_partstat(Event $event, array &$response, bool $event_on_se
  */
 function if_no_dtend_add_one_to_event(Event &$event)
 {
-    if (!$event->dtend) {
-        if ($event->duration) {
-            $offset = calculate_duration($event->duration);
-        } else {
-            $offset = 0;
-        }
-        $event->dtend_array = [
-            [],
-            date("Ymd\THis", $event->dtstart_array[2] + $offset),
-            $event->dtstart_array[2] + $offset,
-        ];
+    if ($event->dtend) {
+        return;
     }
+    if ($event->duration) {
+        $offset = calculate_duration($event->duration);
+    } else {
+        $offset = 0;
+    }
+    $event->dtend_array = [
+        [],
+        date("Ymd\THis", $event->dtstart_array[2] + $offset),
+        $event->dtstart_array[2] + $offset,
+    ];
 }
 
 /**
@@ -367,7 +368,6 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
 {
     $attendee_array = [];
     $organizer_array = [];
-
 
     if (!empty($event->attendee_array) || !empty($event->organizer_array) || $event_on_server && (!empty($event_on_server->attendee_array) || !empty($event_on_server->organizer_array))) {
 

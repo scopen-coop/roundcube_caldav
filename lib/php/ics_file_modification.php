@@ -215,46 +215,43 @@ function change_partstat_ics(string $ics, string $status, string $email): string
     }
     foreach ($sections as &$section) {
 
-        if (preg_match('@ATTENDEE@', $section) == 1) {
-            if (preg_match('/' . $email . '/', $section) == 1) {
-                $section = preg_replace('/[\r|\n]+ /', '', $section);
+        if (preg_match('@ATTENDEE@', $section) != 1 || preg_match('/' . $email . '/', $section) != 1) {
+			continue;
+		}
+		$section = preg_replace('/[\r|\n]+ /', '', $section);
 
-                $attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
+		$attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-                $rsvp_field_is_present = false;
-                foreach ($attributes as &$attribute) {
-                    if ($attribute == ';' || $attributes == ':') {
-                        continue;
-                    }
-                    $parts = explode('=', $attribute);
-                    $command = $parts[0];
-                    if (strcmp($command, 'PARTSTAT') == 0) {
-                        $parts[1] = $status;
-                        $attribute = implode('=', $parts);
-                    }
-                    if ($command === 'RSVP') {
-                        if ($status === 'DECLINED') {
-                            $parts[1] = 'FALSE';
-                        } else {
-                            $parts[1] = 'TRUE';
-                        }
-                        $rsvp_field_is_present = true;
-                        $attribute = implode('=', $parts);
-                    }
+		$rsvp_field_is_present = false;
+		foreach ($attributes as &$attribute) {
+			if ($attribute == ';' || $attributes == ':') {
+				continue;
+			}
+			$parts = explode('=', $attribute);
+			$command = $parts[0];
+			if (strcmp($command, 'PARTSTAT') == 0) {
+				$parts[1] = $status;
+				$attribute = implode('=', $parts);
+			}
+			if ($command === 'RSVP') {
+				if ($status === 'DECLINED') {
+					$parts[1] = 'FALSE';
+				} else {
+					$parts[1] = 'TRUE';
+				}
+				$rsvp_field_is_present = true;
+				$attribute = implode('=', $parts);
+			}
 
-                }
-                $section = implode('', $attributes);
+		}
+		$section = implode('', $attributes);
 
-                if (!$rsvp_field_is_present && $status == 'DECLINED') {
-                    $section = preg_replace('@:mailto:@', ';RSVP=FALSE:mailto:', $section);
-                }
+		if (!$rsvp_field_is_present && $status == 'DECLINED') {
+			$section = preg_replace('@:mailto:@', ';RSVP=FALSE:mailto:', $section);
+		}
 
-                $section = implode("\n ", str_split($section, 74));
-            }
-            print_r($section, "\n\n");
-        }
-
-    }
+		$section = implode("\n ", str_split($section, 74));
+	}
     return implode("\n", $sections);
 }
 
@@ -331,7 +328,6 @@ function delete_status_section_ics(string $ics): string
 function change_last_modified_ics(string $ics): string
 {
     $new_date = gmdate("Ymd\THis\Z");
-
     return preg_replace("@LAST-MODIFIED:.*@", "LAST-MODIFIED:" . $new_date, $ics);
 }
 
@@ -415,32 +411,29 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
     $sections = preg_split('@(\n(?! ))@m', $ics);
 
     foreach ($sections as &$section) {
-
-        if (preg_match('@ATTENDEE@', $section) == 1) {
-
-            $section = preg_replace("/[\r|\n]+ /", '', $section);
-            $attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
-
-            foreach ($attributes as &$attribute) {
-                if ($attribute == ';' || $attributes == ':') {
-                    continue;
-                }
-                $parts = explode('=', $attribute);
-                $command = $parts[0];
-                if (strcmp($command, 'PARTSTAT') == 0) {
-                    $parts[1] = 'NEEDS_ACTION';
-                    $attribute = implode('=', $parts);
-                } elseif (strcmp($command, 'RSVP') == 0) {
-                    $parts[1] = 'TRUE';
-                    $attribute = implode('=', $parts);
-                }
-
-            }
-            $section = implode("\r\n ", str_split(implode('', $attributes), 74));
-
+        if (preg_match('@ATTENDEE@', $section) != 1) {
+			continue;
         }
-    }
+		$section = preg_replace("/[\r|\n]+ /", '', $section);
+		$attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
 
+		foreach ($attributes as &$attribute) {
+			if ($attribute == ';' || $attributes == ':') {
+				continue;
+			}
+			$parts = explode('=', $attribute);
+			$command = $parts[0];
+			if (strcmp($command, 'PARTSTAT') == 0) {
+				$parts[1] = 'NEEDS_ACTION';
+				$attribute = implode('=', $parts);
+			} elseif (strcmp($command, 'RSVP') == 0) {
+				$parts[1] = 'TRUE';
+				$attribute = implode('=', $parts);
+			}
+		}
+		$section = implode("\r\n ", str_split(implode('', $attributes), 74));
+
+	}
     return implode("\r\n", $sections);
 }
 
