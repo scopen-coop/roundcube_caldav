@@ -456,6 +456,7 @@ function post_import_event_server($event_template_html, calendar, array_response
  */
 function display_button_and_send_request_on_clic(select_calendars, array_response, $event_template_html) {
 
+    console.log(select_calendars);
     let buttons_array = {
         'reschedule': 'reschedule',
         'confirm_button': $event_template_html.find('.confirm_button'),
