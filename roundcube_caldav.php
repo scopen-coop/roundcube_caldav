@@ -144,6 +144,8 @@ class roundcube_caldav extends rcube_plugin
 			return $save_params;
 		}
 
+		var_dump($this->rcube->config->get('server_caldav')['_password']);
+
 		// On récupère l'url et le login dans les champs (ils sont remplis par défault avec l'ancienne valeur)
 		$urlbase = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
 		$save_params['prefs']['server_caldav']['_url_base'] = $urlbase;
@@ -154,8 +156,7 @@ class roundcube_caldav extends rcube_plugin
 		$new_password = false;
 		if (!empty($_POST['_define_password'])) {
 			$pwd = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST,true);
-			$ciphered_password = $cipher->encrypt($pwd, $this->rcube->config->get('des_key'), true);
-			$save_params['prefs']['server_caldav']['_password'] = $ciphered_password;
+			$save_params['prefs']['server_caldav']['_password'] = $cipher->encrypt($pwd, $this->rcube->config->get('des_key'), true);
 			if ($this->rcube->config->get('server_caldav')['_password'] != $save_params['prefs']['server_caldav']['_password']) {
 				$new_password = true;
 			}
@@ -163,7 +164,9 @@ class roundcube_caldav extends rcube_plugin
 			$save_params['prefs']['server_caldav']['_password'] = $this->rcube->config->get('server_caldav')['_password'];
 		}
 
-		var_dump($this->rcube->config->get('server_caldav')['_password'], $save_params['prefs']['server_caldav']['_password'],$new_password);
+
+
+		var_dump($this->rcube->config->get('des_key'),$this->rcube->config->get('server_caldav')['_password'], $save_params['prefs']['server_caldav']['_password'],$new_password);
 
 
 		$save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $save_params['prefs']['server_caldav']['_password'], $urlbase);
