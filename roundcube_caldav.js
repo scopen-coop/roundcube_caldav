@@ -503,7 +503,6 @@ function display_button_and_send_request_on_clic(select_calendars, array_respons
                     } else {
                         calendar = array_response['found_older_event_on_calendar'];
                     }
-                    console.log(calendar);
 
                     // On affiche pas la popup de message si il s'agit uniquement d'importer l'événement sur notre serveur
                     if (button !== 'update_button' && button !== 'update_button_organizer') {
