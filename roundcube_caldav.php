@@ -1175,9 +1175,7 @@ class roundcube_caldav extends rcube_plugin
             $this->rcmail->output->command('display_message', $this->gettext('successfully_saved'), 'confirmation');
             return true;
         } else {
-            $message = $res === false ? '' : $res;
-
-            $this->rcmail->output->command('display_message', $this->gettext('something_happened') . $ics, 'error');
+            $this->rcmail->output->command('display_message', $this->gettext('something_happened') . $res, 'error');
             return false;
         }
     }
