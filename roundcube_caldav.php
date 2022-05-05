@@ -146,7 +146,8 @@ class roundcube_caldav extends rcube_plugin
                 // Si le mot de passe est spécifié on le change et on teste la connexion sinon on récupère l'ancien
                 $new_password = false;
                 if (!empty($_POST['_define_password'])) {
-                    $ciphered_password = $cipher->encrypt(rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST), $this->rcube->config->get('des_key'), true);
+                	$pwd = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST,true);
+                    $ciphered_password = $cipher->encrypt($pwd, $this->rcube->config->get('des_key'), true);
                     $save_params['prefs']['server_caldav']['_password'] = $ciphered_password;
                     $new_password = true;
 
