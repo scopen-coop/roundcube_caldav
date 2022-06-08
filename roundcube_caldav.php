@@ -163,7 +163,15 @@ class roundcube_caldav extends rcube_plugin
 			$save_params['prefs']['server_caldav']['_password'] = $this->rcube->config->get('server_caldav')['_password'];
 		}
 
-		$save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $save_params['prefs']['server_caldav']['_password'], $urlbase);
+		try {
+			$save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $save_params['prefs']['server_caldav']['_password'], $urlbase);
+		} catch (Exception $e) {
+			$this->rcmail->output->command('display_message', $this->gettext('save_error_msg') . "\n" . $e->getMessage(), 'error');
+			$save_params['abort'] = true;
+			$save_params['result'] = false;
+			return $save_params;
+		}
+
 
 		if ($save_params['prefs']['server_caldav']['_connexion_status'] && $new_password) {
 			return $save_params;
@@ -400,11 +408,7 @@ class roundcube_caldav extends rcube_plugin
             //  Connexion au serveur calDAV et récupération des calendriers dispos
             $this->client = new SimpleCalDAVClient();
 
-            try {
-                $this->client->connect($_url_base, $_login, $plain_password);
-            } catch (Exception $e) {
-                return false;
-            }
+            $this->client->connect($_url_base, $_login, $plain_password);
             return true;
         }
         return false;
