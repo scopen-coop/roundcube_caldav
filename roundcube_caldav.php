@@ -119,7 +119,6 @@ class roundcube_caldav extends rcube_plugin
         $server = $this->rcube->config->get('server_caldav');
         if (!empty($server['_url_base']) && !empty($server['_login']) && !empty($server['_password']) && $server['_connexion_status']) {
             $param_list = $this->calendar_selection_form($param_list);
-
         }
         return $param_list;
     }
@@ -254,59 +253,61 @@ class roundcube_caldav extends rcube_plugin
     function calendar_selection_form(array $param_list): array
     {
 
-        try {
-            // Connexion to caldav server
-            $server = $this->rcube->config->get('server_caldav');
-            $_login = $server['_login'];
-            $_password = $server['_password'];
-            $_url_base = $server['_url_base'];
+		// Connexion to caldav server
+		$server = $this->rcube->config->get('server_caldav');
+		$_login = $server['_login'];
+		$_password = $server['_password'];
+		$_url_base = $server['_url_base'];
 
-
-            $success = $this->try_connection($_login, $_password, $_url_base); //0.86
-
-            if (!$success) {
-				$this->rcmail->output->command('display_message', $this->gettext('connect_error_msg'), 'error');
-			}
-
-			$param_list['blocks']['main']['options']['calendar_choice'] = array(
-				'title' => html::label('ojk', rcube::Q($this->gettext('calendar_choice'))),
-			);
-			$available_calendars = $this->client->findCalendars();
-			if(empty($available_calendars)){
-				return $param_list;
-			}
-			foreach ($available_calendars as $available_calendar) {
-				$print = null;
-				if ($server['_main_calendar'] == $available_calendar->getCalendarID()) {
-					$print = $available_calendar->getCalendarID();
-				}
-				if (!empty($server['_used_calendars'])){
-					foreach ($server['_used_calendars'] as $used_calendar) {
-						if ($used_calendar == $available_calendar->getCalendarID()) {
-							$print = $available_calendar->getCalendarID();
-							break;
-						}
-					}
-				}
-
-				$checkbox = new html_checkbox(array('name' => '_define_used_calendars[]', 'value' => $available_calendar->getCalendarID()));
-				$radiobutton = new html_radiobutton(array('name' => '_define_main_calendar', 'value' => $available_calendar->getCalendarID()));
-
-				$param_list['blocks']['main']['options'][$available_calendar->getCalendarID() . 'radiobutton'] = array(
-					'title' => html::label($available_calendar->getCalendarID(), $this->gettext("use_this_calendar") . $available_calendar->getDisplayName()),
-					'content' => $checkbox->show($print)
-				);
-
-
-				$param_list['blocks']['main']['options'][$available_calendar->getCalendarID() . 'checkbox'] = array(
-					'title' => html::label($available_calendar->getCalendarID(), $this->gettext("make_this_calendar_default1") . $available_calendar->getDisplayName() . $this->gettext("make_this_calendar_default2")),
-					'content' => $radiobutton->show($server['_main_calendar']),
-				);
-			}
+		try {
+			$success = $this->try_connection($_login, $_password, $_url_base);
 		} catch (Exception $e) {
 			$this->rcmail->output->command('display_message', $this->gettext('connect_error_msg'). "\n" .$e->getMessage(), 'error');
+			return $param_list;
 		}
 
+		if (!$success) {
+			$this->rcmail->output->command('display_message', $this->gettext('connect_error_msg'), 'error');
+			return $param_list;
+		}
+		try {
+			$available_calendars = $this->client->findCalendars();
+		} catch (Exception $e) {
+			$this->rcmail->output->command('display_message', $this->gettext('find_calendar_error'), 'error');
+			return $param_list;
+		}
+		if(empty($available_calendars)){
+			return $param_list;
+		}
+		$param_list['blocks']['main']['options']['calendar_choice'] = array(
+			'title' => html::label('ojk', rcube::Q($this->gettext('calendar_choice'))),
+		);
+		foreach ($available_calendars as $available_calendar) {
+			$print = null;
+			if ($server['_main_calendar'] == $available_calendar->getCalendarID()) {
+				$print = $available_calendar->getCalendarID();
+			}
+			if (!empty($server['_used_calendars'])){
+				foreach ($server['_used_calendars'] as $used_calendar) {
+					if ($used_calendar == $available_calendar->getCalendarID()) {
+						$print = $available_calendar->getCalendarID();
+						break;
+					}
+				}
+			}
+
+			$checkbox = new html_checkbox(array('name' => '_define_used_calendars[]', 'value' => $available_calendar->getCalendarID()));
+			$radiobutton = new html_radiobutton(array('name' => '_define_main_calendar', 'value' => $available_calendar->getCalendarID()));
+
+			$param_list['blocks']['main']['options'][$available_calendar->getCalendarID() . 'radiobutton'] = array(
+				'title' => html::label($available_calendar->getCalendarID(), $this->gettext("use_this_calendar") . $available_calendar->getDisplayName()),
+				'content' => $checkbox->show($print)
+			);
+			$param_list['blocks']['main']['options'][$available_calendar->getCalendarID() . 'checkbox'] = array(
+				'title' => html::label($available_calendar->getCalendarID(), $this->gettext("make_this_calendar_default1") . $available_calendar->getDisplayName() . $this->gettext("make_this_calendar_default2")),
+				'content' => $radiobutton->show($server['_main_calendar']),
+			);
+		}
         return $param_list;
     }
 

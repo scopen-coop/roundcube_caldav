@@ -23,6 +23,7 @@ $labels['main_calendar'] = 'Veuillez indiquer votre calendrier par default';
 $labels['calendar_choice'] = 'Attention : si vous modifiez votre url / login / mot de passe vos préférences seront oubliées. \n
  Veuillez choisir votre calendrier par default  ainsi que les calendriers que vous serez amené à utilisé ';
 $labels['connect_error_msg'] = 'La connection avec votre server CalDAV à échouée';
+$labels['find_calendar_error'] = 'La récupération des calendriers disponibles a provoqué une erreur';
 $labels['something_happened_while_sending_information_to_client'] = "Quelque chose ne s'est pas bien passé lors de l'envoi des informations à afficher ";
 $labels['ErrorEmptyArrayOfCalendar'] = "Vous n'avez aucun calendrier sélectionné";
 $labels['invitation'] = 'Vous avez reçu une invitation :';
