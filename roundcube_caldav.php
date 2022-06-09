@@ -277,6 +277,7 @@ class roundcube_caldav extends rcube_plugin
 			return $param_list;
 		}
 		if(empty($available_calendars)){
+			$this->rcmail->output->command('display_message', $this->gettext('no_calendar_found'), 'error');
 			return $param_list;
 		}
 		$param_list['blocks']['main']['options']['calendar_choice'] = array(

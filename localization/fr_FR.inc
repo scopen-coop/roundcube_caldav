@@ -12,7 +12,6 @@
  * +-----------------------------------------------------------------------+
  */
 
-
 $labels = array();
 $labels['server_caldav'] = 'Configuration serveur CalDAV';
 $labels['url_base'] = "Indiquez l'url de votre serveur calDAV sous la forme : \n https://my_caldav_server/remote.php/calendars/my_name";
@@ -35,9 +34,9 @@ $labels['next_meeting'] = 'Rendez vous suivant: ';
 $labels['all_day'] = 'Toute la journée';
 $labels['successfully_saved'] = 'Cet événement à été ajouté à votre agenda';
 $labels['successfully_sent'] = "Le mail contenant vos modifications a bien été envoyé";
-$labels['no_participant_to_answer'] = "Aucun mail n'a été envoyé car les participants ne souhaitent pas recevoir de réponse";
 $labels['something_happened'] = "L'enregistrement de cet événement ne s'est pas passé comme prévu";
 $labels['something_happened_when_sending'] = "L'envoi d'un mail de modifications a échoué";
+$labels['no_participant_to_answer'] = "Aucun mail n'a été envoyé car les participants ne souhaitent pas recevoir de réponse";
 $labels['confirm'] = 'Confirmer';
 $labels['tentative'] = 'Confirmer Provisoirement';
 $labels['decline'] = "Décliner l'invitation";
@@ -57,6 +56,7 @@ $labels['make_this_calendar_default1'] = "Sélectionner le calendrier ";
 $labels['make_this_calendar_default2'] = " par défaut";
 $labels['reschedule_meeting']= "Reprogrammer cet événement";
 $labels['ask_for_reschedule'] = "Demander une reprogrammation";
+$labels['ask_rescheduled_msg'] = 'Vous avez demandé à reprogrammer cet événement :';
 $labels['cancel'] = "Annuler";
 $labels['new_date_start'] = 'Nouvelle date de début pour cet événement';
 $labels['new_time_start'] = 'Horaire du début';
@@ -64,7 +64,6 @@ $labels['new_time_end'] = 'Horaire de fin';
 $labels['new_date_end'] = 'Nouvelle date de fin pour cet événement';
 $labels['new_location'] = 'Choisir un nouveau lieu pour cet événement';
 $labels['if_rescheduled_msg'] = 'Vous avez reprogrammé cet événement :';
-$labels['ask_rescheduled_msg'] = 'Vous avez demandé à reprogrammer cet événement :';
 $labels['error_date_inf'] = 'Attention vous ne pouvez pas mettre une date de fin supérieure à la date de début';
 $labels['error_incomplete_field'] = "Attention vous n'avez pas remplis les champs nécessaires (soit le champs lieu soit tous les champs date) ";
 $labels['modified_event']= "<b>Attention !</b> l'événement affiché n'est pas celui que vous avez reçu, il s'agit d'une version plus récente trouvée sur le calendrier ";
@@ -115,6 +114,7 @@ $labels['saving_and_sending'] = "Enregistrement de vos modifications et envoi de
 $labels['main_calendar_error'] = "Vous devez selectionner un calendrier par défault";
 $labels['no_title'] = "Un événement sans titre";
 $labels['main_calendar_not_exist'] = "Le calendrier choisis comme principal n'existe pas ou plus sur votre serveur";
+$labels['no_calendar_found'] = "Aucun Calendrier n'est disponible sur votre server";
 
 
 ?>
