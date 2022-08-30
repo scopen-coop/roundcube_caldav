@@ -69,20 +69,22 @@ class roundcube_caldav extends rcube_plugin
         $this->include_stylesheet('vendor/fortawesome/font-awesome/css/all.css');
 
         $server = $this->rcube->config->get('server_caldav');
-        $_connexion = $server['_connexion_status'];
+		if (is_array($server) && array_key_exists('_connexion_status', $server)) {
+			$_connexion = $server['_connexion_status'];
 
 
-        $this->add_hook('preferences_sections_list', array($this, 'preference_sections_list'));
-        $this->add_hook('preferences_list', array($this, 'preferences_list'));
-        $this->add_hook('preferences_save', array($this, 'preferences_save'));
+			$this->add_hook('preferences_sections_list', array($this, 'preference_sections_list'));
+			$this->add_hook('preferences_list', array($this, 'preferences_list'));
+			$this->add_hook('preferences_save', array($this, 'preferences_save'));
 
 
-        if ($_connexion && $server['_main_calendar'] != null) {
-            $this->add_hook('message_objects', array($this, 'message_objects'));
-            $this->register_action('plugin.roundcube_caldav_get_info_server', array($this, 'get_info_server'));
-            $this->register_action('plugin.roundcube_caldav_import_event_on_server', array($this, 'import_event_on_server'));
-            $this->register_action('plugin.roundcube_caldav_decline_counter', array($this, 'decline_counter'));
-        }
+			if ($_connexion && $server['_main_calendar'] != null) {
+				$this->add_hook('message_objects', array($this, 'message_objects'));
+				$this->register_action('plugin.roundcube_caldav_get_info_server', array($this, 'get_info_server'));
+				$this->register_action('plugin.roundcube_caldav_import_event_on_server', array($this, 'import_event_on_server'));
+				$this->register_action('plugin.roundcube_caldav_decline_counter', array($this, 'decline_counter'));
+			}
+		}
 
     }
 
@@ -150,16 +152,20 @@ class roundcube_caldav extends rcube_plugin
 		$login = rcube_utils::get_input_value('_define_login', rcube_utils::INPUT_POST);
 		$save_params['prefs']['server_caldav']['_login'] = $login;
 
+        $server = $this->rcube->config->get('server_caldav');
+
 		// Si le mot de passe est spécifié on le change et on teste la connexion sinon on récupère l'ancien
 		$new_password = false;
 		if (!empty($_POST['_define_password'])) {
 			$pwd = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST,true);
 			$save_params['prefs']['server_caldav']['_password'] = $cipher->encrypt($pwd, $this->rcube->config->get('des_key'), true);
-			if ($cipher->decrypt($this->rcube->config->get('server_caldav')['_password'], $this->rcube->config->get('des_key'), true) != $pwd) {
+			if (is_array($server)
+                && array_key_exists('_password', $server)
+                && $cipher->decrypt($server['_password'], $this->rcube->config->get('des_key'), true) != $pwd) {
 				$new_password = true;
 			}
-		} elseif (array_key_exists('_password', $this->rcube->config->get('server_caldav'))) {
-			$save_params['prefs']['server_caldav']['_password'] = $this->rcube->config->get('server_caldav')['_password'];
+		} elseif (array_key_exists('_password', $server)) {
+			$save_params['prefs']['server_caldav']['_password'] = $server['_password'];
 		}
 
 		try {
@@ -218,12 +224,22 @@ class roundcube_caldav extends rcube_plugin
     {
         $server = $this->rcube->config->get('server_caldav');
 
+        $_url_base_server='';
+        $_login_server='';
+
+        if (is_array($server) && array_key_exists('_url_base',$server)) {
+            $_url_base_server=$server['_url_base'];
+        }
+        if (is_array($server) && array_key_exists('_login',$server)) {
+            $_login_server=$server['_login'];
+        }
+
         // Champs pour specifier l'url du serveur
         $field_id = 'define_server_caldav';
         $url_base = new html_inputfield(array('name' => '_' . $field_id, 'id' => $field_id));
         $param_list['blocks']['main']['options']['url_base'] = array(
             'title' => html::label($field_id, rcube::Q($this->gettext('url_base'))),
-            'content' => $url_base->show($server['_url_base']),
+            'content' => $url_base->show($_url_base_server),
         );
 
         // Champs pour specifier le login
@@ -231,7 +247,7 @@ class roundcube_caldav extends rcube_plugin
         $login = new html_inputfield(array('name' => '_' . $field_id, 'id' => $field_id));
         $param_list['blocks']['main']['options']['login'] = array(
             'title' => html::label($field_id, rcube::Q($this->gettext('login'))),
-            'content' => $login->show($server['_login']),
+            'content' => $login->show($_login_server),
         );
 
         // Champs pour specifier le mot de passe
@@ -831,7 +847,7 @@ class roundcube_caldav extends rcube_plugin
         }else {
             $_main_calendar = $server['_main_calendar'];
         }
-        
+
         // On récupère la time_zone qui va nous servir plus tard dans la fonction
         $this->time_zone_offset = $ical->iCalDateToDateTime($current_event->dtstart_array[1])->getOffset();
         date_default_timezone_set($this->time_zone_offset);
