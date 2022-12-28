@@ -68,23 +68,22 @@ class roundcube_caldav extends rcube_plugin
         $this->include_script('vendor/fortawesome/font-awesome/js/all.js');
         $this->include_stylesheet('vendor/fortawesome/font-awesome/css/all.css');
 
+	$this->add_hook('preferences_sections_list', array($this, 'preference_sections_list'));
+	$this->add_hook('preferences_list', array($this, 'preferences_list'));
+	$this->add_hook('preferences_save', array($this, 'preferences_save'));
+
+	    
         $server = $this->rcube->config->get('server_caldav');
-		if (is_array($server) && array_key_exists('_connexion_status', $server)) {
-			$_connexion = $server['_connexion_status'];
+	if (is_array($server) && array_key_exists('_connexion_status', $server)) {
+		$_connexion = $server['_connexion_status'];
 
-
-			$this->add_hook('preferences_sections_list', array($this, 'preference_sections_list'));
-			$this->add_hook('preferences_list', array($this, 'preferences_list'));
-			$this->add_hook('preferences_save', array($this, 'preferences_save'));
-
-
-			if ($_connexion && $server['_main_calendar'] != null) {
-				$this->add_hook('message_objects', array($this, 'message_objects'));
-				$this->register_action('plugin.roundcube_caldav_get_info_server', array($this, 'get_info_server'));
-				$this->register_action('plugin.roundcube_caldav_import_event_on_server', array($this, 'import_event_on_server'));
-				$this->register_action('plugin.roundcube_caldav_decline_counter', array($this, 'decline_counter'));
-			}
+		if ($_connexion && $server['_main_calendar'] != null) {
+			$this->add_hook('message_objects', array($this, 'message_objects'));
+			$this->register_action('plugin.roundcube_caldav_get_info_server', array($this, 'get_info_server'));
+			$this->register_action('plugin.roundcube_caldav_import_event_on_server', array($this, 'import_event_on_server'));
+			$this->register_action('plugin.roundcube_caldav_decline_counter', array($this, 'decline_counter'));
 		}
+	}
 
     }
 
