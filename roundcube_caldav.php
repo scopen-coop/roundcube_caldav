@@ -68,23 +68,25 @@ class roundcube_caldav extends rcube_plugin
         $this->include_script('vendor/fortawesome/font-awesome/js/all.js');
         $this->include_stylesheet('vendor/fortawesome/font-awesome/css/all.css');
 
-	$this->add_hook('preferences_sections_list', array($this, 'preference_sections_list'));
-	$this->add_hook('preferences_list', array($this, 'preferences_list'));
-	$this->add_hook('preferences_save', array($this, 'preferences_save'));
+        $this->add_hook('preferences_sections_list', [$this, 'preference_sections_list']);
+        $this->add_hook('preferences_list', [$this, 'preferences_list']);
+        $this->add_hook('preferences_save', [$this, 'preferences_save']);
 
-	    
+
         $server = $this->rcube->config->get('server_caldav');
-	if (is_array($server) && array_key_exists('_connexion_status', $server)) {
-		$_connexion = $server['_connexion_status'];
+        if (is_array($server) && array_key_exists('_connexion_status', $server)) {
+            $_connexion = $server['_connexion_status'];
 
-		if ($_connexion && $server['_main_calendar'] != null) {
-			$this->add_hook('message_objects', array($this, 'message_objects'));
-			$this->register_action('plugin.roundcube_caldav_get_info_server', array($this, 'get_info_server'));
-			$this->register_action('plugin.roundcube_caldav_import_event_on_server', array($this, 'import_event_on_server'));
-			$this->register_action('plugin.roundcube_caldav_decline_counter', array($this, 'decline_counter'));
-		}
-	}
-
+            if ($_connexion && $server['_main_calendar'] != null) {
+                $this->add_hook('message_objects', [$this, 'message_objects']);
+                $this->register_action('plugin.roundcube_caldav_get_info_server', [$this, 'get_info_server']);
+                $this->register_action(
+                    'plugin.roundcube_caldav_import_event_on_server',
+                    [$this, 'import_event_on_server']
+                );
+                $this->register_action('plugin.roundcube_caldav_decline_counter', [$this, 'decline_counter']);
+            }
+        }
     }
 
 
@@ -135,82 +137,82 @@ class roundcube_caldav extends rcube_plugin
     {
         $cipher = new password_encryption();
         if ($save_params['section'] != 'server_caldav') {
-        	return $save_params;
+            return $save_params;
         }
-		if (empty($_POST['_define_server_caldav']) || empty($_POST['_define_login'])) {
-			$this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
-			$save_params['abort'] = true;
-			$save_params['result'] = false;
-			return $save_params;
-		}
 
-		// On récupère l'url et le login dans les champs (ils sont remplis par défault avec l'ancienne valeur)
-		$urlbase = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
-		$urlbase = preg_replace('/(.*)personal\/*$/','$1',$urlbase);
-		$save_params['prefs']['server_caldav']['_url_base'] = $urlbase;
-		$login = rcube_utils::get_input_value('_define_login', rcube_utils::INPUT_POST);
-		$save_params['prefs']['server_caldav']['_login'] = $login;
+        if (empty($_POST['_define_server_caldav']) || empty($_POST['_define_login'])) {
+            $this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
+            $save_params['abort'] = true;
+            $save_params['result'] = false;
+            return $save_params;
+        }
+
+        // On récupère l'url et le login dans les champs (ils sont remplis par défault avec l'ancienne valeur)
+        $urlbase = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
+        $urlbase = preg_replace('/(.*)personal\/*$/','$1',$urlbase);
+        $save_params['prefs']['server_caldav']['_url_base'] = $urlbase;
+        $login = rcube_utils::get_input_value('_define_login', rcube_utils::INPUT_POST);
+        $save_params['prefs']['server_caldav']['_login'] = $login;
 
         $server = $this->rcube->config->get('server_caldav');
 
-		// Si le mot de passe est spécifié on le change et on teste la connexion sinon on récupère l'ancien
-		$new_password = false;
-		if (!empty($_POST['_define_password'])) {
-			$pwd = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST,true);
-			$save_params['prefs']['server_caldav']['_password'] = $cipher->encrypt($pwd, $this->rcube->config->get('des_key'), true);
-			if (is_array($server)
-                && array_key_exists('_password', $server)
-                && $cipher->decrypt($server['_password'], $this->rcube->config->get('des_key'), true) != $pwd) {
-				$new_password = true;
-			}
-		} elseif (array_key_exists('_password', $server)) {
-			$save_params['prefs']['server_caldav']['_password'] = $server['_password'];
-		}
+        // Si le mot de passe est spécifié on le change et on teste la connexion sinon on récupère l'ancien
+        $new_password = false;
+        if (!empty($_POST['_define_password'])) {
+            $pwd = rcube_utils::get_input_value('_define_password', rcube_utils::INPUT_POST,true);
+            $save_params['prefs']['server_caldav']['_password'] = $cipher->encrypt($pwd, $this->rcube->config->get('des_key'), true);
+            if (
+                $cipher->decrypt($server['_password'], $this->rcube->config->get('des_key'), true) != $pwd
+            ) {
+                $new_password = true;
+            }
+        } elseif (array_key_exists('_password', $server)) {
+            $save_params['prefs']['server_caldav']['_password'] = $server['_password'];
+        }
 
-		try {
-			$save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $save_params['prefs']['server_caldav']['_password'], $urlbase);
-		} catch (Exception $e) {
-			$this->rcmail->output->command('display_message', $this->gettext('save_error_msg') . "\n" . $e->getMessage(), 'error');
-			$save_params['abort'] = true;
-			$save_params['result'] = false;
-			return $save_params;
-		}
+        try {
+            $save_params['prefs']['server_caldav']['_connexion_status'] = $this->try_connection($login, $save_params['prefs']['server_caldav']['_password'], $urlbase);
+        } catch (Exception $e) {
+            $this->rcmail->output->command('display_message', $this->gettext('save_error_msg') . "\n" . $e->getMessage(), 'error');
+            $save_params['abort'] = true;
+            $save_params['result'] = false;
+            return $save_params;
+        }
 
+        if ($save_params['prefs']['server_caldav']['_connexion_status'] && $new_password) {
+            return $save_params;
+        } elseif (!$save_params['prefs']['server_caldav']['_connexion_status']) {
+            $this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
+            $save_params['abort'] = true;
+            $save_params['result'] = false;
+            return $save_params;
+        }
 
-		if ($save_params['prefs']['server_caldav']['_connexion_status'] && $new_password) {
-			return $save_params;
-		} elseif (!$save_params['prefs']['server_caldav']['_connexion_status']) {
-			$this->rcmail->output->command('display_message', $this->gettext('save_error_msg'), 'error');
-			$save_params['abort'] = true;
-			$save_params['result'] = false;
-			return $save_params;
-		}
+        if (!isset($_POST['_define_main_calendar'])) {
+            $this->rcmail->output->command('display_message', $this->gettext('main_calendar_error'), 'error');
+            $save_params['abort'] = true;
+            $save_params['result'] = false;
+            return $save_params;
+        }
 
-		if (!isset($_POST['_define_main_calendar'])) {
-			$this->rcmail->output->command('display_message', $this->gettext('main_calendar_error'), 'error');
-			$save_params['abort'] = true;
-			$save_params['result'] = false;
-			return $save_params;
-		}
+        // on récupère le calendrier principal que l'on ajoute également à la liste des calendriers utilisés
+        // si aucun calendrier principal n'est selectionné on annule la sauvegarde
+        $main_calendar = rcube_utils::get_input_value('_define_main_calendar', rcube_utils::INPUT_POST);
 
-		// on récupère le calendrier principal que l'on ajoute également à la liste des calendriers utilisés
-		// si aucun calendrier principal n'est selectionné on annule la sauvegarde
-		$main_calendar = rcube_utils::get_input_value('_define_main_calendar', rcube_utils::INPUT_POST);
+        if ($main_calendar) {
+            $save_params['prefs']['server_caldav']['_main_calendar'] = $main_calendar;
+            $save_params['prefs']['server_caldav']['_used_calendars'][$main_calendar] = $main_calendar;
+        }
 
-		if ($main_calendar) {
-			$save_params['prefs']['server_caldav']['_main_calendar'] = $main_calendar;
-			$save_params['prefs']['server_caldav']['_used_calendars'][$main_calendar] = $main_calendar;
-		}
+        // On sauvegarde la liste des calendriers secondaires
+        $chosen_calendars = array(rcube_utils::get_input_value('_define_used_calendars', rcube_utils::INPUT_POST));
+        if(!empty($chosen_calendars[0])){
+            foreach ($chosen_calendars[0] as $cal) {
+                $save_params['prefs']['server_caldav']['_used_calendars'][$cal] = $cal;
+            }
+        }
 
-		// On sauvegarde la liste des calendriers secondaires
-		$chosen_calendars = array(rcube_utils::get_input_value('_define_used_calendars', rcube_utils::INPUT_POST));
-		if(!empty($chosen_calendars[0])){
-			foreach ($chosen_calendars[0] as $cal) {
-				$save_params['prefs']['server_caldav']['_used_calendars'][$cal] = $cal;
-			}
-		}
-
-		return $save_params;
+        return $save_params;
     }
 
 
