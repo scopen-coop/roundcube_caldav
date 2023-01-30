@@ -98,8 +98,10 @@ function undirect_rendering(response) {
  * @param response
  */
 function display_after_response(response) {
-    $('#' + response.uid).show();
-    $('#saving_and_sending').hide()
+    // Using Jquery id selector (#) can cause probleme if uid contain characters 
+    // like '@' (like google invitation)
+    $(document.getElementById(response.uid)).show();
+    $('#saving_and_sending').hide();
 }
 
 /**
@@ -275,15 +277,22 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
             $div_to_add.prepend('<p class="if_rescheduled_msg"><b>' + rcmail.gettext("ask_rescheduled_msg", 'roundcube_caldav') + '</b></p>');
         }
     }
-
-    if ($date_start.val() !== array_response['date_start'] || $date_end.val() !== array_response['date_end']
-        || $time_start.val() !== array_response['date_hours_start'] || $time_end.val() !== array_response['date_hours_end']) {
-
-
-        let chosenDateStart = $date_start.val();
-        let chosenDateEnd = $date_end.val();
-        let chosenTimeStart = $time_start.val();
-        let chosenTimeEnd = $time_end.val();
+    
+    let chosenDateStart = array_response['date_start']; 
+    let chosenDateEnd = array_response['date_end'];
+    let chosenTimeStart = array_response['date_hours_start'];
+    let chosenTimeEnd = array_response['date_hours_end'];
+    
+    if (
+        $date_start.val() !== array_response['date_start'] 
+        || $date_end.val() !== array_response['date_end']
+        || $time_start.val() !== array_response['date_hours_start']
+        || $time_end.val() !== array_response['date_hours_end']
+    ) {
+        chosenDateStart = $date_start.val();
+        chosenDateEnd = $date_end.val();
+        chosenTimeStart = $time_start.val();
+        chosenTimeEnd = $time_end.val();
 
         let datestr = new Date(chosenDateStart + ' ' + chosenTimeStart).getTime();
         let dateend = new Date(chosenDateEnd + ' ' + chosenTimeEnd).getTime();
@@ -341,8 +350,9 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
     decline.html(rcmail.gettext('decline', 'roundcube_caldav'));
 
     let calendar = array_response['found_older_event_on_calendar'] ? array_response['found_older_event_on_calendar'] : null;
+    
     if ((!calendar && select.val()) || !isOrganizer) {
-        calendar = select.val()
+        calendar = select.val();
     }
 
     let modification = {
@@ -350,8 +360,9 @@ function change_date_location_out(rescheduledPopup, $event_template_html, $div_t
         _chosenDateEnd: chosenDateEnd,
         _chosenTimeStart: chosenTimeStart,
         _chosenTimeEnd: chosenTimeEnd,
-        _chosenLocation: chosenLocation,
-    }
+        _chosenLocation: chosenLocation
+    };
+    
     post_import_event_server(
         $event_template_html,
         calendar,
