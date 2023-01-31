@@ -1,4 +1,5 @@
 <?php
+
 /**
  *
  * Rouncube calDAV handling plugin
@@ -41,6 +42,7 @@ function extract_event_ics(string $ics, string $uid): string
     foreach ($array_event[1] as $event) {
         $uid_match = array();
         preg_match("@^UID:(.*?)[\r|\n]+@m", $event, $uid_match);
+        
         if (strcmp($uid, $uid_match[1]) == 0) {
             $specific_event .= "\r\nBEGIN:VEVENT" . $event . "END:VEVENT";
         }
@@ -52,7 +54,6 @@ function extract_event_ics(string $ics, string $uid): string
 
     return $ics;
 }
-
 
 /**
  * Cancel one instance of this event, adding the field EXDATE:'$date_start' to VEVENT object
@@ -73,6 +74,7 @@ function cancel_one_instance(string $ics, string $date_start): string
     preg_match_all("@(?<=BEGIN:VEVENT)(.*?)(?:END:VEVENT)@s", $ics, $array_event);
 
     $specific_event = '';
+    
     foreach ($array_event[1] as $event) {
         $recurrence_id = "EXDATE:" . $date_start . "\r\n";
         $event = preg_replace('/(UID.*)/', $recurrence_id . "$1", $event);
@@ -81,7 +83,6 @@ function cancel_one_instance(string $ics, string $date_start): string
 
     return $header . $specific_event . $footer;
 }
-
 
 /**
  * Change the start and end date fields of a VEVENT
@@ -113,9 +114,9 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
 
     // date start
     $all_events = '';
+    
     foreach ($array_event[1] as $i => $event) {
         if ($i == 0) {
-
             if (date('e') !== 'UTC') {
                 $new_date_start = date(";\T\Z\I\D=e:Ymd\THis", strtotime($new_date_start));
                 $new_date_end = date(";\T\Z\I\D=e:Ymd\THis", strtotime($new_date_end));
@@ -126,28 +127,45 @@ function change_date_ics(string $new_date_start, string $new_date_end, string $i
             } elseif (preg_match('@DURATION:([0-9A-Z]+)@m', $event) == 1) {
                 $event = preg_replace('@DURATION:([0-9A-Z]+)@m', 'DTEND' . $new_date_end, $event);
             } else {
-                $event = preg_replace('@(DTSTART.*:[0-9A-Z]+)@m', "$1\r\nDTEND" . $new_date_end, $event);
+                $event = preg_replace(
+                    '@(DTSTART.*:[0-9A-Z]+)@m', "$1\r\nDTEND" . $new_date_end,
+                    $event
+                );
             }
+            
             $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART' . $new_date_start, $event);
         } else {
-
             $array_dtstart = array();
             $array_dtend = array();
             preg_match('@DTSTART.*:([0-9A-Z]+)@m', $event, $array_dtstart);
             preg_match('@DTEND.*:([0-9A-Z]+)@m', $event, $array_dtend);
 
+            $new_date_start_second_event = date(
+                ";\T\Z\I\D=e:Ymd\THis",
+                strtotime($array_dtstart[1]) + $offset_start
+             );
+            
+            $new_date_end_second_event = date(
+                ";\T\Z\I\D=e:Ymd\THis",
+                strtotime($array_dtend[1]) + $offset_end
+            );
 
-            $new_date_start_second_event = date(";\T\Z\I\D=e:Ymd\THis", strtotime($array_dtstart[1]) + $offset_start);
-            $new_date_end_second_event = date(";\T\Z\I\D=e:Ymd\THis", strtotime($array_dtend[1]) + $offset_end);
-
-            $event = preg_replace('@DTSTART.*:([0-9A-Z]+)@m', 'DTSTART' . $new_date_start_second_event, $event);
-            $event = preg_replace('@DTEND.*:([0-9A-Z]+)@m', 'DTEND' . $new_date_end_second_event, $event);
-
+            $event = preg_replace(
+                '@DTSTART.*:([0-9A-Z]+)@m',
+                'DTSTART' . $new_date_start_second_event,
+                $event
+            );
+            
+            $event = preg_replace(
+                '@DTEND.*:([0-9A-Z]+)@m',
+                'DTEND' . $new_date_end_second_event,
+                $event
+            );
         }
 
         $all_events .= 'BEGIN:VEVENT' . $event . "END:VEVENT\r\n";
-
     }
+    
     return $header . $all_events . $footer;
 }
 
@@ -161,22 +179,23 @@ function change_location_ics(string $location, string $ics): string
 {
     $location = wordwrap($location, 73, "\r\n ", true);
 
-
     $sections = preg_split('@(\n(?! ))@m', $ics);
     $has_location_field = false;
+    
     foreach ($sections as &$section) {
         if (preg_match('@^LOCATION:@m', $section) > 0) {
             $section = substr($section, 0, strlen('LOCATION:')) . $location . "\r";
             $has_location_field = true;
         }
     }
+    
     $ics = implode("\n", $sections);
 
     if (!$has_location_field) {
         $ics = preg_replace("@END:VEVENT@", "LOCATION:" . $location . "\r\nEND:VEVENT", $ics);
     }
+    
     return $ics;
-
 }
 
 /**
@@ -188,11 +207,13 @@ function change_location_ics(string $location, string $ics): string
 function change_status_ics(string $status, string $ics): string
 {
     $pos_status = strpos($ics, 'STATUS:');
+    
     if ($pos_status > 0) {
         $ics = preg_replace('@^(STATUS:).*$@m', '$1' . $status, $ics);
     } else {
         $ics = preg_replace('@(END:VEVENT)@', 'STATUS:' . $status . "\r\nEND:VEVENT", $ics);
     }
+    
     return $ics;
 }
 
@@ -213,45 +234,50 @@ function change_partstat_ics(string $ics, string $status, string $email): string
     } elseif (strcmp("CONFIRMED", $status) == 0) {
         $status = 'ACCEPTED';
     }
+    
     foreach ($sections as &$section) {
-
         if (preg_match('@ATTENDEE@', $section) != 1 || preg_match('/' . $email . '/', $section) != 1) {
-			continue;
-		}
-		$section = preg_replace('/[\r|\n]+ /', '', $section);
+            continue;
+        }
+        
+        $section = preg_replace('/[\r|\n]+ /', '', $section);
+        $attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $rsvp_field_is_present = false;
+        
+        foreach ($attributes as &$attribute) {
+            if ($attribute == ';' || $attributes == ':') {
+                continue;
+            }
+            
+            $parts = explode('=', $attribute);
+            $command = $parts[0];
+            
+            if (strcmp($command, 'PARTSTAT') == 0) {
+                $parts[1] = $status;
+                $attribute = implode('=', $parts);
+            }
+            
+            if ($command === 'RSVP') {
+                if ($status === 'DECLINED') {
+                    $parts[1] = 'FALSE';
+                } else {
+                    $parts[1] = 'TRUE';
+                }
+                
+                $rsvp_field_is_present = true;
+                $attribute = implode('=', $parts);
+            }
+        }
+        
+        $section = implode('', $attributes);
 
-		$attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
+        if (!$rsvp_field_is_present && $status == 'DECLINED') {
+            $section = preg_replace('@:mailto:@', ';RSVP=FALSE:mailto:', $section);
+        }
 
-		$rsvp_field_is_present = false;
-		foreach ($attributes as &$attribute) {
-			if ($attribute == ';' || $attributes == ':') {
-				continue;
-			}
-			$parts = explode('=', $attribute);
-			$command = $parts[0];
-			if (strcmp($command, 'PARTSTAT') == 0) {
-				$parts[1] = $status;
-				$attribute = implode('=', $parts);
-			}
-			if ($command === 'RSVP') {
-				if ($status === 'DECLINED') {
-					$parts[1] = 'FALSE';
-				} else {
-					$parts[1] = 'TRUE';
-				}
-				$rsvp_field_is_present = true;
-				$attribute = implode('=', $parts);
-			}
-
-		}
-		$section = implode('', $attributes);
-
-		if (!$rsvp_field_is_present && $status == 'DECLINED') {
-			$section = preg_replace('@:mailto:@', ';RSVP=FALSE:mailto:', $section);
-		}
-
-		$section = implode("\n ", str_split($section, 74));
-	}
+        $section = implode("\n ", str_split($section, 74));
+    }
+    
     return implode("\n", $sections);
 }
 
@@ -271,12 +297,14 @@ function update_comment_section_ics(string $ics, string $comment): string
 
     $sections = preg_split('@(\n(?! ))@m', $ics);
     $has_comment_section = false;
+    
     foreach ($sections as &$section) {
         if (preg_match('@^COMMENT:@m', $section) > 0) {
             $section = substr($section, 0, strlen('COMMENT:')) . $comment;
             $has_comment_section = true;
         }
     }
+    
     $ics = implode("\n", $sections);
 
     if (!$has_comment_section) {
@@ -294,14 +322,15 @@ function update_comment_section_ics(string $ics, string $comment): string
 function delete_comment_section_ics(string $ics): string
 {
     $sections = preg_split('@(\n(?! ))@m', $ics);
+    
     foreach ($sections as $key => &$section) {
         if (preg_match('@^COMMENT:@m', $section) > 0) {
             unset($sections[$key]);
         }
     }
+    
     return implode("\n", $sections);
 }
-
 
 /**
  * Delete the status field  of an icalendar string for sending purpose
@@ -311,14 +340,15 @@ function delete_comment_section_ics(string $ics): string
 function delete_status_section_ics(string $ics): string
 {
     $sections = preg_split('@(\n(?! ))@m', $ics);
+    
     foreach ($sections as $key => &$section) {
         if (preg_match('@^STATUS:@m', $section) > 0) {
             unset($sections[$key]);
         }
     }
+    
     return implode("\n", $sections);
 }
-
 
 /**
  * Change LAST_MODIFIED field  of a VEVENT
@@ -340,6 +370,7 @@ function change_sequence_ics(string $ics): string
 {
 
     $num_sequence = array();
+    
     if (preg_match("@SEQUENCE:([0-9]+)@", $ics, $num_sequence) == 1) {
         $num_sequence = intval($num_sequence[1]) + 1;
         $ics = preg_replace("@SEQUENCE:[0-9]+@", "SEQUENCE:" . $num_sequence, $ics);
@@ -348,9 +379,7 @@ function change_sequence_ics(string $ics): string
     }
 
     return $ics;
-
 }
-
 
 /**
  * Change the METHOD field of a VCALENDAR
@@ -365,6 +394,7 @@ function change_method_ics(string $ics, string $method): string
     } else {
         $ics = preg_replace('/BEGIN:VCALENDAR/', "BEGIN:VCALENDAR\r\nMETHOD:" . $method, $ics);
     }
+    
     return $ics;
 }
 
@@ -378,6 +408,7 @@ function del_method_field_ics($ics): string
     if (preg_match('/^METHOD:.*$/m', $ics) == 1) {
         $ics = preg_replace('/^METHOD:.*$/m', '', $ics);
     }
+    
     return $ics;
 }
 
@@ -390,6 +421,7 @@ function find_time_zone($ics): array
 {
     $vtimezone = [];
     $ical = new ICal\ICal($ics);
+    
     if (preg_match("@(?<=BEGIN:VTIMEZONE)(.*?)(?:END:VTIMEZONE)@s", $ics, $vtimezone) == 1) {
         $timezone_string = $ical->calendarTimeZone();
         $timezone = new DateTimeZone($timezone_string);
@@ -397,6 +429,7 @@ function find_time_zone($ics): array
         $date = new DateTime();
         $timezone = $date->getTimezone();
     }
+    
     return [$timezone->getOffset(new DateTime()), $timezone];
 }
 
@@ -412,31 +445,34 @@ function change_partstat_of_all_attendees_to_need_action($ics): string
 
     foreach ($sections as &$section) {
         if (preg_match('@ATTENDEE@', $section) != 1) {
-			continue;
+            continue;
         }
-		$section = preg_replace("/[\r|\n]+ /", '', $section);
-		$attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
+        
+        $section = preg_replace("/[\r|\n]+ /", '', $section);
+        $attributes = preg_split('/([;|:])/', $section, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-		foreach ($attributes as &$attribute) {
-			if ($attribute == ';' || $attributes == ':') {
-				continue;
-			}
-			$parts = explode('=', $attribute);
-			$command = $parts[0];
-			if (strcmp($command, 'PARTSTAT') == 0) {
-				$parts[1] = 'NEEDS_ACTION';
-				$attribute = implode('=', $parts);
-			} elseif (strcmp($command, 'RSVP') == 0) {
-				$parts[1] = 'TRUE';
-				$attribute = implode('=', $parts);
-			}
-		}
-		$section = implode("\r\n ", str_split(implode('', $attributes), 74));
-
-	}
+        foreach ($attributes as &$attribute) {
+            if ($attribute == ';' || $attributes == ':') {
+                continue;
+            }
+            
+            $parts = explode('=', $attribute);
+            $command = $parts[0];
+            
+            if (strcmp($command, 'PARTSTAT') == 0) {
+                $parts[1] = 'NEEDS_ACTION';
+                $attribute = implode('=', $parts);
+            } elseif (strcmp($command, 'RSVP') == 0) {
+                $parts[1] = 'TRUE';
+                $attribute = implode('=', $parts);
+            }
+        }
+        
+        $section = implode("\r\n ", str_split(implode('', $attributes), 74));
+    }
+    
     return implode("\r\n", $sections);
 }
-
 
 function clean_ics($ics): string
 {

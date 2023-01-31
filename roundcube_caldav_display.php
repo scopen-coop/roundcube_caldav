@@ -212,8 +212,6 @@
                 <label for="message_input"><?php echo $this->gettext("comment_to_send") ?></label>
                 <textarea name="message" class="message_input" rows="12"></textarea>
             </div>
-
-
         </div>
     </div>
 </template>

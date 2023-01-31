@@ -1,4 +1,5 @@
 <?php
+
 /**
  *
  * Rouncube calDAV handling plugin
@@ -17,10 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
-
 use ICal\Event;
 use ICal\ICal;
-
 
 /**
  * Fill the response array with attendees informations
@@ -42,14 +41,22 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
 
     $id = 0;
     $all_adresses = '';
+    
     if (!empty($event->attendee_array)) {
         foreach ($event->attendee_array as $attendee) {
-            if (!is_string($attendee) && (array_key_exists('PARTSTAT', $attendee) || array_key_exists('CN', $attendee)  || array_key_exists('ROLE', $attendee))) {
+            if (
+                !is_string($attendee) 
+                && (
+                    array_key_exists('PARTSTAT', $attendee) 
+                    || array_key_exists('CN',$attendee) 
+                    || array_key_exists('ROLE', $attendee)
+                )
+            ) {
                 $response['attendees'][$id]['name'] = $attendee['CN'];
                 $response['attendees'][$id]['RSVP'] = $attendee['RSVP'];
                 $response['attendees'][$id]['partstat'] = $attendee['PARTSTAT'];
                 $response['attendees'][$id]['ROLE'] = $attendee['ROLE'];
-            }elseif (is_string($attendee) && str_start_with($attendee, 'mailto:')) {
+            } elseif (is_string($attendee) && str_start_with($attendee, 'mailto:')) {
                 $response['attendees'][$id]['email'] = substr($attendee, strlen('mailto:'));
                 $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendees'][$id]['email'] . "',this)";
                 if ($my_email !== $response['attendees'][$id]['email']) {
@@ -59,34 +66,36 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
             }
         }
     }
+    
     // On cherche les informations concernant l'organisateur
     if (!empty($event->organizer_array)) {
         $organizer_array = [];
+        
         foreach ($event->organizer_array as $organizer) {
             if (is_string($organizer) && str_start_with($organizer, 'mailto:')) {
                 $organizer_email = substr($organizer, strlen('mailto:'));
                 $organizer_array['email'] = $organizer_email;
                 $organizer_array['partstat'] = 'ORGANIZER';
                 $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $organizer_email . "',this)";
+                
                 if ($my_email !== $organizer_email) {
                     $all_adresses .= $organizer_email . ';';
                 }
-
-
             } else {
                 $organizer_array['name'] = $organizer['CN'];
             }
         }
+        
         $response['attendees'][] = $organizer_array;
     }
 
     // On definit les caractérisques du bouton pour répondre à tous
     $all_adresses = substr($all_adresses, 0, -1);
+    
     $response['attr_reply_all'] = [
         'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $all_adresses . "',this)"
     ];
 }
-
 
 /**
  * Get the  email sender's participation status before changing for a newer event in server in order to display the good
@@ -100,13 +109,16 @@ function get_sender_s_partstat(Event $event, array &$response, bool $event_on_se
     $array_attendees = [];
     $id = 0;
     $res = -1;
+    
     if (!empty($event->attendee_array)) {
         foreach ($event->attendee_array as $attendee) {
             if (is_string($attendee) && str_start_with($attendee, 'mailto:')) {
                 $array_attendees[$id]['email'] = substr($attendee, strlen('mailto:'));
+                
                 if ($sender_email === $array_attendees[$id]['email']) {
                     $res = $id;
                 }
+                
                 $id++;
             } elseif (array_key_exists('CN', $attendee)) {
                 $array_attendees[$id]['partstat'] = $attendee['PARTSTAT'];
@@ -123,7 +135,6 @@ function get_sender_s_partstat(Event $event, array &$response, bool $event_on_se
     }
 }
 
-
 /**
  * Test if event have a duration instead of dtend or only a dtstart.
  * If so, fill $event->dtend_array with correct value in order to use it in others functions which need a dtend
@@ -134,11 +145,13 @@ function if_no_dtend_add_one_to_event(Event &$event)
     if ($event->dtend) {
         return;
     }
+    
     if ($event->duration) {
         $offset = calculate_duration($event->duration);
     } else {
         $offset = 0;
     }
+    
     $event->dtend_array = [
         [],
         date("Ymd\THis", $event->dtstart_array[2] + $offset),
@@ -164,7 +177,6 @@ function set_method_field(ICal $ical, &$response, bool $is_Organizer)
     }
 }
 
-
 /**
  * Check if this event already exist on server in an older version, and if it is the case, set the response array.
  * $response['found_older_event_on_calendar'] = id of calendar where an event was found
@@ -178,18 +190,25 @@ function set_if_an_older_event_was_found_on_server(Event $event, array &$respons
 {
     foreach ($arrayOfCalendars as $calendar) {
         // On trouve les événements qui matchent dans chacun des calendriers
-        $event_found_on_server = find_event_with_matching_uid($event, $calendar->getCalendarID(), $all_events);
+        $event_found_on_server = find_event_with_matching_uid(
+            $event, 
+            $calendar->getCalendarID(),
+            $all_events
+        );
+        
         if ($event_found_on_server) {
             $response['found_older_event_on_calendar'] = $calendar->getCalendarID();
 
             $ical = new ICal($event_found_on_server->getData());
             $older_events = $ical->events();
+            
             foreach ($older_events as $older_event) {
                 if ($older_event->uid == $event->uid) {
                     $response['older_event'] = $older_event;
                     break;
                 }
             }
+            
             break;
         }
     }
@@ -208,21 +227,22 @@ function set_if_an_older_event_was_found_on_server(Event $event, array &$respons
  */
 function set_if_modification_date_location_description_attendees(array &$response, bool $is_Organizer, Event $event, string $langs, ?array $attendees): void
 {
-
     $event_to_compare_with = $is_Organizer ? $response['used_event'] : $response['older_event'];
+
     if (strcmp($event_to_compare_with->location, $event->location) != 0) {
         $response['new_location'] = $event->location;
     }
-    if ($event_to_compare_with->dtstart_array[2] != $event->dtstart_array[2] || $event_to_compare_with->dtend_array[2] != $event->dtend_array[2]) {
-
+    
+    if (
+        $event_to_compare_with->dtstart_array[2] != $event->dtstart_array[2] 
+        || $event_to_compare_with->dtend_array[2] != $event->dtend_array[2]
+    ) {
         setlocale(LC_TIME, $langs);
-
 
         $response['new_date']['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
         $response['new_date']['date_day_start'] = date("d", $event->dtstart_array[2]);
         $response['new_date']['date_weekday_start'] = strftime("%A", $event->dtstart_array[2]);
         $response['new_date']['date_hours_start'] = date("G:i", $event->dtstart_array[2]);
-
 
         $response['new_date']['date_month_end'] = date("M/Y", $event->dtend_array[2]);
         $response['new_date']['date_day_end'] = date("d", $event->dtend_array[2]);
@@ -233,11 +253,14 @@ function set_if_modification_date_location_description_attendees(array &$respons
         if (strcmp(substr($event->dtstart_array[1], 0, 8), substr($event->dtend_array[1], 0, 8)) == 0) {
             $same_date = true;
         }
+        
         $response['new_date']['same_date'] = $same_date;
     }
+    
     if ($event_to_compare_with->description === $event->description) {
         $response['new_description'] = nl2br($event->description);
     }
+    
     if (($event_to_compare_with->attendee_array || $event->attendee_array)) {
         $response['new_attendees'] = find_difference_attendee($attendees, $response['attendees']);
     }
@@ -250,8 +273,6 @@ function set_if_modification_date_location_description_attendees(array &$respons
             $event_to_compare_with->dtstart_array[2] + $offset,
         ];
     }
-
-
 }
 
 /**
@@ -298,11 +319,13 @@ function set_formated_date_time(Event $event, array &$response, string $langs): 
 function set_calendar_to_use_for_select_input(array &$response, array $server_caldav_config, array $arrayOfCalendars): string
 {
     $msg = '';
+    
     foreach ($server_caldav_config['_used_calendars'] as $used_calendars) {
         if ($arrayOfCalendars[$used_calendars]) {
             $response['used_calendar'][$used_calendars] = $arrayOfCalendars[$used_calendars]->getDisplayName();
         }
     }
+    
     if ($arrayOfCalendars[$server_caldav_config['_main_calendar']]) {
         $response['main_calendar_name'] = $arrayOfCalendars[$server_caldav_config['_main_calendar']]->getDisplayName();
         $response['main_calendar_id'] = $server_caldav_config['_main_calendar'];
@@ -311,6 +334,7 @@ function set_calendar_to_use_for_select_input(array &$response, array $server_ca
     }
 
     $response['display_select'] = ($response['METHOD'] !== 'CANCEL') && !$response['found_older_event_on_calendar'];
+    
     return $msg;
 }
 
@@ -324,11 +348,13 @@ function set_calendar_to_use_for_select_input(array &$response, array $server_ca
 function set_sender_and_receiver_email($message, array &$response): void
 {
     $response['sender_email'] = $message->get_header('from');
+    
     if (strpos($response['sender_email'], ';')) {
         $response['sender_email'] = substr($response['sender_email'], 0, -1);
     }
 
     $response['receiver_email'] = $message->get_header('to');
+    
     if (strpos($response['receiver_email'], ';')) {
         $response['receiver_email'] = substr($response['receiver_email'], 0, -1);
     }
@@ -343,17 +369,21 @@ function set_sender_and_receiver_email($message, array &$response): void
 function find_difference_attendee(array $array_attendee_new, array $array_attendee_old): array
 {
     $new_attendees = [];
+    
     foreach ($array_attendee_new as $new_attendee) {
         $is_different = true;
+        
         foreach ($array_attendee_old as $old_attendee) {
             if ($new_attendee['email'] === $old_attendee['email']) {
                 $is_different = false;
             }
         }
+        
         if ($is_different) {
             $new_attendees[] = $new_attendee;
         }
     }
+    
     return $new_attendees;
 }
 
@@ -369,12 +399,20 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
     $attendee_array = [];
     $organizer_array = [];
 
-    if (!empty($event->attendee_array) || !empty($event->organizer_array) || $event_on_server && (!empty($event_on_server->attendee_array) || !empty($event_on_server->organizer_array))) {
-
+    if (
+        !empty($event->attendee_array) 
+        || !empty($event->organizer_array)
+        || $event_on_server 
+        && (
+            !empty($event_on_server->attendee_array)
+            || !empty($event_on_server->organizer_array)
+        )
+    ) {
         // On boucle sur les attendee pour recuperer la bonne identity
         foreach ($event->attendee_array as $attendee) {
             array_push($attendee_array, $attendee);
         }
+        
         if ($event_on_server) {
             foreach ($event_on_server->attendee_array as $attendee) {
                 array_push($attendee_array, $attendee);
@@ -384,6 +422,7 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
         foreach ($attendee_array as $attendee) {
             if (is_string($attendee)) {
                 $attendee = preg_replace('/(mailto:)?(.+)/', '$2', $attendee);
+                
                 foreach ($my_identities as $identity) {
                     if (strcmp($attendee, $identity['email']) == 0) {
                         $my_identity['email'] = $identity['email'];
@@ -394,9 +433,11 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
                 }
             }
         }
+        
         foreach ($event->organizer_array as $organizer) {
             array_push($organizer_array, $organizer);
         }
+        
         if ($event_on_server) {
             foreach ($event_on_server->organizer_array as $organizer) {
                 array_push($organizer_array, $organizer);
@@ -407,6 +448,7 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
         foreach ($organizer_array as $organizer) {
             if (is_string($organizer)) {
                 $organizer_email = preg_replace('/(mailto:)?(.+)/', '$2', $organizer);
+                
                 foreach ($my_identities as $identity) {
                     if (strcmp($organizer_email, $identity['email']) == 0) {
                         $my_identity['email'] = $identity['email'];
@@ -418,6 +460,7 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
             }
         }
     }
+    
     return null;
 }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  *
  * Rouncube calDAV handling plugin
@@ -17,8 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
-
-class password_encryption {
+class password_encryption
+{
 
     /**
      * Encrypts (but does not authenticate) a message
@@ -34,19 +35,15 @@ class password_encryption {
         $nonce = openssl_random_pseudo_bytes($nonceSize);
 
         $ciphertext = openssl_encrypt(
-            $message,
-            'aes-256-ctr',
-            $key,
-            OPENSSL_RAW_DATA,
-            $nonce
+                $message, 'aes-256-ctr', $key, OPENSSL_RAW_DATA, $nonce
         );
 
         // Now let's pack the IV and the ciphertext together
         // Naively, we can just concatenate
         if ($encode) {
-            return base64_encode($nonce.$ciphertext);
+            return base64_encode($nonce . $ciphertext);
         }
-        return $nonce.$ciphertext;
+        return $nonce . $ciphertext;
     }
 
     /**
@@ -59,10 +56,12 @@ class password_encryption {
      */
     public static function decrypt($message, $key, $encoded = false)
     {
-        $plaintext='';
+        $plaintext = '';
+        
         if (!empty($message)) {
             if ($encoded) {
                 $message = base64_decode($message, true);
+                
                 if ($message === false) {
                     throw new Exception('Encryption failure');
                 }
@@ -73,13 +72,10 @@ class password_encryption {
             $ciphertext = mb_substr($message, $nonceSize, null, '8bit');
 
             $plaintext = openssl_decrypt(
-                $ciphertext,
-                'aes-256-ctr',
-                $key,
-                OPENSSL_RAW_DATA,
-                $nonce
+                    $ciphertext, 'aes-256-ctr', $key, OPENSSL_RAW_DATA, $nonce
             );
         }
+        
         return $plaintext;
     }
 

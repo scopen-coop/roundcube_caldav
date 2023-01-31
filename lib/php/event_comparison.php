@@ -1,4 +1,5 @@
 <?php
+
 /**
  *
  * Rouncube calDAV handling plugin
@@ -17,10 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
-
 use ICal\Event;
 use it\thecsea\simple_caldav_client\CalDAVObject;
-
 
 /**
  * Find an event with matching uid
@@ -31,7 +30,7 @@ use it\thecsea\simple_caldav_client\CalDAVObject;
  */
 function find_event_with_matching_uid(Event $event, string $calendar, array $all_events): ?CalDAVObject
 {
-    $all_event_from_cal = (array)$all_events[$calendar];
+    $all_event_from_cal = (array) $all_events[$calendar];
 
     foreach ($all_event_from_cal as $event_found) {
         $uid = array();
@@ -41,6 +40,7 @@ function find_event_with_matching_uid(Event $event, string $calendar, array $all
             return $event_found;
         }
     }
+    
     return null;
 }
 
@@ -57,12 +57,18 @@ function is_there_an_overlap(int $base_timestamp, string $current_date_start, st
 {
     // If the event we want to compare with has no dt_end
     if (!$date_end_to_compare_with) {
-        $date_end_to_compare_with = date("Ymd\THis\Z", strtotime($date_start_to_compare_with, $base_timestamp) + 86400);
+        $date_end_to_compare_with = date("Ymd\THis\Z",
+                strtotime($date_start_to_compare_with, $base_timestamp) + 86400);
     }
-    return (((strtotime($date_start_to_compare_with, $base_timestamp) > strtotime($current_date_start, $base_timestamp))
-            && (strtotime($date_start_to_compare_with, $base_timestamp) < strtotime($current_date_end, $base_timestamp))) ||
-        ((strtotime($date_end_to_compare_with, $base_timestamp) > strtotime($current_date_start, $base_timestamp))
-            && (strtotime($date_end_to_compare_with, $base_timestamp) < strtotime($current_date_end, $base_timestamp))));
+    
+    return 
+        (
+            strtotime($date_start_to_compare_with, $base_timestamp) > strtotime($current_date_start,$base_timestamp)
+            && strtotime($date_start_to_compare_with, $base_timestamp) < strtotime($current_date_end,$base_timestamp)
+        ) || (
+            strtotime($date_end_to_compare_with, $base_timestamp) > strtotime($current_date_start,$base_timestamp)
+            && strtotime($date_end_to_compare_with, $base_timestamp) < strtotime($current_date_end,$base_timestamp)
+        );
 }
 
 /**
@@ -75,8 +81,9 @@ function is_there_an_overlap(int $base_timestamp, string $current_date_start, st
  */
 function is_after(string $current_date_end, string $current_date_end_with_offset, string $date_start_to_compare_with, int $base_timestamp): bool
 {
-    return strtotime($date_start_to_compare_with, $base_timestamp) >= strtotime($current_date_end, $base_timestamp)
-        && (strtotime($date_start_to_compare_with, $base_timestamp) < strtotime($current_date_end_with_offset, $base_timestamp));
+    return 
+        strtotime($date_start_to_compare_with, $base_timestamp) >= strtotime($current_date_end, $base_timestamp)
+        && strtotime($date_start_to_compare_with, $base_timestamp) < strtotime($current_date_end_with_offset, $base_timestamp);
 }
 
 /**
@@ -92,8 +99,10 @@ function is_before(string $current_date_start, string $current_date_start_with_o
     if (!$date_end_to_compare_with) {
         return false;
     }
-    return strtotime($date_end_to_compare_with, $base_timestamp) <= strtotime($current_date_start, $base_timestamp)
-        && (strtotime($date_end_to_compare_with, $base_timestamp) > strtotime($current_date_start_with_offset, $base_timestamp));
+    
+    return 
+        strtotime($date_end_to_compare_with, $base_timestamp) <= strtotime($current_date_start, $base_timestamp)
+        && strtotime($date_end_to_compare_with, $base_timestamp) > strtotime($current_date_start_with_offset, $base_timestamp);
 }
 
 /**
@@ -110,23 +119,30 @@ function choose_the_closest_meeting(array $array_date, string $date_start_or_end
 
     if (strcmp($opt, 'previous') == 0) {
         foreach ($array_date as $date) {
-            if (strtotime($array_date[$uid]['date_start']) <= strtotime($date['date_start'])
-                && strtotime($date_start_or_end) >= strtotime($date['date_end'])) {
+            if (
+                strtotime($array_date[$uid]['date_start']) <= strtotime($date['date_start']) 
+                && strtotime($date_start_or_end) >= strtotime($date['date_end'])
+            ) {
                 $uid = $date['uid'];
             }
         }
     } else {
         foreach ($array_date as $date) {
-            if (strtotime($array_date[$uid]['date_start']) > strtotime($date['date_start'])
-                && strtotime($date_start_or_end) <= strtotime($date['date_start'])) {
+            if (
+                strtotime($array_date[$uid]['date_start']) > strtotime($date['date_start']) 
+                && strtotime($date_start_or_end) <= strtotime($date['date_start'])
+            ) {
                 $uid = $date['uid'];
-            } elseif (strtotime($array_date[$uid]['date_start']) == strtotime($date['date_start'])
+            } elseif (
+                strtotime($array_date[$uid]['date_start']) == strtotime($date['date_start']) 
                 && strtotime($array_date[$uid]['date_end']) >= strtotime($date['date_end'])
-                && strtotime($date_start_or_end) <= strtotime($date['date_start'])) {
+                && strtotime($date_start_or_end) <= strtotime($date['date_start'])
+            ) {
                 $uid = $date['uid'];
             }
         }
     }
+    
     return $uid;
 }
 
@@ -139,19 +155,27 @@ function calculate_duration(string $duration)
 {
     $ladder = ['S' => 1, 'M' => 60, 'H' => 3600, 'D' => 86400, 'W' => 604800];
     $match_array = [];
-    $res = preg_match('/P([0-9]*W)?([0-9]*D)?T?([0-9]*H)?([0-9]*M)?([0-9]*S)?/', $duration, $match_array);
+    
+    $res = preg_match(
+            '/P([0-9]*W)?([0-9]*D)?T?([0-9]*H)?([0-9]*M)?([0-9]*S)?/',
+            $duration,
+            $match_array
+    );
+    
     if (!$res) {
-		return false;
-	}
-	array_shift($match_array);
-	$duration_in_second = 0;
-	foreach ($match_array as $match) {
-		$scale = [];
-		preg_match('/([0-9]*)([A-Z])/', $match, $scale);
-		$duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
-	}
-	return $duration_in_second;
-
+        return false;
+    }
+    
+    array_shift($match_array);
+    $duration_in_second = 0;
+    
+    foreach ($match_array as $match) {
+        $scale = [];
+        preg_match('/([0-9]*)([A-Z])/', $match, $scale);
+        $duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
+    }
+    
+    return $duration_in_second;
 }
 
 /**
