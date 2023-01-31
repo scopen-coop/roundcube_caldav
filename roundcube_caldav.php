@@ -746,8 +746,10 @@ class roundcube_caldav extends rcube_plugin
 					$new_ics = $ics_with_modified_date_and_location;
 					// On change le numéro de sequence si l'utilisateur est l'organisateur de l'evenement ou si l'événement n'a pas de participants
 					$new_ics = change_sequence_ics($new_ics);
+                    $new_ics = clean_ics($new_ics);
 					$send_event = $this->save_event_on_caldav_server_and_display_message($new_ics, $status, $event, $chosen_calendar, $event_uid);
 				} else {
+                    $new_ics = clean_ics($new_ics);
 					$send_event = $this->save_event_on_caldav_server_and_display_message($new_ics, $status, $event, $chosen_calendar, $event_uid);
                 
                      // On sauvegarde sur le serveur sans les dates et lieu modifiés

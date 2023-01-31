@@ -375,8 +375,8 @@ function change_method_ics(string $ics, string $method): string
  */
 function del_method_field_ics($ics): string
 {
-    if (preg_match('/^METHOD:.*[\r|\n]*/m', $ics) == 1) {
-        $ics = preg_replace('/^METHOD:.*/m', '', $ics);
+    if (preg_match('/^METHOD:.*$/m', $ics) == 1) {
+        $ics = preg_replace('/^METHOD:.*$/m', '', $ics);
     }
     return $ics;
 }
