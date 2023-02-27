@@ -344,7 +344,9 @@ function set_calendar_to_use_for_select_input(array &$response, array $server_ca
         $msg = "main_calendar_not_exist";
     }
 
-    $response['display_select'] = ($response['METHOD'] !== 'CANCEL') && !$response['found_older_event_on_calendar'];
+    $found_older = !empty($response['found_older_event_on_calendar']) ? $response['found_older_event_on_calendar'] : false;
+
+    $response['display_select'] = ($response['METHOD'] !== 'CANCEL') && !$found_older;
     
     return $msg;
 }
