@@ -113,7 +113,6 @@ class roundcube_caldav extends rcube_plugin
      */
     function preferences_list($param_list): array
     {
-
         if ($param_list['section'] != 'server_caldav') {
             return $param_list;
         }
@@ -122,7 +121,7 @@ class roundcube_caldav extends rcube_plugin
         $param_list = $this->display_server_caldav_form($param_list);
 
         $server = $this->rcube->config->get('server_caldav');
-        
+
         if (
             !empty($server['_url_base'])
             && !empty($server['_login'])
@@ -131,6 +130,7 @@ class roundcube_caldav extends rcube_plugin
         ) {
             $param_list = $this->calendar_selection_form($param_list);
         }
+
         return $param_list;
     }
 
@@ -901,7 +901,6 @@ class roundcube_caldav extends rcube_plugin
                     $new_ics = $ics_with_modified_date_and_location;
                     // On change le numéro de sequence si l'utilisateur est l'organisateur de l'evenement ou si l'événement n'a pas de participants
                     $new_ics = change_sequence_ics($new_ics);
-                    $new_ics = clean_ics($new_ics);
                     
                     $send_event = $this->save_event_on_caldav_server_and_display_message(
                             $new_ics,
@@ -911,8 +910,6 @@ class roundcube_caldav extends rcube_plugin
                             $event_uid
                     );
                 } else {
-                    $new_ics = clean_ics($new_ics);
-                    
                     $send_event = $this->save_event_on_caldav_server_and_display_message(
                             $new_ics,
                             $status, 
@@ -1500,7 +1497,7 @@ class roundcube_caldav extends rcube_plugin
                 $this->gettext('something_happened') . $save_error, 
                 'error'
             );
-            
+
             return false;
         }
     }
