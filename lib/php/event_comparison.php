@@ -114,6 +114,10 @@ function is_before(string $current_date_start, string $current_date_start_with_o
  */
 function choose_the_closest_meeting(array $array_date, string $date_start_or_end, string $opt): ?string
 {
+    if (empty($array_date)) {
+        return null;
+    }
+
     $first = array_key_first($array_date);
     $uid = $array_date[$first]['uid'];
 

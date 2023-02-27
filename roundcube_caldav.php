@@ -626,7 +626,7 @@ class roundcube_caldav extends rcube_plugin
             
             $response['uid'] = $event->uid;
 
-            if ($event->rrule) {
+            if (isset($event->rrule) && $event->rrule) {
                 $rrule = new Recurr\Rule($event->rrule, $event->dtstart_array[1]);
                 $array_match = [];
                 
@@ -670,7 +670,9 @@ class roundcube_caldav extends rcube_plugin
 
             set_method_field($ical, $response, $is_Organizer);
 
-            $response['comment'] = nl2br($event->comment);
+            if (isset($event->comment) && $event->comment) {
+                $response['comment'] = nl2br($event->comment);
+            }
 
             set_if_an_older_event_was_found_on_server(
                 $event, 
@@ -702,31 +704,39 @@ class roundcube_caldav extends rcube_plugin
             $new_attendees_array = [];
             set_participants_characteristics_and_set_buttons_properties($event, $new_attendees_array);
 
-            if (!$is_Organizer && $response['found_older_event_on_calendar']) {
+            $response['display_modification_made_by_organizer'] = false;
+
+            if (
+                !$is_Organizer
+                && !empty($response['found_older_event_on_calendar'])
+                && $response['found_older_event_on_calendar']
+            ) {
                 $response['display_modification_made_by_organizer'] = true;
             }
 
 
             $date_time_already_set = false;
 
+            $attendees = !empty($new_attendees_array['attendees']) ? $new_attendees_array['attendees'] : null;
+
             if (($found_advance && $response['METHOD'] == 'COUNTER')) {
                 set_if_modification_date_location_description_attendees(
-                    $response, 
+                    $response,
                     $is_Organizer,
-                    $event, 
-                    $langs, 
-                    $new_attendees_array['attendees']
+                    $event,
+                    $langs,
+                    $attendees
                 );
                 
                 set_formated_date_time($response['used_event'], $response, $langs);
                 $date_time_already_set = true;
             } elseif ($response['display_modification_made_by_organizer']) {
                 set_if_modification_date_location_description_attendees(
-                        $response, 
-                        $is_Organizer,
-                        $event,
-                        $langs, 
-                        $new_attendees_array['attendees']
+                    $response,
+                    $is_Organizer,
+                    $event,
+                    $langs,
+                    $attendees
                 );
                 
                 set_formated_date_time($response['older_event'], $response, $langs);
@@ -738,6 +748,11 @@ class roundcube_caldav extends rcube_plugin
             if (!$date_time_already_set) {
                 set_formated_date_time($event, $response, $langs);
             }
+
+            if (isset($event->description) && $event->description) {
+                $response['description'] = nl2br($event->description);
+            }
+
 
             $response['description'] = nl2br($event->description);
             $response['location'] = $event->location;
@@ -762,8 +777,10 @@ class roundcube_caldav extends rcube_plugin
                 get_sender_s_partstat($found_advance[0]['event'], $response, true);
             }
             
+            $role = !empty($response['identity']['role']) ? $response['identity']['role'] : '';
+
             $this->select_buttons_to_display(
-                    $response['identity']['role'] ?: '',
+                    $role,
                     $response['METHOD'],
                     $response
             );
@@ -954,7 +971,11 @@ class roundcube_caldav extends rcube_plugin
      */
     function select_buttons_to_display(string $role, string $method, array &$response)
     {
-        $has_modifications = $response['new_description'] || $response['new_location'] || $response['new_date'];
+        $has_new_description = !empty($response['new_description']) ? true : false;
+        $has_new_location = !empty($response['new_location']) ? true : false;
+        $has_new_date = !empty($response['new_date']) ? true : false;
+
+        $has_modifications = $has_new_description || $has_new_location || $has_new_date;
         $is_recurrent = count($response['recurrent_events'][$response['uid']]) > 1;
         $buttons_to_display = [];
         
@@ -1717,11 +1738,11 @@ class roundcube_caldav extends rcube_plugin
     public function change_date_and_location(array $modification, array $array_events, Event $event, string $ics): string
     {
 
-        $chosen_date_start = $modification['_chosenDateStart'];
-        $chosen_date_end = $modification['_chosenDateEnd'];
-        $chosen_time_start = $modification['_chosenTimeStart'];
-        $chosen_time_end = $modification['_chosenTimeEnd'];
-        $chosen_location = $modification['_chosenLocation'];
+        $chosen_date_start = !empty($modification['_chosenDateStart']) ? $modification['_chosenDateStart'] : null;
+        $chosen_date_end = !empty($modification['_chosenDateEnd']) ? $modification['_chosenDateEnd'] : null;
+        $chosen_time_start = !empty($modification['_chosenTimeStart']) ? $modification['_chosenTimeStart'] : null;
+        $chosen_time_end = !empty($modification['_chosenTimeEnd']) ? $modification['_chosenTimeEnd'] : null;
+        $chosen_location = !empty($modification['_chosenLocation']) ? $modification['_chosenLocation'] : null;
 
         // On parse la date puis on remplace par la nouvelle date dans le fichier ics
         if ($chosen_date_start && $chosen_date_end && $chosen_time_start && $chosen_time_end) {

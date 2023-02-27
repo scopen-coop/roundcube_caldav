@@ -36,7 +36,11 @@ use ICal\ICal;
  * @param array $response
  */
 function set_participants_characteristics_and_set_buttons_properties(Event $event, array &$response)
-{
+{   
+    if (empty($response['identity']) || empty($response['identity']['email'])) {
+        return;
+    }
+    
     $my_email = $response['identity']['email'];
 
     $id = 0;
@@ -229,7 +233,11 @@ function set_if_modification_date_location_description_attendees(array &$respons
 {
     $event_to_compare_with = $is_Organizer ? $response['used_event'] : $response['older_event'];
 
-    if (strcmp($event_to_compare_with->location, $event->location) != 0) {
+    if (
+        !empty($event_to_compare_with->location)
+        && !empty($event->location)
+        && strcmp($event_to_compare_with->location, $event->location) != 0
+    ) {
         $response['new_location'] = $event->location;
     }
     
@@ -241,12 +249,12 @@ function set_if_modification_date_location_description_attendees(array &$respons
 
         $response['new_date']['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
         $response['new_date']['date_day_start'] = date("d", $event->dtstart_array[2]);
-        $response['new_date']['date_weekday_start'] = strftime("%A", $event->dtstart_array[2]);
+        $response['new_date']['date_weekday_start'] = date("l", $event->dtstart_array[2]);
         $response['new_date']['date_hours_start'] = date("G:i", $event->dtstart_array[2]);
 
         $response['new_date']['date_month_end'] = date("M/Y", $event->dtend_array[2]);
         $response['new_date']['date_day_end'] = date("d", $event->dtend_array[2]);
-        $response['new_date']['date_weekday_end'] = strftime("%A", $event->dtstart_array[2]);
+        $response['new_date']['date_weekday_end'] = date("l", $event->dtstart_array[2]);
         $response['new_date']['date_hours_end'] = date("G:i", $event->dtend_array[2]);
         $same_date = false;
 
@@ -261,7 +269,10 @@ function set_if_modification_date_location_description_attendees(array &$respons
         $response['new_description'] = nl2br($event->description);
     }
     
-    if (($event_to_compare_with->attendee_array || $event->attendee_array)) {
+    if (
+        ($event_to_compare_with->attendee_array || $event->attendee_array)
+        && !empty($attendees) && !empty($response['attendees'])
+    ) {
         $response['new_attendees'] = find_difference_attendee($attendees, $response['attendees']);
     }
 
@@ -294,13 +305,13 @@ function set_formated_date_time(Event $event, array &$response, string $langs): 
     $response['date_start'] = date("Y-m-d", $event->dtstart_array[2]);
     $response['date_month_start'] = date("M/Y", $event->dtstart_array[2]);
     $response['date_day_start'] = date("d", $event->dtstart_array[2]);
-    $response['date_weekday_start'] = strftime("%A", $event->dtstart_array[2]);
+    $response['date_weekday_start'] = date("l", $event->dtstart_array[2]);
     $response['date_hours_start'] = date("H:i", $event->dtstart_array[2]);
 
     $response['date_end'] = date("Y-m-d", $event->dtend_array[2]);
     $response['date_month_end'] = date("M/Y", $event->dtend_array[2]);
     $response['date_day_end'] = date("d", $event->dtend_array[2]);
-    $response['date_weekday_end'] = strftime("%A", $event->dtstart_array[2]);
+    $response['date_weekday_end'] = date("l", $event->dtstart_array[2]);
     $response['date_hours_end'] = date("H:i", $event->dtend_array[2]);
 
     $response['same_date'] = $response['date_start'] === $response['date_end'];
