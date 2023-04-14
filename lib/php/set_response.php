@@ -265,7 +265,7 @@ function set_if_modification_date_location_description_attendees(array &$respons
         $response['new_date']['same_date'] = $same_date;
     }
     
-    if ($event_to_compare_with->description === $event->description) {
+    if (!empty($event->description) && $event_to_compare_with->description === $event->description) {
         $response['new_description'] = nl2br($event->description);
     }
     

@@ -74,7 +74,7 @@ class roundcube_caldav extends rcube_plugin
 
             if ($_connexion && $server['_main_calendar'] != null) {
                 $this->add_hook('message_objects', [$this, 'message_objects']);
-                
+
                 $this->register_action(
                     'plugin.roundcube_caldav_get_info_server',
                     [$this, 'get_info_server']
@@ -440,7 +440,7 @@ class roundcube_caldav extends rcube_plugin
             $html = ob_get_clean();
             $content[] = $html;
         }
-        
+
         return array('content' => $content);
     }
 
@@ -559,6 +559,10 @@ class roundcube_caldav extends rcube_plugin
 
         // Récupération du mail
         $message = new rcube_message($uid, $mbox);
+
+        if (empty($message->attachments)) {
+            return;
+        }
         
         try {
             foreach ($message->attachments as &$attachment) {
@@ -749,7 +753,7 @@ class roundcube_caldav extends rcube_plugin
                 set_formated_date_time($event, $response, $langs);
             }
 
-            if (isset($event->description) && $event->description) {
+            if (!empty($event->description) && $event->description) {
                 $response['description'] = nl2br($event->description);
             }
 
@@ -784,7 +788,7 @@ class roundcube_caldav extends rcube_plugin
                     $response['METHOD'],
                     $response
             );
-            
+
             $this->rcmail->output->command(
                 'plugin.undirect_rendering_js',
                 array('request' => $response)
@@ -918,7 +922,7 @@ class roundcube_caldav extends rcube_plugin
                     $new_ics = $ics_with_modified_date_and_location;
                     // On change le numéro de sequence si l'utilisateur est l'organisateur de l'evenement ou si l'événement n'a pas de participants
                     $new_ics = change_sequence_ics($new_ics);
-                    
+
                     $send_event = $this->save_event_on_caldav_server_and_display_message(
                             $new_ics,
                             $status,
@@ -1140,10 +1144,8 @@ class roundcube_caldav extends rcube_plugin
                         && $event_found->status !== 'CANCELLED'
                         && is_there_an_overlap(
                                 $current_event->dtstart_array[2],
-                                $current_event->dtstart_array[1],
-                                $current_event->dtend_array[1],
-                                $event_found->dtstart_array[1],
-                                $event_found->dtend_array[1]
+                                $current_event,
+                                $event_found
                         )
                     ) {
                         // Affichage de l'événement
@@ -1261,10 +1263,9 @@ class roundcube_caldav extends rcube_plugin
         foreach ($this->all_events[$calendar->getCalendarID()] as $event_found_ics) {
             // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
             $event_found_ical = new ICal($event_found_ics->getData());
-
             // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
             foreach ($event_found_ical->events() as &$event_found) {
-
+                if_no_dtend_add_one_to_event($event_found);
                 if ($event_found->uid == $current_event->uid) {
                     continue;
                 }
@@ -1297,7 +1298,8 @@ class roundcube_caldav extends rcube_plugin
                     $event_found->status !== 'CANCELLED'
                     && is_before(
                         $current_event->dtstart_array[1],
-                        $date_with_offset, $event_found->dtend_array[1],
+                        $date_with_offset,
+                        $event_found->dtend_array[1],
                         $current_event->dtstart_array[2]
                     )
                 ) {
@@ -1737,7 +1739,6 @@ class roundcube_caldav extends rcube_plugin
      */
     public function change_date_and_location(array $modification, array $array_events, Event $event, string $ics): string
     {
-
         $chosen_date_start = !empty($modification['_chosenDateStart']) ? $modification['_chosenDateStart'] : null;
         $chosen_date_end = !empty($modification['_chosenDateEnd']) ? $modification['_chosenDateEnd'] : null;
         $chosen_time_start = !empty($modification['_chosenTimeStart']) ? $modification['_chosenTimeStart'] : null;
@@ -1781,6 +1782,7 @@ class roundcube_caldav extends rcube_plugin
         if ($chosen_location) {
             $ics = change_location_ics($chosen_location, $ics);
         }
+
         return $ics;
     }
 

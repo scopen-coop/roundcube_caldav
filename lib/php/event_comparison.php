@@ -47,20 +47,32 @@ function find_event_with_matching_uid(Event $event, string $calendar, array $all
 /**
  * Search for an overlap between the two time intervals, true in case of overlap.
  * @param int $base_timestamp
- * @param string $current_date_start
- * @param string $current_date_end
- * @param string $date_start_to_compare_with
- * @param string|null $date_end_to_compare_with
+ * @param $current_event
+ * @param $event_found
  * @return bool
  */
-function is_there_an_overlap(int $base_timestamp, string $current_date_start, string $current_date_end, string $date_start_to_compare_with, ?string $date_end_to_compare_with): bool
+function is_there_an_overlap(int $base_timestamp, $current_event, $event_found): bool
 {
-    // If the event we want to compare with has no dt_end
-    if (!$date_end_to_compare_with) {
-        $date_end_to_compare_with = date("Ymd\THis\Z",
-                strtotime($date_start_to_compare_with, $base_timestamp) + 86400);
+    if (
+        empty($current_event->dtstart_array[1]) 
+        || empty($current_event->dtend_array[1])
+        || empty($event_found->dtstart_array[1])
+    ) {
+        return false;
     }
-    
+
+    $current_date_start = $current_event->dtstart_array[1];
+    $current_date_end = $current_event->dtend_array[1];
+    $date_start_to_compare_with = $event_found->dtstart_array[1];
+
+    if (empty($event_found->dtend_array) || empty($event_found->dtend_array[1])) {
+        $date_end_to_compare_with = date(
+                "Ymd\THis\Z", strtotime($date_start_to_compare_with, $base_timestamp) + 86400);
+    } else {
+        $date_end_to_compare_with = $event_found->dtend_array[1];
+    }
+
+
     return 
         (
             strtotime($date_start_to_compare_with, $base_timestamp) > strtotime($current_date_start,$base_timestamp)
