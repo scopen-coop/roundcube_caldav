@@ -115,6 +115,7 @@ $labels['main_calendar_error'] = "Vous devez selectionner un calendrier par déf
 $labels['no_title'] = "Un événement sans titre";
 $labels['main_calendar_not_exist'] = "Le calendrier choisis comme principal n'existe pas ou plus sur votre serveur";
 $labels['no_calendar_found'] = "Aucun Calendrier n'est disponible sur votre server";
+$labels['invitation_without_event_inside'] = "Vous avez reçu une invitation sans événement";
 
 
 ?>
