@@ -610,13 +610,15 @@ class roundcube_caldav extends rcube_plugin
 
         set_sender_and_receiver_email($message, $response);
         
-        $first_event = array_shift($events);
+        $first_event = $events[array_key_first($events)];
+
         if (empty($first_event)) {
             $this->rcmail->output->command('display_message', $this->gettext('invitation_without_event_inside'), 'error');
             return;
         }
-        
-        $same_uid =  $first_event->uid;
+
+        $same_uid = $first_event->uid;
+
         foreach ($events as $i => &$event) {
             if_no_dtend_add_one_to_event($event);
             $response['recurrent_events'][$event->uid][] = $this->pretty_date(
