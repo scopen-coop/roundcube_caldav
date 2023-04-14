@@ -181,16 +181,21 @@ function calculate_duration(string $duration)
     if (!$res) {
         return false;
     }
-    
+
     array_shift($match_array);
     $duration_in_second = 0;
-    
-    foreach ($match_array as $match) {
-        $scale = [];
-        preg_match('/([0-9]*)([A-Z])/', $match, $scale);
-        $duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
+
+    if (!empty($match_array)) {
+        foreach ($match_array as $match) {
+            $scale = [];
+            preg_match('/([0-9]*)([A-Z])/', $match, $scale);
+
+            if (!empty($scale)) {
+                $duration_in_second += intval($scale[1]) * $ladder[$scale[2]];
+            }
+        }
     }
-    
+
     return $duration_in_second;
 }
 
