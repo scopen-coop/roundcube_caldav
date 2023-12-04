@@ -668,17 +668,17 @@ class roundcube_caldav extends rcube_plugin
                     $this->rcmail->user->list_identities(null, true)
                 );
             }
-			$this->rcmail->output->command(
-				'display_message', 
-				json_encode($response['identity']),
-				'error'
-			);	
+
             $is_Organizer = false;
             
             if ($response['identity']) {
                 $is_Organizer = strcmp($response['identity']['role'], 'ORGANIZER') == 0;
             }
-            
+			$this->rcmail->output->command(
+				'display_message', 
+				json_encode($is_Organizer),
+				'error'
+			);	
             if ($is_Organizer) {
                 get_sender_s_partstat($event, $response);
             }
