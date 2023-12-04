@@ -655,9 +655,10 @@ class roundcube_caldav extends rcube_plugin
 
 			$this->rcmail->output->command(
 				'display_message', 
-				json_encode($event->organizer_array),
+				json_encode($event->organizer_array[0]),
 				'error'
 			);	
+			
 			// On récupère les informations correspondant à l'identité qui a été solicité dans le champs attendee ou organisateur
             if ($found_advance) {
                 $response['identity'] = find_identity_matching_with_attendee_or_organizer(
