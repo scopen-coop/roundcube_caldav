@@ -618,12 +618,6 @@ class roundcube_caldav extends rcube_plugin
         }
 
         $same_uid = $first_event->uid;
-		$this->rcmail->output->command(
-				'display_message', 
-				$first_event->description,
-				'error'
-		);    
-		
 		
 		foreach ($events as $i => &$event) {
             if_no_dtend_add_one_to_event($event);
@@ -955,6 +949,13 @@ class roundcube_caldav extends rcube_plugin
                 }
             }
 
+			$this->rcmail->output->command(
+				'display_message', 
+				$send_event . '   ' .$has_participants . '   ' . $update_event_on_server_only . '  ' .  $cancel_event_on_server_only,
+				'error'
+			);		  
+		
+			
             // On envoie une réponse uniquement si il y a des participants à qui répondre,
             // et si ce n'est pas une simple mise a jour de l'événement sur le serveur de l'utilisateur
             if ($send_event && $has_participants && !$update_event_on_server_only && !$cancel_event_on_server_only) {
