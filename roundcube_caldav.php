@@ -951,7 +951,7 @@ class roundcube_caldav extends rcube_plugin
 
 			$this->rcmail->output->command(
 				'display_message', 
-				intval($send_event && $has_participants && !$update_event_on_server_only && !$cancel_event_on_server_only),
+				strval(intval($send_event)) . strval(intval($has_participants)) . strval(intval($update_event_on_server_only)) . strval(intval($cancel_event_on_server_only)),
 				'error'
 			);		  
 		
