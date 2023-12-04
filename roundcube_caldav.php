@@ -655,7 +655,10 @@ class roundcube_caldav extends rcube_plugin
 
 			$this->rcmail->output->command(
 				'display_message', 
-				json_encode($event->organizer_array[1]),
+				json_encode(find_identity_matching_with_attendee_or_organizer(
+                    $event,
+                    $this->rcmail->user->list_identities(null, true)
+                )),
 				'error'
 			);	
 			
