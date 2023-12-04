@@ -412,6 +412,11 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
     $attendee_array = [];
     $organizer_array = [];
 
+	$this->rcmail->output->command(
+		'display_message', 
+		json_encode($event->organizer_array),
+		'error'
+	);	
     if (
         !empty($event->attendee_array) 
         || !empty($event->organizer_array)

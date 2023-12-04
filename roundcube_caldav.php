@@ -794,6 +794,12 @@ class roundcube_caldav extends rcube_plugin
                     $response
             );
 
+			
+			$this->rcmail->output->command(
+				'display_message', 
+				strval(intval($response['identity'])),
+				'error'
+			);	
             $this->rcmail->output->command(
                 'plugin.undirect_rendering_js',
                 array('request' => $response)
@@ -948,13 +954,6 @@ class roundcube_caldav extends rcube_plugin
                     $new_ics = $ics_with_modified_date_and_location;
                 }
             }
-
-			$this->rcmail->output->command(
-				'display_message', 
-				strval(intval($send_event)) . strval(intval($has_participants)) . strval(intval($update_event_on_server_only)) . strval(intval($cancel_event_on_server_only)),
-				'error'
-			);		  
-		
 			
             // On envoie une réponse uniquement si il y a des participants à qui répondre,
             // et si ce n'est pas une simple mise a jour de l'événement sur le serveur de l'utilisateur
