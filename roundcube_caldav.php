@@ -655,7 +655,7 @@ class roundcube_caldav extends rcube_plugin
 
 			$this->rcmail->output->command(
 				'display_message', 
-				json_encode($event->organizer_array[0]),
+				json_encode($event->organizer_array[1]),
 				'error'
 			);	
 			
