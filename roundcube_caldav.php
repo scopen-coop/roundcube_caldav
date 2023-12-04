@@ -618,8 +618,14 @@ class roundcube_caldav extends rcube_plugin
         }
 
         $same_uid = $first_event->uid;
-		var_dump($events); exit;
-        foreach ($events as $i => &$event) {
+		$this->rcmail->output->command(
+				'display_message', 
+				$first_event->description,
+				'error'
+		);    
+		
+		
+		foreach ($events as $i => &$event) {
             if_no_dtend_add_one_to_event($event);
             $response['recurrent_events'][$event->uid][] = $this->pretty_date(
                 $event->dtstart_array[1], 
