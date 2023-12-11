@@ -594,7 +594,7 @@ class roundcube_caldav extends rcube_plugin
 
         $ics = $message->get_part_body($attachment->mime_id);
         $ical = new ICal();
-		$ical->initString($ics);
+        $ical->initString($ics);
 
         $array_events = $ical->cal;
         $array_events = $array_events['VEVENT'] ?? $array_events;
@@ -835,7 +835,8 @@ class roundcube_caldav extends rcube_plugin
             // On récupère la PJ
             $ics = $message->get_part_body($attachment->mime_id);
             // On regarde uniquement l'évenement qui nous interesse parmis les différents présent dans le fichier
-            $ical = new ICal($ics);
+            $ical = new ICal();
+            $ical->initString($ics);
 
             $array_event = $ical->events();
 
@@ -1135,7 +1136,8 @@ class roundcube_caldav extends rcube_plugin
             foreach ($this->all_events[$calendar->getCalendarID()] as $event_found_ics) {
 
                 // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
-                $event_found_ical = new ICal($event_found_ics->getData());
+                $event_found_ical = new ICal();
+                $event_found_ical->initString($event_found_ics->getData());
 
                 $events_found = $event_found_ical->events();
                 
@@ -1268,7 +1270,9 @@ class roundcube_caldav extends rcube_plugin
         $has_meeting_by_calendars = false;
         foreach ($this->all_events[$calendar->getCalendarID()] as $event_found_ics) {
             // On recupère uniquement le fichier ics qui est dans la partie data pour le parser
-            $event_found_ical = new ICal($event_found_ics->getData());
+            $event_found_ical = new ICal();
+            $event_found_ical->initString($event_found_ics->getData());
+
             // On regarde event par event, un fichier ics peut en contenir plusieurs (en cas de répétition)
             foreach ($event_found_ical->events() as &$event_found) {
                 if_no_dtend_add_one_to_event($event_found);
@@ -1429,7 +1433,8 @@ class roundcube_caldav extends rcube_plugin
             
             if ($event_found_on_server) {
                 $event_ics = $event_found_on_server->getData();
-                $ical_found = new ICal($event_ics);
+                $ical_found = new ICal();
+                $ical_found->initString($event_ics);
 
                 // On parse l'evt trouvé pour avoir sa séquence
                 $event_found = $ical_found->events()[0];
@@ -1593,7 +1598,8 @@ class roundcube_caldav extends rcube_plugin
     public function send_mail(string $ics_to_send, rcube_message $message, string $method, array $my_identity, bool $has_modif = false): array
     {
         // On parse l'ics reçu
-        $ical = new ICal($ics_to_send, array('skipRecurrence' => true));
+        $ical = new ICal(false, array('skipRecurrence' => true));
+        $ical->initString($ics_to_send);
 
         $ical_events = $ical->events();
         $event = array_shift($ical_events);
