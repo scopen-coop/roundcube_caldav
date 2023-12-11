@@ -593,7 +593,8 @@ class roundcube_caldav extends rcube_plugin
         $this->connection_to_calDAV_server();
 
         $ics = $message->get_part_body($attachment->mime_id);
-        $ical = new ICal($ics);
+        $ical = new ICal();
+		$ical->initString($ics);
 
         $array_events = $ical->cal;
         $array_events = $array_events['VEVENT'] ?? $array_events;
