@@ -174,7 +174,7 @@ function set_method_field(ICal $ical, &$response, bool $is_Organizer)
 {
     if (
         is_array($ical->cal['VCALENDAR'])
-        && array_key_exists($ical->cal['VCALENDAR'], 'METHOD')
+        && array_key_exists('METHOD', $ical->cal['VCALENDAR'])
         && $ical->cal['VCALENDAR']['METHOD']
     ) {
         $response['METHOD'] = $ical->cal['VCALENDAR']['METHOD'];
