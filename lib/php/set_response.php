@@ -172,7 +172,11 @@ function if_no_dtend_add_one_to_event(Event &$event)
  */
 function set_method_field(ICal $ical, &$response, bool $is_Organizer)
 {
-    if ($ical->cal['VCALENDAR']['METHOD']) {
+    if (
+        $ical->cal['VCALENDAR']
+        && array_key_exists($ical->cal['VCALENDAR'], 'METHOD')
+        && $ical->cal['VCALENDAR']['METHOD']
+    ) {
         $response['METHOD'] = $ical->cal['VCALENDAR']['METHOD'];
     } elseif ($is_Organizer) {
         $response['METHOD'] = 'REPLY';
