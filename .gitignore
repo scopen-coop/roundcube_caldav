@@ -2,3 +2,4 @@
 /temp/*
 /.idea/*
 composer.lock
+/nbproject/private/
