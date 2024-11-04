@@ -763,10 +763,6 @@ class roundcube_caldav extends rcube_plugin
                 $response['description'] = nl2br($event->description);
             }
 
-            if ($event->description) {
-                $response['description'] = nl2br($event->description);
-            }
-
             $response['location'] = $event->location;
 
             $msg = set_calendar_to_use_for_select_input(
@@ -1375,6 +1371,7 @@ class roundcube_caldav extends rcube_plugin
         // On supprime le champ METHOD du fichier ics qui bloque l'ajout
         $ics = del_method_field_ics($ics);
 
+        var_dump($ics); exit;
         // on formate l'url sur laquelle on veut déposer notre event
         $url = rtrim($url_base, '/') . '/' . $calendar_id . '/' . $uid . '.ics';
 
