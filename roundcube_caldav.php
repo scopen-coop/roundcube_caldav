@@ -759,13 +759,17 @@ class roundcube_caldav extends rcube_plugin
                 set_formated_date_time($event, $response, $langs);
             }
 
-            if (!empty($event->description) && $event->description) {
+            if (!empty($event->description)) {
                 $response['description'] = nl2br($event->description);
+            } else {
+                $response['description']='';
             }
 
-
-            $response['description'] = nl2br($event->description);
-            $response['location'] = $event->location;
+            if (!empty($event->location)) {
+                $response['location'] = $event->location;
+            } else {
+                $response['location']='';
+            }
 
             $msg = set_calendar_to_use_for_select_input(
                 $response,
