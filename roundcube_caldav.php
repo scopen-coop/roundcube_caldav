@@ -765,11 +765,7 @@ class roundcube_caldav extends rcube_plugin
                 $response['description']='';
             }
 
-            if (!empty($event->location)) {
-                $response['location'] = $event->location;
-            } else {
-                $response['location']='';
-            }
+            $response['location'] = $event->location;
 
             $msg = set_calendar_to_use_for_select_input(
                 $response,
