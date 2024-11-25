@@ -48,7 +48,6 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
     
     if (!empty($event->attendee_array)) {
         foreach ($event->attendee_array as $attendee) {
-            var_dump($attendee);
             if (
                 !is_string($attendee) 
                 && (
