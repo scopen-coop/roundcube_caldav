@@ -124,7 +124,7 @@ function get_sender_s_partstat(Event $event, array &$response, bool $event_on_se
                 }
                 
                 $id++;
-            } elseif (array_key_exists('CN', $attendee)) {
+            } elseif (is_array($attendee) && array_key_exists('PARTSTAT', $attendee)) {
                 $array_attendees[$id]['partstat'] = $attendee['PARTSTAT'];
             }
         }
