@@ -451,8 +451,10 @@ function find_identity_matching_with_attendee_or_organizer(Event $event, array $
             }
         }
         
-        foreach ($event->organizer_array as $organizer) {
-            array_push($organizer_array, $organizer);
+        if(is_array($event->organizer_array)) {
+            foreach ($event->organizer_array as $organizer) {
+                array_push($organizer_array, $organizer);
+            }
         }
         
         if ($event_on_server) {
