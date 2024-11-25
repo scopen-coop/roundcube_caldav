@@ -57,10 +57,10 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
                     || array_key_exists('ROLE', $attendee)
                 )
             ) {
-                $response['attendees'][$id]['name'] = $attendee['CN'];
-                $response['attendees'][$id]['RSVP'] = $attendee['RSVP'];
-                $response['attendees'][$id]['partstat'] = $attendee['PARTSTAT'];
-                $response['attendees'][$id]['ROLE'] = $attendee['ROLE'];
+                $response['attendees'][$id]['name'] = array_key_exists('CN',$attendee) ? $attendee['CN']: null;
+                $response['attendees'][$id]['RSVP'] = array_key_exists('RSVP', $attendee) ? $attendee['RSVP']: null;
+                $response['attendees'][$id]['partstat'] = array_key_exists('PARTSTAT', $attendee) ? $attendee['PARTSTAT']: null;
+                $response['attendees'][$id]['ROLE'] = array_key_exists('ROLE', $attendee) ? $attendee['ROLE']: null;
             } elseif (is_string($attendee) && str_start_with($attendee, 'mailto:')) {
                 $response['attendees'][$id]['email'] = substr($attendee, strlen('mailto:'));
                 $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendees'][$id]['email'] . "',this)";
