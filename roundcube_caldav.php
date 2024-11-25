@@ -706,7 +706,7 @@ class roundcube_caldav extends rcube_plugin
                 $response['used_event'] = $event;
             }
             
-            var_dump($event);
+             $this->rcmail->output->command('display_message', $this->gettext($event), 'error');
             set_participants_characteristics_and_set_buttons_properties(
                     $response['used_event'],
                     $response
