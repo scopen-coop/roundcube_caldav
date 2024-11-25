@@ -56,7 +56,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
                     || array_key_exists('ROLE', $attendee)
                 )
             ) {
-                $response['attendees'][$id]['name'] = array_key_exists('CN',$attendee) ? $attendee['CN']: null;
+                $response['attendees'][$id]['name'] = array_key_exists('CN', $attendee) ? $attendee['CN']: null;
                 $response['attendees'][$id]['RSVP'] = array_key_exists('RSVP', $attendee) ? $attendee['RSVP']: null;
                 $response['attendees'][$id]['partstat'] = array_key_exists('PARTSTAT', $attendee) ? $attendee['PARTSTAT']: null;
                 $response['attendees'][$id]['ROLE'] = array_key_exists('ROLE', $attendee) ? $attendee['ROLE']: null;
@@ -86,7 +86,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
                     $all_adresses .= $organizer_email . ';';
                 }
             } else {
-                $organizer_array['name'] = $organizer['CN'];
+                $organizer_array['name'] =  array_key_exists('CN', $organizer) ? $organizer['CN']: null;
             }
         }
         
