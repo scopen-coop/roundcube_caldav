@@ -14,7 +14,7 @@
 
 $labels = array();
 $labels['server_caldav'] = 'Configuration serveur CalDAV';
-$labels['url_base'] = "Indiquez l'url de votre serveur calDAV sous la forme : \n https://my_caldav_server/remote.php/calendars/my_name";
+$labels['url_base'] = "Indiquez l'url de votre serveur calDAV sous la forme : \n https://my_caldav_server/remote.php/dav/calendars/my_username/";
 $labels['login'] = 'Indiquer votre login utilisé sur le serveur';
 $labels['password'] = 'Indiquez votre mot de passe';
 $labels['save_error_msg'] = 'Vos informations sont incorrectes et/ou incomplètes';

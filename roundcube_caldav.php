@@ -162,7 +162,7 @@ class roundcube_caldav extends rcube_plugin
 
         // On récupère l'url et le login dans les champs (ils sont remplis par défault avec l'ancienne valeur)
         $urlbase = rcube_utils::get_input_value('_define_server_caldav', rcube_utils::INPUT_POST);
-        $urlbase = preg_replace('/(.*)personal\/*$/', '$1', $urlbase);
+        $urlbase = $this->normalize_caldav_base_url($urlbase);
         $save_params['prefs']['server_caldav']['_url_base'] = $urlbase;
         $login = rcube_utils::get_input_value('_define_login', rcube_utils::INPUT_POST);
         $save_params['prefs']['server_caldav']['_login'] = $login;
@@ -1347,6 +1347,78 @@ class roundcube_caldav extends rcube_plugin
     }
 
     /**
+     * Normalize a CalDAV base URL entered in settings.
+     */
+    private function normalize_caldav_base_url(string $url): string
+    {
+        $url = rtrim(trim($url), '/');
+
+        if (preg_match('#/remote\.php/calendars/#', $url)) {
+            $url = preg_replace('#/remote\.php/calendars/#', '/remote.php/dav/calendars/', $url);
+        }
+
+        if (preg_match('#/remote\.php/dav/calendars/[^/]+/personal$#', $url)) {
+            $url = preg_replace('#/personal$#', '', $url);
+        }
+
+        return $url;
+    }
+
+    /**
+     * Build an absolute CalDAV URL from the configured server origin and a path.
+     */
+    private function build_absolute_caldav_url(string $path, ?string $uid = null): string
+    {
+        $server = $this->rcube->config->get('server_caldav');
+        $url_base = is_array($server) ? ($server['_url_base'] ?? '') : '';
+        $parsed = parse_url($url_base);
+
+        if (empty($parsed['scheme']) || empty($parsed['host'])) {
+            throw new Exception('Invalid CalDAV URL');
+        }
+
+        $origin = $parsed['scheme'] . '://' . $parsed['host'];
+
+        if (!empty($parsed['port'])) {
+            $origin .= ':' . $parsed['port'];
+        }
+
+        $path = '/' . ltrim($path, '/');
+
+        if ($uid !== null) {
+            $path = rtrim($path, '/') . '/' . $uid . '.ics';
+        }
+
+        return $origin . $path;
+    }
+
+    /**
+     * Resolve the PUT URL for a calendar event.
+     */
+    private function resolve_event_put_url(string $calendar_id, string $uid, ?string $href = null): string
+    {
+        if (!empty($href)) {
+            if (preg_match('#^https?://#', $href)) {
+                return $href;
+            }
+
+            return $this->build_absolute_caldav_url($href);
+        }
+
+        if (isset($this->arrayOfCalendars[$calendar_id])) {
+            return $this->build_absolute_caldav_url(
+                $this->arrayOfCalendars[$calendar_id]->getURL(),
+                $uid
+            );
+        }
+
+        $server = $this->rcube->config->get('server_caldav');
+        $url_base = is_array($server) ? ($server['_url_base'] ?? '') : '';
+
+        return rtrim($url_base, '/') . '/' . $calendar_id . '/' . $uid . '.ics';
+    }
+
+    /**
      * Connection to the calDAV server and import of the ics file.
      * If the server already has an event with the same uid we must provide the url of this event.
      * @param string $ics
@@ -1361,7 +1433,6 @@ class roundcube_caldav extends rcube_plugin
 
         // Récupération de l'url, du login et du mdp
         $server = $this->rcube->config->get('server_caldav');
-        $url_base = $server['_url_base'];
         $_password = $server['_password'];
         $login = $server['_login'];
         $cipher = new password_encryption();
@@ -1373,13 +1444,7 @@ class roundcube_caldav extends rcube_plugin
         // On supprime le champ METHOD du fichier ics qui bloque l'ajout
         $ics = del_method_field_ics($ics);
 
-        // on formate l'url sur laquelle on veut déposer notre event
-        $url = rtrim($url_base, '/') . '/' . $calendar_id . '/' . $uid . '.ics';
-
-        // Si href n'est pas nul alors on remplace l'url par href pour récupérer le bon événement
-        if ($href != null) {
-            $url = $href;
-        }
+        $url = $this->resolve_event_put_url($calendar_id, $uid, $href);
 
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_USERPWD, $login . ':' . $password);
