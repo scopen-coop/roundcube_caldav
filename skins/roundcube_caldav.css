@@ -270,6 +270,10 @@ fieldset {
     text-align: center;
 }
 
-.attendee_link  {
+.description, .location, .comment, .if_new_description, .if_new_location {
+    white-space: pre-wrap;
+}
+
+.attendee_link {
     margin-left: 0.5em;
 }
