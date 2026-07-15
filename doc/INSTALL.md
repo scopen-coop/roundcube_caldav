@@ -23,6 +23,21 @@ installation):
 
 In case of errors, check the files `logs/*`.
 
+## Nextcloud configuration
+
+When using Nextcloud as CalDAV server, use the following base URL in **Settings > Setup CalDav**:
+
+```
+https://your-nextcloud.example/remote.php/dav/calendars/your_username/
+```
+
+This is **not** the URL shown by Nextcloud's calendar app (which often ends with `/personal/`).
+Do not include a calendar name in the base URL; select your calendars on the plugin settings page instead.
+
+If you previously used the legacy path `/remote.php/calendars/`, update it to the `/remote.php/dav/calendars/` form above.
+Without the correct URL, accepting or declining invitations may fail with an error such as
+`Sabre\DAV\Exception\NotFound: Node with name personal was not found`.
+
 ## Installation with roundcube installed from Debian/Ubuntu repositories
 
 The version of roundcube packaged by Debian and distributed through the Debian and Ubuntu repositories has a split
