@@ -681,7 +681,7 @@ class roundcube_caldav extends rcube_plugin
             set_method_field($ical, $response, $is_Organizer);
 
             if (isset($event->comment) && $event->comment) {
-                $response['comment'] = nl2br($event->comment);
+                $response['comment'] = $event->comment;
             }
 
             set_if_an_older_event_was_found_on_server(
@@ -760,7 +760,7 @@ class roundcube_caldav extends rcube_plugin
             }
 
             if (!empty($event->description)) {
-                $response['description'] = nl2br($event->description);
+                $response['description'] = $event->description;
             } else {
                 $response['description']='';
             }

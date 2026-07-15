@@ -27,11 +27,10 @@ use ICal\ICal;
  * bool:RSVP,
  * partstat: Participation status,
  * ROLE: attendee/organizer,
- * email,
- * onclick: action to add for the participant button]
+ * email]
  *
  * And Fill the action to add on reply_all button
- * $response['attr_reply_all'] = [onclick]
+ * $response['attr_reply_all'] = [emails]
  * @param Event $event
  * @param array $response
  */
@@ -62,7 +61,6 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
                 $response['attendees'][$id]['ROLE'] = array_key_exists('ROLE', $attendee) ? $attendee['ROLE']: null;
             } elseif (is_string($attendee) && str_start_with($attendee, 'mailto:')) {
                 $response['attendees'][$id]['email'] = substr($attendee, strlen('mailto:'));
-                $response['attendees'][$id]['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $response['attendees'][$id]['email'] . "',this)";
                 if ($my_email !== $response['attendees'][$id]['email']) {
                     $all_adresses .= $response['attendees'][$id]['email'] . ';';
                 }
@@ -80,7 +78,6 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
                 $organizer_email = substr($organizer, strlen('mailto:'));
                 $organizer_array['email'] = $organizer_email;
                 $organizer_array['partstat'] = 'ORGANIZER';
-                $organizer_array['onclick'] = "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $organizer_email . "',this)";
                 
                 if ($my_email !== $organizer_email) {
                     $all_adresses .= $organizer_email . ';';
@@ -97,7 +94,7 @@ function set_participants_characteristics_and_set_buttons_properties(Event $even
     $all_adresses = substr($all_adresses, 0, -1);
     
     $response['attr_reply_all'] = [
-        'onclick' => "return " . rcmail_output::JS_OBJECT_NAME . ".command('compose','" . $all_adresses . "',this)"
+        'emails' => $all_adresses
     ];
 }
 
@@ -270,7 +267,7 @@ function set_if_modification_date_location_description_attendees(array &$respons
     }
     
     if (!empty($event->description) && $event_to_compare_with->description === $event->description) {
-        $response['new_description'] = nl2br($event->description);
+        $response['new_description'] = $event->description;
     }
     
     if (
