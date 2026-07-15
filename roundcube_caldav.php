@@ -436,7 +436,7 @@ class roundcube_caldav extends rcube_plugin
         
         if ($has_ICalendar_attachments) {
             ob_start();
-            include("plugins/roundcube_caldav/roundcube_caldav_display.php");
+            include(__DIR__ . '/roundcube_caldav_display.php');
             $html = ob_get_clean();
             $content[] = $html;
         }
