@@ -26,9 +26,9 @@ use ICal\Event;
 use ICal\ICal;
 use it\thecsea\simple_caldav_client\CalDAVCalendar;
 use it\thecsea\simple_caldav_client\CalDAVException;
-use it\thecsea\simple_caldav_client\SimpleCalDAVClient;
 
 require_once(__DIR__ . '/vendor/autoload.php');
+require_once(__DIR__ . '/lib/php/secure_simple_caldav_client.php');
 require_once(__DIR__ . '/lib/php/password_encryption.php');
 require_once(__DIR__ . '/lib/php/ics_file_modification.php');
 require_once(__DIR__ . '/lib/php/event_comparison.php');
@@ -41,7 +41,7 @@ class roundcube_caldav extends rcube_plugin
     public $rcube;
     public $rcmail;
 
-    /** @var SimpleCalDAVClient $client */
+    /** @var SecureSimpleCalDAVClient $client */
     protected $client;
     protected $time_zone_offset;
     protected $twenty_four_hour = 86400;
@@ -512,7 +512,7 @@ class roundcube_caldav extends rcube_plugin
             );
 
             //  Connexion au serveur calDAV et récupération des calendriers dispos
-            $this->client = new SimpleCalDAVClient();
+            $this->client = new SecureSimpleCalDAVClient();
 
             $this->client->connect($_url_base, $_login, $plain_password);
             return true;
